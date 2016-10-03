@@ -13,6 +13,7 @@ use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
 
 pub struct App {
+    pt: Seed,
     gl: GlGraphics,
     t: f64,
 }
@@ -21,19 +22,15 @@ impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
-        // TODO: is this wasteful at all?
-        // I.e. should I be storing a PermutationTable or `noise` or something?
-        let seed = Seed::new(12);
         let noise = Brownian4::new(noise::perlin4, 4).wavelength(1.0);
 
         // For now just drawing one coloured square
         // based on the current time.
         //
         // TODO: draw a grid of squares based on position and time.
-        let val = noise.apply(&seed, &[42.0, 37.0, 2.0, self.t as f32]);
-
-        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
+        let val = noise.apply(&self.pt, &[42.0, 37.0, 2.0, self.t as f32]) + 0.5;
         let color: [f32; 4] = [val, val, val, 1.0];
+        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 
         let square = rectangle::square(0.0, 0.0, 50.0);
         let x = (args.width / 2) as f64;
@@ -66,6 +63,7 @@ fn main() {
         .unwrap();
 
     let mut app = App {
+        pt: Seed::new(12),
         gl: GlGraphics::new(opengl),
         t: 0.0,
     };
