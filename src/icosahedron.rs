@@ -23,6 +23,8 @@ pub const VERTICES: [[f64; 3]; 12] = [
     [ B,    0.0, -A  ],
 ];
 
+// TODO: describe the very specific and deliberate
+// order that these faces are in.
 pub const FACES: [[usize; 3]; 20] = [
     [ 0,  1,  8  ],
     [ 7,  8,  1  ],

@@ -122,8 +122,7 @@ fn main() {
     // icosahedron vertices.
     let pt = Seed::new(12);
     let noise = Brownian3::new(noise::perlin3, 4).wavelength(1.0);
-    let mut color_index: usize = 0;
-    let vertex_data: Vec<Vertex> = icosahedron::VERTICES
+    let mutated_vertices: Vec<Vertex> = icosahedron::VERTICES
         .iter()
         .map(|v| {
             let (x, y, z) = (
@@ -133,23 +132,39 @@ fn main() {
             );
             // Vary a little bit around 1.0.
             let val = noise.apply(&pt, &[x, y, z]) * 0.1 + 1.0;
-            let vertex = Vertex::new([
+            // Set the color later when we clone it.
+            // TODO: This code is a mess. Hack first, clean it up later.
+            Vertex::new([
                 x * val,
                 y * val,
                 z * val,
-            ], icosahedron::RAINBOW[color_index]);
-            // TODO: you want to do this per face, not per vertex. Which means you'll need
-            // to deliberately create redundant vertices in the icosahedron model.
-            // This is fine; you're going to want to do this when you start subdividing
-            // the icosahedron into different chunks anyway.
-            color_index = (color_index + 1) % 10;
-            vertex
+            ], [0.0, 0.0, 0.0])
         })
         .collect();
 
+    // Give each face its own unique copies of the vertices,
+    // so that we can colour the faces independently.
+    let mut vertex_data: Vec<Vertex> = Vec::new();
+    let mut face_index: usize = 0;
     let index_vec: Vec<u16> = icosahedron::FACES
         .iter()
-        .flat_map(|f| vec![f[0], f[1], f[2]])
+        .flat_map(|f| {
+            let first_vertex_index = vertex_data.len();
+            for v in 0..3 {
+                let mut colored_vertex = mutated_vertices[f[v]].clone();
+                // Give adjacent triangles the same colour.
+                // We want to highlight the connection between
+                // the two triangles that make up each quad.
+                colored_vertex.a_color = icosahedron::RAINBOW[face_index / 2];
+                vertex_data.push(colored_vertex);
+            }
+            face_index += 1;
+            vec![
+                first_vertex_index,
+                first_vertex_index + 1,
+                first_vertex_index + 2,
+            ]
+        })
         .map(|vi| vi as u16)
         .collect();
     let index_data: &[u16] = index_vec.as_slice();
