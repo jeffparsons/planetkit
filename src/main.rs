@@ -31,13 +31,15 @@ gfx_vertex_struct!(
     Vertex {
         a_pos: [f32; 4] = "a_pos",
         tex_coord: [f32; 2] = "a_tex_coord",
+        a_color: [f32; 3] = "a_color",
     }
 );
 
 impl Vertex {
-    fn new(pos: [f32; 3]) -> Vertex {
+    fn new(pos: [f32; 3], color: [f32; 3]) -> Vertex {
         Vertex {
             a_pos: [pos[0], pos[1], pos[2], 1.0],
+            a_color: color,
             tex_coord: [0.0, 0.0],
         }
     }
@@ -113,13 +115,14 @@ fn main() {
         .exit_on_esc(true)
         .build()
         .unwrap();
-    window.set_capture_cursor(true);
+    window.set_capture_cursor(false);
 
     // Massage vertex data into form that gfx wants.
     // Set up some noise so we can mutate the base
     // icosahedron vertices.
     let pt = Seed::new(12);
     let noise = Brownian3::new(noise::perlin3, 4).wavelength(1.0);
+    let mut color_index: usize = 0;
     let vertex_data: Vec<Vertex> = icosahedron::VERTICES
         .iter()
         .map(|v| {
@@ -130,11 +133,17 @@ fn main() {
             );
             // Vary a little bit around 1.0.
             let val = noise.apply(&pt, &[x, y, z]) * 0.1 + 1.0;
-            Vertex::new([
+            let vertex = Vertex::new([
                 x * val,
                 y * val,
                 z * val,
-            ])
+            ], icosahedron::RAINBOW[color_index]);
+            // TODO: you want to do this per face, not per vertex. Which means you'll need
+            // to deliberately create redundant vertices in the icosahedron model.
+            // This is fine; you're going to want to do this when you start subdividing
+            // the icosahedron into different chunks anyway.
+            color_index = (color_index + 1) % 10;
+            vertex
         })
         .collect();
 
