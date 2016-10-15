@@ -11,8 +11,6 @@ extern crate camera_controllers;
 extern crate vecmath;
 extern crate shader_version;
 
-use noise::{Brownian3, Seed};
-
 // TODO: move most of these into specific functions
 use piston::window::WindowSettings;
 use piston::event_loop::*;
@@ -22,18 +20,21 @@ use piston_window::PistonWindow;
 use gfx::pso::bundle::Bundle;
 
 mod icosahedron;
+mod globe;
 
 // Most of this boilerplate stuff adapted from
 // <https://github.com/PistonDevelopers/piston-examples/blob/master/src/cube.rs>.
 // TODO: This is incomprehensible! Do something about it.
 
 gfx_vertex_struct!(
-    Vertex {
+    _Vertex {
         a_pos: [f32; 4] = "a_pos",
         tex_coord: [f32; 2] = "a_tex_coord",
         a_color: [f32; 3] = "a_color",
     }
 );
+
+pub type Vertex = _Vertex;
 
 impl Vertex {
     fn new(pos: [f32; 3], color: [f32; 3]) -> Vertex {
@@ -117,57 +118,9 @@ fn main() {
         .unwrap();
     window.set_capture_cursor(false);
 
-    // Massage vertex data into form that gfx wants.
-    // Set up some noise so we can mutate the base
-    // icosahedron vertices.
-    let pt = Seed::new(12);
-    let noise = Brownian3::new(noise::perlin3, 4).wavelength(1.0);
-    let mutated_vertices: Vec<Vertex> = icosahedron::VERTICES
-        .iter()
-        .map(|v| {
-            let (x, y, z) = (
-                v[0] as f32,
-                v[1] as f32,
-                v[2] as f32,
-            );
-            // Vary a little bit around 1.0.
-            let val = noise.apply(&pt, &[x, y, z]) * 0.1 + 1.0;
-            // Set the color later when we clone it.
-            // TODO: This code is a mess. Hack first, clean it up later.
-            Vertex::new([
-                x * val,
-                y * val,
-                z * val,
-            ], [0.0, 0.0, 0.0])
-        })
-        .collect();
-
-    // Give each face its own unique copies of the vertices,
-    // so that we can colour the faces independently.
-    let mut vertex_data: Vec<Vertex> = Vec::new();
-    let mut face_index: usize = 0;
-    let index_vec: Vec<u16> = icosahedron::FACES
-        .iter()
-        .flat_map(|f| {
-            let first_vertex_index = vertex_data.len();
-            for v in 0..3 {
-                let mut colored_vertex = mutated_vertices[f[v]].clone();
-                // Give adjacent triangles the same colour.
-                // We want to highlight the connection between
-                // the two triangles that make up each quad.
-                colored_vertex.a_color = icosahedron::RAINBOW[face_index / 2];
-                vertex_data.push(colored_vertex);
-            }
-            face_index += 1;
-            vec![
-                first_vertex_index,
-                first_vertex_index + 1,
-                first_vertex_index + 2,
-            ]
-        })
-        .map(|vi| vi as u16)
-        .collect();
-    let index_data: &[u16] = index_vec.as_slice();
+    let globe = globe::Globe::new_example();
+    let (vertices, indices) = globe.make_geometry();
+    let index_data: &[u16] = indices.as_slice();
 
     // Make OpenGL resource factory.
     // We'll use this for creating all our
@@ -175,7 +128,7 @@ fn main() {
     let ref mut factory = window.factory.clone();
 
     let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
-        &vertex_data, index_data
+        &vertices, index_data
     );
 
     let texels = [[0x20, 0xA0, 0xC0, 0x00]];
