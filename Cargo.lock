@@ -5,6 +5,7 @@ dependencies = [
  "camera_controllers 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nalgebra 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "noise 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -439,6 +440,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gcc 0.3.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "nalgebra"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "num 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1025,6 +1036,7 @@ dependencies = [
 "checksum malloc_buf 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 "checksum memmap 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "f20f72ed93291a72e22e8b16bb18762183bb4943f0f483da5b8be1a9e8192752"
 "checksum miniz-sys 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "9d1f4d337a01c32e1f2122510fed46393d53ca35a7f429cb0450abaedfa3ed54"
+"checksum nalgebra 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f754f64bd1a5f5899285c2e182df7ddebcecf466369663be2277ca01b6da5d5d"
 "checksum nodrop 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "0dbbadd3f4c98dea0bd3d9b4be4c0cdaf1ab57035cb2e41fce3983db5add7cc5"
 "checksum noise 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2beecc561ba77c35a7fefab972a29213a42065811a2da81e63671ecfcbff6f63"
 "checksum num 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)" = "bde7c03b09e7c6a301ee81f6ddf66d7a28ec305699e3d3b056d2fc56470e3120"

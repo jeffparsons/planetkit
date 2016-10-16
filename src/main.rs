@@ -10,6 +10,7 @@ extern crate piston_window;
 extern crate camera_controllers;
 extern crate vecmath;
 extern crate shader_version;
+extern crate nalgebra as na;
 
 // TODO: move most of these into specific functions
 use piston::window::WindowSettings;
