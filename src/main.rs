@@ -21,6 +21,7 @@ use gfx::pso::bundle::Bundle;
 
 mod icosahedron;
 mod globe;
+mod chunk;
 
 // Most of this boilerplate stuff adapted from
 // <https://github.com/PistonDevelopers/piston-examples/blob/master/src/cube.rs>.

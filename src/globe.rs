@@ -1,13 +1,17 @@
 use noise;
 use icosahedron;
 
+use chunk::{ IntCoord, Chunk, Root, CellPos, Cell };
+
+const ROOT_QUADS: u8 = 10;
+
 pub struct Spec {
     seed: u32,
     radius: f64,
     // These are the full width/height of a given root quad or chunk's voxmap;
     // i.e. not an exponent.
-    root_resolution: u64,
-    chunk_resolution: u64,
+    root_resolution: IntCoord,
+    chunk_resolution: IntCoord,
 }
 
 impl Spec {
@@ -18,31 +22,83 @@ impl Spec {
     }
 }
 
+// TODO: split out a WorldGen type that handles all the procedural
+// generation, because none of that really needs to be tangled
+// with the realised Globe.
 pub struct Globe {
     spec: Spec,
     // Permutation table for noise
     pt: noise::Seed,
+    // TODO: figure out what structure to store these in.
+    // You'll never have all chunks loaded in the real world.
+    //
+    // TODO: you'll probably also want to store some lower-res
+    // pseudo-chunks for rendering planets at a distance.
+    // But maybe you can put that off?
+    chunks: Vec<Chunk>,
 }
 
 impl Globe {
     pub fn new(spec: Spec) -> Globe {
         assert!(spec.is_valid(), "Invalid globe spec!");
         let pt = noise::Seed::new(spec.seed);
-        Globe {
+        let mut globe = Globe {
             spec: spec,
             pt: pt,
-        }
+            chunks: Vec::new(),
+        };
+        globe.build_all_chunks();
+        globe
     }
 
     pub fn new_example() -> Globe {
         Globe::new(
             Spec {
                 seed: 12,
-                radius: 1.2, // TODO: make it ~Earth
-                root_resolution: 256,
-                chunk_resolution: 16,
+                radius: 1.0, // TODO: make it ~Earth
+                root_resolution: 16,
+                chunk_resolution: 4,
             }
         )
+    }
+
+    pub fn build_all_chunks(&mut self) {
+        let chunks_per_root_side = self.spec.root_resolution / self.spec.chunk_resolution;
+        for root_index in 0..ROOT_QUADS {
+            let root = Root { index: root_index };
+            for y in 0..chunks_per_root_side {
+                for x in 0..chunks_per_root_side {
+                    let origin = CellPos {
+                        root: root.clone(),
+                        x: x * self.spec.chunk_resolution,
+                        y: y * self.spec.chunk_resolution,
+                    };
+                    self.build_chunk(origin);
+                }
+            }
+        }
+    }
+
+    pub fn build_chunk(&mut self, origin: CellPos) {
+        // TODO: get parameters from spec
+        let noise = noise::Brownian3::new(noise::perlin3, 4).wavelength(1.0);
+        let mut cells: Vec<Cell> = Vec::new();
+        let end_x = origin.x + self.spec.chunk_resolution;
+        let end_y = origin.y + self.spec.chunk_resolution;
+        for cell_y in origin.y..end_y {
+            for cell_x in origin.x..end_x {
+                // Calculate height for this cell from world spec.
+
+                // TODO: project onto the globe!
+                let (x, y, z) = (1.0, 2.0, 3.0);
+
+                // Vary a little bit around 1.0.
+                let height = noise.apply(&self.pt, &[x, y, z]) * 0.1 + 1.0;
+                cells.push(Cell {
+                    height: height,
+                });
+            }
+        }
     }
 
     // Make vertices and list of indices into that array for triangle faces.
