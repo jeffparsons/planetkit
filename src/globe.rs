@@ -209,4 +209,13 @@ impl Globe {
 
         (vertex_data, index_vec)
     }
+
+    fn cell_center(&self, cell_pos: CellPos) -> Pt3 {
+        let res = self.spec.root_resolution as f64;
+        let pt_in_root_quad = Pt2::new(
+            cell_pos.x as f64 / res,
+            cell_pos.y as f64 / res,
+        );
+        project(cell_pos.root, pt_in_root_quad)
+    }
 }
