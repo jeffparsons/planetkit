@@ -1,3 +1,6 @@
+use rand;
+use rand::Rng;
+
 use na::{ Point2, Point3, Vector2, Vector3 };
 
 use noise;
@@ -24,9 +27,14 @@ pub struct Spec {
 
 impl Spec {
     pub fn is_valid(&self) -> bool {
-        // Chunk resolution needs to be a factor of root resolution.
-        let chunks_per_root_side = self.root_resolution / self.chunk_resolution;
-        chunks_per_root_side * self.chunk_resolution == self.root_resolution
+        // Chunk resolution needs to divide perfectly into root resolution.
+        let calculated_root_resolution = self.chunks_per_root_side() * self.chunk_resolution;
+        calculated_root_resolution == self.root_resolution
+    }
+
+    pub fn chunks_per_root_side(&self) -> IntCoord {
+        // Assume chunk resolution divides perfectly into root resolution.
+        self.root_resolution / self.chunk_resolution
     }
 }
 
@@ -160,54 +168,95 @@ impl Globe {
 
     // Make vertices and list of indices into that array for triangle faces.
     pub fn make_geometry(&self) -> (Vec<::Vertex>, Vec<u16>) {
-        // Output faces for each root quad.
         let mut vertex_data: Vec<::Vertex> = Vec::new();
-        let index_vec: Vec<u16> = (0..ROOT_QUADS)
-            .flat_map(|root_index| {
-                let first_vertex_index = vertex_data.len() as u16;
-                // Add vertices of both north and south triangles of quad.
-                // Color by root quad.
-                let root_color = icosahedron::RAINBOW[root_index as usize];
-                let tri_coords: [[f64; 2]; 6] = [
-                    // TEMP: match the order of the icosahedron vertices
-                    // to minimise differences initially--but this shouldn't
-                    // need to be the same at all.
-                    // North triangle
-                    [0.0, 0.0],
-                    [1.0, 0.0],
-                    [0.0, 1.0],
+        let mut index_data: Vec<u16> = Vec::new();
 
-                    // South triangle
-                    [1.0, 1.0],
-                    [0.0, 1.0],
-                    [1.0, 0.0],
-                ];
-                for coord_pair in tri_coords.iter() {
-                    let pt3 = project(
-                        Root { index: root_index },
-                        Pt2::new(coord_pair[0], coord_pair[1]),
+        // Build geometry for each chunk into our buffers.
+        let chunks_per_root_side = self.spec.chunks_per_root_side();
+        for root_index in 0..ROOT_QUADS {
+            for y in 0..chunks_per_root_side {
+                for x in 0..chunks_per_root_side {
+                    let origin = CellPos {
+                        root: root_index.into(),
+                        x: x * self.spec.chunk_resolution,
+                        y: y * self.spec.chunk_resolution,
+                    };
+                    self.make_chunk_geometry(
+                        origin,
+                        &mut vertex_data,
+                        &mut index_data
                     );
-                    let vertex = ::Vertex::new([
+                }
+            }
+        }
+
+        (vertex_data, index_data)
+    }
+
+    pub fn make_chunk_geometry(
+        &self,
+        origin: CellPos,
+        vertex_data: &mut Vec<::Vertex>,
+        index_data: &mut Vec<u16>
+    ) {
+        let end_x = origin.x + self.spec.chunk_resolution;
+        let end_y = origin.y + self.spec.chunk_resolution;
+        for cell_y in origin.y..end_y {
+            for cell_x in origin.x..end_x {
+                // TEMP: Randomly mutate cell color to make it easier to see edges.
+                let root_color = icosahedron::RAINBOW[origin.root.index as usize];
+                let mut cell_color = root_color;
+                let mut rng = rand::thread_rng();
+                for mut color_channel in cell_color.iter_mut() {
+                    *color_channel *= rng.next_f32();
+                }
+
+                // TODO: use functions that return just the bit they care
+                // about and... maths. This is silly.
+                let first_vertex_index = vertex_data.len() as u16;
+
+                // Output a quad for this cell starting from its
+                // center point and going to the next on (x, y).
+                // Name anti-clockwise starting from (0, 0).
+                // TODO: output hexagons+pentagons instead.
+                let a = CellPos {
+                    x: cell_x,
+                    y: cell_y,
+                    root: origin.root,
+                };
+                let mut b = a.clone();
+                b.x += 1;
+                let mut c = b.clone();
+                c.y += 1;
+                let mut d = c.clone();
+                d.x -= 1;
+
+                for cell_pos in [a, b, c, d].iter() {
+                    // TODO: use actual chunk data to render this stuff.
+                    let pt3 = self.cell_center(*cell_pos);
+                    vertex_data.push(::Vertex::new([
                         pt3[0] as f32,
                         pt3[1] as f32,
                         pt3[2] as f32,
-                    ], root_color);
-                    vertex_data.push(vertex);
+                    ], cell_color));
                 }
 
-                vec![
+                // Output two faces for the cell. For lack of
+                // a better idea, just going with north and south;
+                // kinda like the inverse of when we were joining
+                // icosahedral triangles into quads.
+                index_data.extend(&[
                     // North face
                     first_vertex_index,
                     first_vertex_index + 1,
-                    first_vertex_index + 2,
-                    // South face
                     first_vertex_index + 3,
-                    first_vertex_index + 4,
-                    first_vertex_index + 5,
-                ]
-            }).collect();
-
-        (vertex_data, index_vec)
+                    // South face
+                    first_vertex_index + 2,
+                    first_vertex_index + 3,
+                    first_vertex_index + 1,
+                ]);
+            }
+        }
     }
 
     fn cell_center(&self, cell_pos: CellPos) -> Pt3 {

@@ -1,3 +1,4 @@
+extern crate rand;
 extern crate noise;
 extern crate piston;
 extern crate graphics;
