@@ -128,7 +128,7 @@ fn main() {
     // Make OpenGL resource factory.
     // We'll use this for creating all our
     // vertex buffers, etc.
-    let ref mut factory = window.factory.clone();
+    let factory = &mut window.factory.clone();
 
     let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
         &vertices, index_data

@@ -136,7 +136,7 @@ impl Globe {
             for y in 0..chunks_per_root_side {
                 for x in 0..chunks_per_root_side {
                     let origin = CellPos {
-                        root: root.clone(),
+                        root: root,
                         x: x * self.spec.chunk_resolution,
                         y: y * self.spec.chunk_resolution,
                     };
@@ -152,8 +152,8 @@ impl Globe {
         let mut cells: Vec<Cell> = Vec::new();
         let end_x = origin.x + self.spec.chunk_resolution;
         let end_y = origin.y + self.spec.chunk_resolution;
-        for cell_y in origin.y..end_y {
-            for cell_x in origin.x..end_x {
+        for _cell_y in origin.y..end_y {
+            for _cell_x in origin.x..end_x {
                 // Calculate height for this cell from world spec.
 
                 // TODO: project onto the globe!
@@ -209,7 +209,7 @@ impl Globe {
                 let root_color = icosahedron::RAINBOW[origin.root.index as usize];
                 let mut cell_color = root_color;
                 let mut rng = rand::thread_rng();
-                for mut color_channel in cell_color.iter_mut() {
+                for mut color_channel in &mut cell_color {
                     *color_channel *= rng.next_f32();
                 }
 
@@ -226,14 +226,14 @@ impl Globe {
                     y: cell_y,
                     root: origin.root,
                 };
-                let mut b = a.clone();
+                let mut b = a;
                 b.x += 1;
-                let mut c = b.clone();
+                let mut c = b;
                 c.y += 1;
-                let mut d = c.clone();
+                let mut d = c;
                 d.x -= 1;
 
-                for cell_pos in [a, b, c, d].iter() {
+                for cell_pos in &[a, b, c, d] {
                     // TODO: use actual chunk data to render this stuff.
                     let pt3 = self.cell_center(*cell_pos);
                     vertex_data.push(::Vertex::new([
@@ -247,7 +247,7 @@ impl Globe {
                 // a better idea, just going with north and south;
                 // kinda like the inverse of when we were joining
                 // icosahedral triangles into quads.
-                index_data.extend(&[
+                index_data.extend_from_slice(&[
                     // North face
                     first_vertex_index,
                     first_vertex_index + 1,
