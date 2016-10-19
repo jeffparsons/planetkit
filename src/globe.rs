@@ -78,13 +78,15 @@ pub fn project(root: Root, pt_in_root_quad: Pt2) -> Pt3 {
     let dc = c - d;
 
     // Decide which triangle we're in.
-    if pt_in_root_quad[0] + pt_in_root_quad[1] < 1.0 {
+    let pos_on_icosahedron = if pt_in_root_quad[0] + pt_in_root_quad[1] < 1.0 {
         // In first triangle.
         a + ab * pt_in_root_quad[0] + ac * pt_in_root_quad[1]
     } else {
         // In second triangle.
         d + dc * (1.0 - pt_in_root_quad[0]) + db * (1.0 - pt_in_root_quad[1])
-    }
+    };
+    use na::Norm;
+    *pos_on_icosahedron.as_vector().normalize().as_point()
 }
 
 // TODO: split out a WorldGen type that handles all the procedural

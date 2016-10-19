@@ -112,8 +112,8 @@ fn main() {
 
     // Create an Glutin window.
     let mut window: PistonWindow = WindowSettings::new(
-        "black-triangle",
-        [640, 480]
+        "planetkit",
+        [800, 600]
     )
         .opengl(opengl)
         .exit_on_esc(true)
