@@ -1,20 +1,13 @@
 use rand;
 use rand::Rng;
 
-use na::{ Point2, Point3, Vector2, Vector3 };
-
 use noise;
-use icosahedron;
 
-use chunk::{ IntCoord, Chunk, Root, CellPos, Cell };
+use types::*;
+use super::icosahedron;
+use super::chunk::{ IntCoord, Chunk, Root, CellPos, Cell };
 
 const ROOT_QUADS: u8 = 10;
-
-// TODO: this belongs at module root
-type Vec2 = Vector2<f64>;
-type Vec3 = Vector3<f64>;
-type Pt2 = Point2<f64>;
-type Pt3 = Point3<f64>;
 
 pub struct Spec {
     seed: u32,
@@ -62,7 +55,7 @@ pub fn project(root: Root, pt_in_root_quad: Pt2) -> Pt3 {
     //              S_2
     //
     // TODO: cache all this stuff somewhere. It's tiny, and we'll use it heaps.
-    use icosahedron::{ FACES, VERTICES };
+    use super::icosahedron::{ FACES, VERTICES };
     let i_north = root.index as usize * 2;
     let i_south = i_north + 1;
     let north = FACES[i_north];

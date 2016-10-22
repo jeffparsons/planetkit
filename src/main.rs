@@ -21,9 +21,8 @@ use opengl_graphics::OpenGL;
 use piston_window::PistonWindow;
 use gfx::pso::bundle::Bundle;
 
-mod icosahedron;
 mod globe;
-mod chunk;
+mod types;
 
 // Most of this boilerplate stuff adapted from
 // <https://github.com/PistonDevelopers/piston-examples/blob/master/src/cube.rs>.
