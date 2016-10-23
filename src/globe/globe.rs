@@ -91,24 +91,45 @@ impl Globe {
 
     pub fn build_chunk(&mut self, origin: CellPos) {
         // TODO: get parameters from spec
-        let noise = noise::Brownian3::new(noise::perlin3, 4).wavelength(1.0);
+        let noise = noise::Brownian3::new(noise::perlin3::<f64>, 4).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
         let end_x = origin.x + self.spec.chunk_resolution;
         let end_y = origin.y + self.spec.chunk_resolution;
-        for _cell_y in origin.y..end_y {
-            for _cell_x in origin.x..end_x {
+        for cell_y in origin.y..end_y {
+            for cell_x in origin.x..end_x {
                 // Calculate height for this cell from world spec.
-
-                // TODO: project onto the globe!
-                let (x, y, z) = (1.0, 2.0, 3.0);
+                // To do this, project the cell onto a unit sphere
+                // and sample 3D simplex noise to get a height value.
+                //
+                // TODO: split out a proper world generator
+                // that layers in lots of different kinds of noise etc.
+                let cell_pos = CellPos {
+                    root: origin.root,
+                    x: cell_x,
+                    y: cell_y,
+                    // TODO: maybe don't use cell_center;
+                    // i.e. use a special method that explicitly
+                    // ignores the z-coordinate for use in
+                    // operations like noise sampling.
+                    // z: 1,
+                };
+                let pt3 = self.cell_center(cell_pos);
 
                 // Vary a little bit around 1.0.
-                let height = noise.apply(&self.pt, &[x, y, z]) * 0.1 + 1.0;
+                let delta =
+                    noise.apply(&self.pt, pt3.as_ref())
+                    * self.spec.radius
+                    * 0.1;
+                let height = self.spec.radius + delta;
                 cells.push(Cell {
                     height: height,
                 });
             }
         }
+        self.chunks.push(Chunk {
+            origin: origin,
+            cells: cells,
+        });
     }
 
     // Make vertices and list of indices into that array for triangle faces.
@@ -117,33 +138,24 @@ impl Globe {
         let mut index_data: Vec<u16> = Vec::new();
 
         // Build geometry for each chunk into our buffers.
-        let chunks_per_root_side = self.spec.chunks_per_root_side();
-        for root_index in 0..ROOT_QUADS {
-            for y in 0..chunks_per_root_side {
-                for x in 0..chunks_per_root_side {
-                    let origin = CellPos {
-                        root: root_index.into(),
-                        x: x * self.spec.chunk_resolution,
-                        y: y * self.spec.chunk_resolution,
-                    };
-                    self.make_chunk_geometry(
-                        origin,
-                        &mut vertex_data,
-                        &mut index_data
-                    );
-                }
-            }
+        for chunk in &self.chunks {
+            // TODO: factor out
+            self.make_chunk_geometry(
+                &chunk,
+                &mut vertex_data,
+                &mut index_data,
+            );
         }
-
         (vertex_data, index_data)
     }
 
     pub fn make_chunk_geometry(
         &self,
-        origin: CellPos,
+        chunk: &Chunk,
         vertex_data: &mut Vec<::Vertex>,
         index_data: &mut Vec<u16>
     ) {
+        let origin = chunk.origin;
         let end_x = origin.x + self.spec.chunk_resolution;
         let end_y = origin.y + self.spec.chunk_resolution;
         for cell_y in origin.y..end_y {
@@ -177,8 +189,36 @@ impl Globe {
                 d.x -= 1;
 
                 for cell_pos in &[a, b, c, d] {
+                    // TEMP: get the height for this cell from chunk data.
                     // TODO: use actual chunk data to render this stuff.
-                    let pt3 = self.cell_center(*cell_pos);
+                    //
+                    // TODO: don't take a reference to a chunk
+                    // in this method; to make geometry for this
+                    // chunk we need to have data for adjacent chunks
+                    // loaded, and rebase some of the edge positions
+                    // on those adjacent chunks to get their cell data.
+                    //
+                    // **OR** we can have a step before this that
+                    // ensures we have all adjacent cell data cached
+                    // in extra rows/columns along the edges of this chunk.
+                    // The latter probably makes more sense for memory
+                    // locality in the hot path. Sometimes we might want
+                    // to ask further afield, though, (e.g. five cells
+                    // into another chunk) so decide whether you want
+                    // a general interface that can fetch as necessary,
+                    // commit to always caching as much as you
+                    // might ever need, or some combination.
+                    //
+                    // HAX: For now... hack hack hack. We won't have all
+                    // the cell data we need for some edge cells,
+                    // so just make it up.
+                    use std::cmp::min;
+                    let local_x = min(cell_pos.x - origin.x, self.spec.chunk_resolution - 1);
+                    let local_y = min(cell_pos.y - origin.y, self.spec.chunk_resolution - 1);
+                    let cell_i = (local_y * self.spec.chunk_resolution + local_x) as usize;
+                    let cell = &chunk.cells[cell_i];
+                    let pt3 = self.cell_center(*cell_pos) * cell.height;
+
                     vertex_data.push(::Vertex::new([
                         pt3[0] as f32,
                         pt3[1] as f32,

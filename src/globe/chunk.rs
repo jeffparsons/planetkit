@@ -1,5 +1,10 @@
 use globe::{ IntCoord, Root };
 
+// TODO: we should actually have multiple different
+// kinds of Voxmaps. "Chunk" should refer to the coarse
+// entity that owns everything related to a conveniently
+// sized partition of the world that would be loaded and
+// unloaded into the world as a unit.
 
 #[derive(Clone, Copy)]
 pub struct CellPos {
