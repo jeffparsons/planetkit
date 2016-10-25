@@ -122,7 +122,7 @@ fn main() {
 
     let globe = globe::Globe::new_example();
     let (vertices, indices) = globe.make_geometry();
-    let index_data: &[u16] = indices.as_slice();
+    let index_data: &[u32] = indices.as_slice();
 
     // Make OpenGL resource factory.
     // We'll use this for creating all our

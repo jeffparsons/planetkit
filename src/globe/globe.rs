@@ -66,8 +66,8 @@ impl Globe {
             Spec {
                 seed: 12,
                 radius: 1.0, // TODO: make it ~Earth
-                root_resolution: 16,
-                chunk_resolution: 4,
+                root_resolution: 64,
+                chunk_resolution: 16,
             }
         )
     }
@@ -133,9 +133,9 @@ impl Globe {
     }
 
     // Make vertices and list of indices into that array for triangle faces.
-    pub fn make_geometry(&self) -> (Vec<::Vertex>, Vec<u16>) {
+    pub fn make_geometry(&self) -> (Vec<::Vertex>, Vec<u32>) {
         let mut vertex_data: Vec<::Vertex> = Vec::new();
-        let mut index_data: Vec<u16> = Vec::new();
+        let mut index_data: Vec<u32> = Vec::new();
 
         // Build geometry for each chunk into our buffers.
         for chunk in &self.chunks {
@@ -153,7 +153,7 @@ impl Globe {
         &self,
         chunk: &Chunk,
         vertex_data: &mut Vec<::Vertex>,
-        index_data: &mut Vec<u16>
+        index_data: &mut Vec<u32>
     ) {
         let origin = chunk.origin;
         let end_x = origin.x + self.spec.chunk_resolution;
@@ -170,7 +170,7 @@ impl Globe {
 
                 // TODO: use functions that return just the bit they care
                 // about and... maths. This is silly.
-                let first_vertex_index = vertex_data.len() as u16;
+                let first_vertex_index = vertex_data.len() as u32;
 
                 // Output a quad for this cell starting from its
                 // center point and going to the next on (x, y).
