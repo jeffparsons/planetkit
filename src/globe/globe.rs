@@ -91,7 +91,7 @@ impl Globe {
 
     pub fn build_chunk(&mut self, origin: CellPos) {
         // TODO: get parameters from spec
-        let noise = noise::Brownian3::new(noise::perlin3::<f64>, 4).wavelength(1.0);
+        let noise = noise::Brownian3::new(noise::perlin3::<f64>, 6).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
         let end_x = origin.x + self.spec.chunk_resolution;
         let end_y = origin.y + self.spec.chunk_resolution;
