@@ -64,7 +64,7 @@ impl Globe {
     pub fn new_example() -> Globe {
         Globe::new(
             Spec {
-                seed: 12,
+                seed: 13,
                 radius: 1.0, // TODO: make it ~Earth
                 root_resolution: 64,
                 chunk_resolution: 16,
@@ -91,7 +91,7 @@ impl Globe {
 
     pub fn build_chunk(&mut self, origin: CellPos) {
         // TODO: get parameters from spec
-        let noise = noise::Brownian3::new(noise::perlin3::<f64>, 6).wavelength(1.0);
+        let noise = noise::Brownian3::new(noise::open_simplex3::<f64>, 6).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
         let end_x = origin.x + self.spec.chunk_resolution;
         let end_y = origin.y + self.spec.chunk_resolution;
@@ -119,7 +119,7 @@ impl Globe {
                 let delta =
                     noise.apply(&self.pt, pt3.as_ref())
                     * self.spec.radius
-                    * 0.1;
+                    * 0.2;
                 let height = self.spec.radius + delta;
                 cells.push(Cell {
                     height: height,
