@@ -6,7 +6,7 @@ use noise;
 use types::*;
 use super::icosahedron;
 use super::Root;
-use super::chunk::{ Chunk, CellPos, Cell };
+use super::chunk::{ Chunk, CellPos, Cell, Material };
 use super::spec::Spec;
 
 const ROOT_QUADS: u8 = 10;
@@ -100,8 +100,14 @@ impl Globe {
                     * self.spec.radius
                     * 0.2;
                 let height = self.spec.radius + delta;
+                // TEMP: ...
+                let material = if height > 1.0 {
+                    Material::Dirt
+                } else {
+                    Material::Air
+                };
                 cells.push(Cell {
-                    height: height,
+                    material: material,
                 });
             }
         }
@@ -139,6 +145,16 @@ impl Globe {
         let end_y = origin.y + self.spec.chunk_resolution;
         for cell_y in origin.y..end_y {
             for cell_x in origin.x..end_x {
+                // TEMP: only draw this cell if it's dirt.
+                use std::cmp::min;
+                let local_x = min(cell_x - origin.x, self.spec.chunk_resolution - 1);
+                let local_y = min(cell_y - origin.y, self.spec.chunk_resolution - 1);
+                let cell_i = (local_y * self.spec.chunk_resolution + local_x) as usize;
+                let cell = &chunk.cells[cell_i];
+                if cell.material != Material::Dirt {
+                    continue;
+                }
+
                 // TEMP: Randomly mutate cell color to make it easier to see edges.
                 let root_color = icosahedron::RAINBOW[origin.root.index as usize];
                 let mut cell_color = root_color;
@@ -191,12 +207,7 @@ impl Globe {
                     // HAX: For now... hack hack hack. We won't have all
                     // the cell data we need for some edge cells,
                     // so just make it up.
-                    use std::cmp::min;
-                    let local_x = min(cell_pos.x - origin.x, self.spec.chunk_resolution - 1);
-                    let local_y = min(cell_pos.y - origin.y, self.spec.chunk_resolution - 1);
-                    let cell_i = (local_y * self.spec.chunk_resolution + local_x) as usize;
-                    let cell = &chunk.cells[cell_i];
-                    let pt3 = self.cell_center(*cell_pos) * cell.height;
+                    let pt3 = self.cell_center(*cell_pos);
 
                     vertex_data.push(::Vertex::new([
                         pt3[0] as f32,

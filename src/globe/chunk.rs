@@ -1,5 +1,11 @@
 use globe::{ IntCoord, Root };
 
+#[derive(PartialEq, Eq)]
+pub enum Material {
+    Air,
+    Dirt,
+}
+
 // TODO: we should actually have multiple different
 // kinds of Voxmaps. "Chunk" should refer to the coarse
 // entity that owns everything related to a conveniently
@@ -15,10 +21,7 @@ pub struct CellPos {
 }
 
 pub struct Cell {
-    // For now we're just storing the elevation
-    // at each X/Y position. That should all be cached
-    // somewhere else, and this should have actual voxel data.
-    pub height: f64,
+    pub material: Material,
 }
 
 // TODO: make this an actual voxmap.
