@@ -27,6 +27,17 @@ pub struct Cell {
 // TODO: make this an actual voxmap.
 pub struct Chunk {
     pub origin: CellPos,
+    pub resolution: [IntCoord; 3],
     // Sorted by (z, y, x).
     pub cells: Vec<Cell>,
+}
+
+impl<'a> Chunk {
+    // Panics if given coordinates of a cell we don't have data for.
+    pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
+        let local_x = pos.x - self.origin.x;
+        let local_y = pos.y - self.origin.y;
+        let cell_i = (local_y * self.resolution[0] + local_x) as usize;
+        &self.cells[cell_i]
+    }
 }

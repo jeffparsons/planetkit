@@ -114,6 +114,13 @@ impl Globe {
         self.chunks.push(Chunk {
             origin: origin,
             cells: cells,
+            resolution: [
+                // TODO: break up x/y chunk resolution
+                self.spec.chunk_resolution,
+                self.spec.chunk_resolution,
+                // TODO: chunks are still always 1 high
+                1,
+            ],
         });
     }
 
@@ -146,11 +153,13 @@ impl Globe {
         for cell_y in origin.y..end_y {
             for cell_x in origin.x..end_x {
                 // TEMP: only draw this cell if it's dirt.
-                use std::cmp::min;
-                let local_x = min(cell_x - origin.x, self.spec.chunk_resolution - 1);
-                let local_y = min(cell_y - origin.y, self.spec.chunk_resolution - 1);
-                let cell_i = (local_y * self.spec.chunk_resolution + local_x) as usize;
-                let cell = &chunk.cells[cell_i];
+                // Use cell centre as top-left corner of quad.
+                let a = CellPos {
+                    x: cell_x,
+                    y: cell_y,
+                    root: origin.root,
+                };
+                let cell = chunk.cell(a);
                 if cell.material != Material::Dirt {
                     continue;
                 }
@@ -171,11 +180,6 @@ impl Globe {
                 // center point and going to the next on (x, y).
                 // Name anti-clockwise starting from (0, 0).
                 // TODO: output hexagons+pentagons instead.
-                let a = CellPos {
-                    x: cell_x,
-                    y: cell_y,
-                    root: origin.root,
-                };
                 let mut b = a;
                 b.x += 1;
                 let mut c = b;
