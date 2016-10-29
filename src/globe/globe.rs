@@ -4,7 +4,6 @@ use rand::Rng;
 use noise;
 
 use types::*;
-use super::icosahedron;
 use super::Root;
 use super::chunk::{ Chunk, CellPos, Cell, Material };
 use super::spec::Spec;
@@ -44,10 +43,10 @@ impl Globe {
         Globe::new(
             Spec {
                 seed: 13,
-                floor_radius: 0.8, // TODO: make it ~Earth
+                floor_radius: 0.90, // TODO: make it ~Earth
                 ocean_radius: 1.0,
-                block_height: 0.05,
-                root_resolution: [64, 64],
+                block_height: 0.02,
+                root_resolution: [32, 32],
                 chunk_resolution: [16, 16, 4],
             }
         )
@@ -62,7 +61,7 @@ impl Globe {
         for root_index in 0..ROOT_QUADS {
             let root = Root { index: root_index };
             // TODO: how many to build high?
-            for z in 0..2 {
+            for z in 0..3 {
                 for y in 0..chunks_per_root[0] {
                     for x in 0..chunks_per_root[1] {
                         let origin = CellPos {
@@ -107,13 +106,21 @@ impl Globe {
                     let delta =
                         noise.apply(&self.pt, land_pt3.as_ref())
                         * self.spec.ocean_radius
-                        * 0.2;
+                        * 0.3;
                     let land_height = self.spec.ocean_radius + delta;
                     // TEMP: ...
                     use na::Norm;
-                    let cell_height_squared = cell_pt3.as_vector().norm_squared();
-                    let material = if cell_height_squared < land_height*land_height {
+                    // TEMP: add tiny delta so we're not "z-fighting"
+                    // with the ocean height.
+                    //
+                    // TODO: how to address this more "permanently"?
+                    // Just never have the ocean height a neat multiple
+                    // of the floor height?
+                    let cell_height = cell_pt3.as_vector().norm() + 0.01;
+                    let material = if cell_height < land_height {
                         Material::Dirt
+                    } else if cell_height < self.spec.ocean_radius {
+                        Material::Water
                     } else {
                         Material::Air
                     };
@@ -169,16 +176,22 @@ impl Globe {
                         root: origin.root,
                     };
                     let cell = chunk.cell(a);
-                    if cell.material != Material::Dirt {
-                        continue;
-                    }
 
+                    // TEMP color dirt as green, ocean as blue.
                     // TEMP: Randomly mutate cell color to make it easier to see edges.
-                    let root_color = icosahedron::RAINBOW[origin.root.index as usize];
-                    let mut cell_color = root_color;
+                    let mut cell_color = if cell.material == Material::Dirt {
+                        // Grassy green
+                        [ 0.0, 0.4, 0.0 ]
+                    } else if cell.material == Material::Water {
+                        // Ocean blue
+                        [ 0.0, 0.1, 0.7 ]
+                    } else {
+                        // Don't draw air or anything else we don't understand.
+                        continue;
+                    };
                     let mut rng = rand::thread_rng();
                     for mut color_channel in &mut cell_color {
-                        *color_channel *= rng.next_f32();
+                        *color_channel *= 1.0 - 0.5 * rng.next_f32();
                     }
 
                     // TODO: use functions that return just the bit they care

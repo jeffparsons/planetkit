@@ -4,6 +4,7 @@ use globe::{ IntCoord, Root };
 pub enum Material {
     Air,
     Dirt,
+    Water,
 }
 
 // TODO: we should actually have multiple different
@@ -37,7 +38,11 @@ impl<'a> Chunk {
     pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
         let local_x = pos.x - self.origin.x;
         let local_y = pos.y - self.origin.y;
-        let cell_i = (local_y * self.resolution[0] + local_x) as usize;
-        &self.cells[cell_i]
+        let local_z = pos.z - self.origin.z;
+        let cell_i =
+            local_z * self.resolution[0] * self.resolution[1] +
+            local_y * self.resolution[0] +
+            local_x;
+        &self.cells[cell_i as usize]
     }
 }
