@@ -5,32 +5,11 @@ use noise;
 
 use types::*;
 use super::icosahedron;
-use super::{ IntCoord, Root };
+use super::Root;
 use super::chunk::{ Chunk, CellPos, Cell };
+use super::spec::Spec;
 
 const ROOT_QUADS: u8 = 10;
-
-pub struct Spec {
-    seed: u32,
-    radius: f64,
-    // These are the full width/height of a given root quad or chunk's voxmap;
-    // i.e. not an exponent.
-    root_resolution: IntCoord,
-    chunk_resolution: IntCoord,
-}
-
-impl Spec {
-    pub fn is_valid(&self) -> bool {
-        // Chunk resolution needs to divide perfectly into root resolution.
-        let calculated_root_resolution = self.chunks_per_root_side() * self.chunk_resolution;
-        calculated_root_resolution == self.root_resolution
-    }
-
-    pub fn chunks_per_root_side(&self) -> IntCoord {
-        // Assume chunk resolution divides perfectly into root resolution.
-        self.root_resolution / self.chunk_resolution
-    }
-}
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled

@@ -2,13 +2,15 @@
 // main bits at this level below.
 mod globe;
 mod icosahedron;
+mod spec;
 pub mod chunk;
-pub mod root;
+mod root;
 
 use types::*;
 
 pub use self::root::*;
 pub use self::globe::*;
+pub use self::spec::*;
 
 pub type IntCoord = u64;
 
