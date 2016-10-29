@@ -44,7 +44,10 @@ impl Globe {
             Spec {
                 seed: 13,
                 floor_radius: 0.90, // TODO: make it ~Earth
-                ocean_radius: 1.0,
+                // NOTE: Don't let ocean radius be a neat multiple of block
+                // height above floor radius, or we'll end up with
+                // z-fighting in evaluating what blocks are water/air.
+                ocean_radius: 1.01,
                 block_height: 0.02,
                 root_resolution: [32, 32],
                 chunk_resolution: [16, 16, 4],
@@ -110,13 +113,7 @@ impl Globe {
                     let land_height = self.spec.ocean_radius + delta;
                     // TEMP: ...
                     use na::Norm;
-                    // TEMP: add tiny delta so we're not "z-fighting"
-                    // with the ocean height.
-                    //
-                    // TODO: how to address this more "permanently"?
-                    // Just never have the ocean height a neat multiple
-                    // of the floor height?
-                    let cell_height = cell_pt3.as_vector().norm() + 0.01;
+                    let cell_height = cell_pt3.as_vector().norm();
                     let material = if cell_height < land_height {
                         Material::Dirt
                     } else if cell_height < self.spec.ocean_radius {
