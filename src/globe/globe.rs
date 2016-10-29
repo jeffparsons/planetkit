@@ -44,25 +44,35 @@ impl Globe {
         Globe::new(
             Spec {
                 seed: 13,
-                radius: 1.0, // TODO: make it ~Earth
-                root_resolution: 64,
-                chunk_resolution: 16,
+                floor_radius: 0.8, // TODO: make it ~Earth
+                ocean_radius: 1.0,
+                block_height: 0.05,
+                root_resolution: [64, 64],
+                chunk_resolution: [16, 16, 4],
             }
         )
     }
 
     pub fn build_all_chunks(&mut self) {
-        let chunks_per_root_side = self.spec.root_resolution / self.spec.chunk_resolution;
+        // Calculate how many chunks to a root in each direction in (x, y).
+        let chunks_per_root = [
+            self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
+            self.spec.root_resolution[1] / self.spec.chunk_resolution[1],
+        ];
         for root_index in 0..ROOT_QUADS {
             let root = Root { index: root_index };
-            for y in 0..chunks_per_root_side {
-                for x in 0..chunks_per_root_side {
-                    let origin = CellPos {
-                        root: root,
-                        x: x * self.spec.chunk_resolution,
-                        y: y * self.spec.chunk_resolution,
-                    };
-                    self.build_chunk(origin);
+            // TODO: how many to build high?
+            for z in 0..2 {
+                for y in 0..chunks_per_root[0] {
+                    for x in 0..chunks_per_root[1] {
+                        let origin = CellPos {
+                            root: root,
+                            x: x * self.spec.chunk_resolution[0],
+                            y: y * self.spec.chunk_resolution[1],
+                            z: z * self.spec.chunk_resolution[2],
+                        };
+                        self.build_chunk(origin);
+                    }
                 }
             }
         }
@@ -72,55 +82,51 @@ impl Globe {
         // TODO: get parameters from spec
         let noise = noise::Brownian3::new(noise::open_simplex3::<f64>, 6).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
-        let end_x = origin.x + self.spec.chunk_resolution;
-        let end_y = origin.y + self.spec.chunk_resolution;
-        for cell_y in origin.y..end_y {
-            for cell_x in origin.x..end_x {
-                // Calculate height for this cell from world spec.
-                // To do this, project the cell onto a unit sphere
-                // and sample 3D simplex noise to get a height value.
-                //
-                // TODO: split out a proper world generator
-                // that layers in lots of different kinds of noise etc.
-                let cell_pos = CellPos {
-                    root: origin.root,
-                    x: cell_x,
-                    y: cell_y,
-                    // TODO: maybe don't use cell_center;
-                    // i.e. use a special method that explicitly
-                    // ignores the z-coordinate for use in
-                    // operations like noise sampling.
-                    // z: 1,
-                };
-                let pt3 = self.cell_center(cell_pos);
+        let end_x = origin.x + self.spec.chunk_resolution[0];
+        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_z = origin.z + self.spec.chunk_resolution[2];
+        for cell_z in origin.z..end_z {
+            for cell_y in origin.y..end_y {
+                for cell_x in origin.x..end_x {
+                    // Calculate height for this cell from world spec.
+                    // To do this, project the cell onto a unit sphere
+                    // and sample 3D simplex noise to get a height value.
+                    //
+                    // TODO: split out a proper world generator
+                    // that layers in lots of different kinds of noise etc.
+                    let cell_pos = CellPos {
+                        root: origin.root,
+                        x: cell_x,
+                        y: cell_y,
+                        z: cell_z,
+                    };
+                    let land_pt3 = self.cell_center_on_unit_sphere(cell_pos);
+                    let cell_pt3 = self.cell_center(cell_pos);
 
-                // Vary a little bit around 1.0.
-                let delta =
-                    noise.apply(&self.pt, pt3.as_ref())
-                    * self.spec.radius
-                    * 0.2;
-                let height = self.spec.radius + delta;
-                // TEMP: ...
-                let material = if height > 1.0 {
-                    Material::Dirt
-                } else {
-                    Material::Air
-                };
-                cells.push(Cell {
-                    material: material,
-                });
+                    // Vary a little bit around 1.0.
+                    let delta =
+                        noise.apply(&self.pt, land_pt3.as_ref())
+                        * self.spec.ocean_radius
+                        * 0.2;
+                    let land_height = self.spec.ocean_radius + delta;
+                    // TEMP: ...
+                    use na::Norm;
+                    let cell_height_squared = cell_pt3.as_vector().norm_squared();
+                    let material = if cell_height_squared < land_height*land_height {
+                        Material::Dirt
+                    } else {
+                        Material::Air
+                    };
+                    cells.push(Cell {
+                        material: material,
+                    });
+                }
             }
         }
         self.chunks.push(Chunk {
             origin: origin,
             cells: cells,
-            resolution: [
-                // TODO: break up x/y chunk resolution
-                self.spec.chunk_resolution,
-                self.spec.chunk_resolution,
-                // TODO: chunks are still always 1 high
-                1,
-            ],
+            resolution: self.spec.chunk_resolution,
         });
     }
 
@@ -148,102 +154,117 @@ impl Globe {
         index_data: &mut Vec<u32>
     ) {
         let origin = chunk.origin;
-        let end_x = origin.x + self.spec.chunk_resolution;
-        let end_y = origin.y + self.spec.chunk_resolution;
-        for cell_y in origin.y..end_y {
-            for cell_x in origin.x..end_x {
-                // TEMP: only draw this cell if it's dirt.
-                // Use cell centre as top-left corner of quad.
-                let a = CellPos {
-                    x: cell_x,
-                    y: cell_y,
-                    root: origin.root,
-                };
-                let cell = chunk.cell(a);
-                if cell.material != Material::Dirt {
-                    continue;
+        let end_x = origin.x + self.spec.chunk_resolution[0];
+        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_z = origin.z + self.spec.chunk_resolution[2];
+        for cell_z in origin.z..end_z {
+            for cell_y in origin.y..end_y {
+                for cell_x in origin.x..end_x {
+                    // TEMP: only draw this cell if it's dirt.
+                    // Use cell centre as top-left corner of quad.
+                    let a = CellPos {
+                        x: cell_x,
+                        y: cell_y,
+                        z: cell_z,
+                        root: origin.root,
+                    };
+                    let cell = chunk.cell(a);
+                    if cell.material != Material::Dirt {
+                        continue;
+                    }
+
+                    // TEMP: Randomly mutate cell color to make it easier to see edges.
+                    let root_color = icosahedron::RAINBOW[origin.root.index as usize];
+                    let mut cell_color = root_color;
+                    let mut rng = rand::thread_rng();
+                    for mut color_channel in &mut cell_color {
+                        *color_channel *= rng.next_f32();
+                    }
+
+                    // TODO: use functions that return just the bit they care
+                    // about and... maths. This is silly.
+                    let first_vertex_index = vertex_data.len() as u32;
+
+                    // Output a quad for this cell starting from its
+                    // center point and going to the next on (x, y).
+                    // Name anti-clockwise starting from (0, 0).
+                    // TODO: output hexagons+pentagons instead.
+                    let mut b = a;
+                    b.x += 1;
+                    let mut c = b;
+                    c.y += 1;
+                    let mut d = c;
+                    d.x -= 1;
+
+                    for cell_pos in &[a, b, c, d] {
+                        // TEMP: get the height for this cell from chunk data.
+                        // TODO: use actual chunk data to render this stuff.
+                        //
+                        // TODO: don't take a reference to a chunk
+                        // in this method; to make geometry for this
+                        // chunk we need to have data for adjacent chunks
+                        // loaded, and rebase some of the edge positions
+                        // on those adjacent chunks to get their cell data.
+                        //
+                        // **OR** we can have a step before this that
+                        // ensures we have all adjacent cell data cached
+                        // in extra rows/columns along the edges of this chunk.
+                        // The latter probably makes more sense for memory
+                        // locality in the hot path. Sometimes we might want
+                        // to ask further afield, though, (e.g. five cells
+                        // into another chunk) so decide whether you want
+                        // a general interface that can fetch as necessary,
+                        // commit to always caching as much as you
+                        // might ever need, or some combination.
+                        //
+                        // HAX: For now... hack hack hack. We won't have all
+                        // the cell data we need for some edge cells,
+                        // so just make it up.
+                        let pt3 = self.cell_center(*cell_pos);
+
+                        vertex_data.push(::Vertex::new([
+                            pt3[0] as f32,
+                            pt3[1] as f32,
+                            pt3[2] as f32,
+                        ], cell_color));
+                    }
+
+                    // Output two faces for the cell. For lack of
+                    // a better idea, just going with north and south;
+                    // kinda like the inverse of when we were joining
+                    // icosahedral triangles into quads.
+                    index_data.extend_from_slice(&[
+                        // North face
+                        first_vertex_index,
+                        first_vertex_index + 1,
+                        first_vertex_index + 3,
+                        // South face
+                        first_vertex_index + 2,
+                        first_vertex_index + 3,
+                        first_vertex_index + 1,
+                    ]);
                 }
-
-                // TEMP: Randomly mutate cell color to make it easier to see edges.
-                let root_color = icosahedron::RAINBOW[origin.root.index as usize];
-                let mut cell_color = root_color;
-                let mut rng = rand::thread_rng();
-                for mut color_channel in &mut cell_color {
-                    *color_channel *= rng.next_f32();
-                }
-
-                // TODO: use functions that return just the bit they care
-                // about and... maths. This is silly.
-                let first_vertex_index = vertex_data.len() as u32;
-
-                // Output a quad for this cell starting from its
-                // center point and going to the next on (x, y).
-                // Name anti-clockwise starting from (0, 0).
-                // TODO: output hexagons+pentagons instead.
-                let mut b = a;
-                b.x += 1;
-                let mut c = b;
-                c.y += 1;
-                let mut d = c;
-                d.x -= 1;
-
-                for cell_pos in &[a, b, c, d] {
-                    // TEMP: get the height for this cell from chunk data.
-                    // TODO: use actual chunk data to render this stuff.
-                    //
-                    // TODO: don't take a reference to a chunk
-                    // in this method; to make geometry for this
-                    // chunk we need to have data for adjacent chunks
-                    // loaded, and rebase some of the edge positions
-                    // on those adjacent chunks to get their cell data.
-                    //
-                    // **OR** we can have a step before this that
-                    // ensures we have all adjacent cell data cached
-                    // in extra rows/columns along the edges of this chunk.
-                    // The latter probably makes more sense for memory
-                    // locality in the hot path. Sometimes we might want
-                    // to ask further afield, though, (e.g. five cells
-                    // into another chunk) so decide whether you want
-                    // a general interface that can fetch as necessary,
-                    // commit to always caching as much as you
-                    // might ever need, or some combination.
-                    //
-                    // HAX: For now... hack hack hack. We won't have all
-                    // the cell data we need for some edge cells,
-                    // so just make it up.
-                    let pt3 = self.cell_center(*cell_pos);
-
-                    vertex_data.push(::Vertex::new([
-                        pt3[0] as f32,
-                        pt3[1] as f32,
-                        pt3[2] as f32,
-                    ], cell_color));
-                }
-
-                // Output two faces for the cell. For lack of
-                // a better idea, just going with north and south;
-                // kinda like the inverse of when we were joining
-                // icosahedral triangles into quads.
-                index_data.extend_from_slice(&[
-                    // North face
-                    first_vertex_index,
-                    first_vertex_index + 1,
-                    first_vertex_index + 3,
-                    // South face
-                    first_vertex_index + 2,
-                    first_vertex_index + 3,
-                    first_vertex_index + 1,
-                ]);
             }
         }
     }
 
-    fn cell_center(&self, cell_pos: CellPos) -> Pt3 {
-        let res = self.spec.root_resolution as f64;
+    // Ignore the z-coordinate; just project to a unit sphere.
+    // This is useful for, e.g., sampling noise to determine elevation
+    // at a particular point on the surface, or other places where you're
+    // really just talking about longitude/latitude.
+    fn cell_center_on_unit_sphere(&self, cell_pos: CellPos) -> Pt3 {
+        let res_x = self.spec.root_resolution[0] as f64;
+        let res_y = self.spec.root_resolution[1] as f64;
         let pt_in_root_quad = Pt2::new(
-            cell_pos.x as f64 / res,
-            cell_pos.y as f64 / res,
+            cell_pos.x as f64 / res_x,
+            cell_pos.y as f64 / res_y,
         );
         super::project(cell_pos.root, pt_in_root_quad)
+    }
+
+    fn cell_center(&self, cell_pos: CellPos) -> Pt3 {
+        let radius = self.spec.floor_radius +
+            self.spec.block_height * cell_pos.z as f64;
+        radius * self.cell_center_on_unit_sphere(cell_pos)
     }
 }

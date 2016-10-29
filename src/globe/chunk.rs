@@ -17,7 +17,7 @@ pub struct CellPos {
     pub root: Root,
     pub x: IntCoord,
     pub y: IntCoord,
-    // TODO: z
+    pub z: IntCoord,
 }
 
 pub struct Cell {
