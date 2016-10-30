@@ -4,7 +4,7 @@ use rand::Rng;
 use noise;
 
 use types::*;
-use super::Root;
+use super::{ Root, Dir };
 use super::chunk::{ Chunk, CellPos, Cell, Material };
 use super::spec::Spec;
 
@@ -276,5 +276,54 @@ impl Globe {
         let radius = self.spec.floor_radius +
             self.spec.block_height * cell_pos.z as f64;
         radius * self.cell_center_on_unit_sphere(cell_pos)
+    }
+
+    // TODO: return something
+    fn cell_vertex(&self, cell_pos: CellPos, dir: Dir) {
+        // We can imagine a hexagon laid out on a quad
+        // that wraps in both directions, such that its
+        // center exists at all four corners of the quad:
+        //
+        //  (0, 0)
+        //          ●       y _
+        //    x        ◌       🡖
+        //    🡓     ◌     ◌
+        //             ◌     ●
+        //          ◌     ◌ ╱   ◌
+        //             ◌   ╱ ◌     ◌     (0, 0)
+        //          ●─────●     ◌     ●
+        //             ◌   ╲ ◌     ◌
+        //          ◌     ◌ ╲   ◌     ◌
+        //             ◌     ●     ◌
+        //          ◌     ◌   ╲ ◌     ◌
+        //             ◌     ◌ ╲   ◌
+        //          ●     ◌     ●─────●
+        //  (0, 0)     ◌     ◌ ╱   ◌
+        //                ◌   ╱ ◌     ◌
+        //                   ●     ◌
+        //                      ◌     ◌
+        //                         ◌
+        //                            ●
+        //                               (0, 0)
+        //
+        // Then, if we list out points for the middle of
+        // each side and each vertex, starting from the
+        // middle of the side in the positive x direction
+        // and travelling counterclockwise, we end up with
+        // 12 offset coordinate pairs in this grid of:
+        const DIR_OFFSETS: [[i8; 2]; 12] = [
+            [ 3,  0], // edge (+x)
+            [ 2,  2], // vertex
+            [ 0,  3], // edge (+y)
+            [-2,  4], // vertex
+            [-3,  3], // edge
+            [-4,  2], // vertex
+            [-3,  0], // edge (-x)
+            [-2, -2], // vertex
+            [ 0, -3], // edge (-y)
+            [ 2, -4], // vertex
+            [ 3, -3], // edge
+            [ 4, -2], // vertex
+        ];
     }
 }

@@ -14,6 +14,8 @@ pub use self::spec::*;
 
 pub type IntCoord = u64;
 
+pub struct Dir(u8);
+
 // Project a position in a given root quad into a unit sphere.
 // Assumes that one corner is represented in `pt_in_root_quad`
 // as (0, 0) and the opposite is (1, 1).
