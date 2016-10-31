@@ -151,6 +151,22 @@ impl Globe {
         (vertex_data, index_data)
     }
 
+    // TODO: don't take a reference to a chunk
+    // in this method; to make geometry for this
+    // chunk we'll eventually need to have data for adjacent chunks
+    // loaded, and rebase some of the edge positions
+    // on those adjacent chunks to get their cell data.
+    //
+    // **OR** we can have a step before this that
+    // ensures we have all adjacent cell data cached
+    // in extra rows/columns along the edges of this chunk.
+    // The latter probably makes more sense for memory
+    // locality in the hot path. Sometimes we might want
+    // to ask further afield, though, (e.g. five cells
+    // into another chunk) so decide whether you want
+    // a general interface that can fetch as necessary,
+    // commit to always caching as much as you
+    // might ever need, or some combination.
     pub fn make_chunk_geometry(
         &self,
         chunk: &Chunk,
@@ -164,15 +180,14 @@ impl Globe {
         for cell_z in origin.z..end_z {
             for cell_y in origin.y..end_y {
                 for cell_x in origin.x..end_x {
-                    // TEMP: only draw this cell if it's dirt.
-                    // Use cell centre as top-left corner of quad.
-                    let a = CellPos {
+                    // Use cell centre as first vertex of each triangle.
+                    let cell_pos = CellPos {
                         x: cell_x,
                         y: cell_y,
                         z: cell_z,
                         root: origin.root,
                     };
-                    let cell = chunk.cell(a);
+                    let cell = chunk.cell(cell_pos);
 
                     // TEMP color dirt as green, ocean as blue.
                     // TEMP: Randomly mutate cell color to make it easier to see edges.
@@ -195,64 +210,68 @@ impl Globe {
                     // about and... maths. This is silly.
                     let first_vertex_index = vertex_data.len() as u32;
 
-                    // Output a quad for this cell starting from its
-                    // center point and going to the next on (x, y).
-                    // Name anti-clockwise starting from (0, 0).
-                    // TODO: output hexagons+pentagons instead.
-                    let mut b = a;
-                    b.x += 1;
-                    let mut c = b;
-                    c.y += 1;
-                    let mut d = c;
-                    d.x -= 1;
-
-                    for cell_pos in &[a, b, c, d] {
-                        // TEMP: get the height for this cell from chunk data.
-                        // TODO: use actual chunk data to render this stuff.
-                        //
-                        // TODO: don't take a reference to a chunk
-                        // in this method; to make geometry for this
-                        // chunk we need to have data for adjacent chunks
-                        // loaded, and rebase some of the edge positions
-                        // on those adjacent chunks to get their cell data.
-                        //
-                        // **OR** we can have a step before this that
-                        // ensures we have all adjacent cell data cached
-                        // in extra rows/columns along the edges of this chunk.
-                        // The latter probably makes more sense for memory
-                        // locality in the hot path. Sometimes we might want
-                        // to ask further afield, though, (e.g. five cells
-                        // into another chunk) so decide whether you want
-                        // a general interface that can fetch as necessary,
-                        // commit to always caching as much as you
-                        // might ever need, or some combination.
-                        //
-                        // HAX: For now... hack hack hack. We won't have all
-                        // the cell data we need for some edge cells,
-                        // so just make it up.
-                        let pt3 = self.cell_center(*cell_pos);
-
+                    // Output triangles made of the cell center and
+                    // each pair of adjacent vertices of the hexagon.
+                    // See `cell_vertex_on_unit_sphere` below for explanation
+                    // of the directions we've chosen here.
+                    //
+                    // TODO: we shouldn't be drawing the full hexagon for all cells;
+                    // otherwise adjacent chunks will both be trying to draw the same
+                    // hexagon at the edges. Instead we should determine which
+                    // vertices we need, and draw partial hexagons like so:
+                    //
+                    //                 6
+                    //        7                 5
+                    //           ◌ · · ●─────●
+                    //          ·   ◌  │  ◌   ╲
+                    //         · ◌     ◌     ◌ ╲
+                    //     8  ◌     ◌  │  ◌     ◌  4
+                    //       ·   ◌     ◌     ◌   ╲
+                    //      · ◌     ◌  │  ◌     ◌ ╲
+                    //  9  ◌     ◌     ●     ◌     ●  3
+                    //      · ◌     ◌  │  ◌     ◌ ╱
+                    //       ·   ◌     ◌     ◌   ╱
+                    //        ◌     ◌  │  ◌     ◌
+                    //    10   · ◌     ◌     ◌ ╱   2
+                    //          ·   ◌  │  ◌   ╱         y
+                    //           ◌ · · ●─────●           ↘
+                    //       11                 1
+                    //                 0
+                    //
+                    //                 x
+                    //                 ↓
+                    //
+                    let cell_center_pt3 = self.cell_center(cell_pos);
+                    const VERTEX_DIRS: [u8; 6] = [1, 3, 5, 7, 9, 11];
+                    for a_i in 0..6 {
+                        let b_i = (a_i + 1) % 6;
+                        let a_pt3 = self.cell_vertex(cell_pos, Dir(VERTEX_DIRS[a_i]));
+                        let b_pt3 = self.cell_vertex(cell_pos, Dir(VERTEX_DIRS[b_i]));
+                        // Push vertex for hexagon center.
                         vertex_data.push(::Vertex::new([
-                            pt3[0] as f32,
-                            pt3[1] as f32,
-                            pt3[2] as f32,
+                            cell_center_pt3[0] as f32,
+                            cell_center_pt3[1] as f32,
+                            cell_center_pt3[2] as f32,
+                        ], cell_color));
+                        // Push vertex for hexagon vertex 'a'.
+                        vertex_data.push(::Vertex::new([
+                            a_pt3[0] as f32,
+                            a_pt3[1] as f32,
+                            a_pt3[2] as f32,
+                        ], cell_color));
+                        // Push vertex for hexagon vertex 'b'.
+                        vertex_data.push(::Vertex::new([
+                            b_pt3[0] as f32,
+                            b_pt3[1] as f32,
+                            b_pt3[2] as f32,
                         ], cell_color));
                     }
 
-                    // Output two faces for the cell. For lack of
-                    // a better idea, just going with north and south;
-                    // kinda like the inverse of when we were joining
-                    // icosahedral triangles into quads.
-                    index_data.extend_from_slice(&[
-                        // North face
-                        first_vertex_index,
-                        first_vertex_index + 1,
-                        first_vertex_index + 3,
-                        // South face
-                        first_vertex_index + 2,
-                        first_vertex_index + 3,
-                        first_vertex_index + 1,
-                    ]);
+                    // Output all six triangle faces for the cell.
+                    let vertex_indices: Vec<u32> =
+                        (first_vertex_index..(first_vertex_index + 6*3))
+                        .collect();
+                    index_data.extend_from_slice(&vertex_indices);
                 }
             }
         }
@@ -278,8 +297,7 @@ impl Globe {
         radius * self.cell_center_on_unit_sphere(cell_pos)
     }
 
-    // TODO: return something
-    fn cell_vertex(&self, cell_pos: CellPos, dir: Dir) {
+    fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
         // We can imagine a hexagon laid out on a quad
         // that wraps in both directions, such that its
         // center exists at all four corners of the quad:
@@ -306,12 +324,43 @@ impl Globe {
         //                            ●
         //                               (0, 0)
         //
+        // This makes it visually obvious that we're dealing
+        // with a grid of 6 units between hexagon centers (count it)
+        // to calculate cell vertex positions (if we want all vertices
+        // to lie at integer coordinate pairs) as opposed to the 1 unit
+        // between cell centers when we're only concerned with the
+        // center points of each cell.
+        //
         // Then, if we list out points for the middle of
         // each side and each vertex, starting from the
         // middle of the side in the positive x direction
         // and travelling counterclockwise, we end up with
-        // 12 offset coordinate pairs in this grid of:
-        const DIR_OFFSETS: [[i8; 2]; 12] = [
+        // 12 offset coordinate pairs in this grid, labelled as follows:
+        //
+        //                 6
+        //        7                 5
+        //           ●─────●─────●
+        //          ╱   ◌     ◌   ╲
+        //         ╱ ◌     ◌     ◌ ╲
+        //     8  ●     ◌     ◌     ●  4
+        //       ╱   ◌     ◌     ◌   ╲
+        //      ╱ ◌     ◌     ◌     ◌ ╲
+        //  9  ●     ◌     ●     ◌     ●  3
+        //      ╲ ◌     ◌     ◌     ◌ ╱
+        //       ╲   ◌     ◌     ◌   ╱
+        //        ●     ◌     ◌     ●
+        //    10   ╲ ◌     ◌     ◌ ╱   2
+        //          ╲   ◌     ◌   ╱         y
+        //           ●─────●─────●           ↘
+        //       11                 1
+        //                 0
+        //
+        //                 x
+        //                 ↓
+        //
+        // Referring to the top figure for the offsets and the
+        // bottom for the labelling, that gives us:
+        const DIR_OFFSETS: [[i64; 2]; 12] = [
             [ 3,  0], // edge (+x)
             [ 2,  2], // vertex
             [ 0,  3], // edge (+y)
@@ -325,5 +374,18 @@ impl Globe {
             [ 3, -3], // edge
             [ 4, -2], // vertex
         ];
+        let res_x = (self.spec.root_resolution[0] * 6) as f64;
+        let res_y = (self.spec.root_resolution[1] * 6) as f64;
+        let pt_in_root_quad = Pt2::new(
+            (cell_pos.x as i64 * 6 + DIR_OFFSETS[dir.0 as usize][0]) as f64 / res_x,
+            (cell_pos.y as i64 * 6 + DIR_OFFSETS[dir.0 as usize][1]) as f64 / res_y,
+        );
+        super::project(cell_pos.root, pt_in_root_quad)
+    }
+
+    fn cell_vertex(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
+        let radius = self.spec.floor_radius +
+            self.spec.block_height * cell_pos.z as f64;
+        radius * self.cell_vertex_on_unit_sphere(cell_pos, dir)
     }
 }
