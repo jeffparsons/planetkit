@@ -84,9 +84,11 @@ impl Globe {
         // TODO: get parameters from spec
         let noise = noise::Brownian3::new(noise::open_simplex3::<f64>, 6).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
-        let end_z = origin.z + self.spec.chunk_resolution[2];
+        // Include cells _on_ the far edge of the chunk;
+        // even though we don't own them we'll need to draw part of them.
+        let end_x = origin.x + self.spec.chunk_resolution[0] + 1;
+        let end_y = origin.y + self.spec.chunk_resolution[1] + 1;
+        let end_z = origin.z + self.spec.chunk_resolution[2] + 1;
         for cell_z in origin.z..end_z {
             for cell_y in origin.y..end_y {
                 for cell_x in origin.x..end_x {
@@ -174,9 +176,11 @@ impl Globe {
         index_data: &mut Vec<u32>
     ) {
         let origin = chunk.origin;
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
-        let end_z = origin.z + self.spec.chunk_resolution[2];
+        // Include cells _on_ the far edge of the chunk;
+        // even though we don't own them we'll need to draw part of them.
+        let end_x = origin.x + self.spec.chunk_resolution[0] + 1;
+        let end_y = origin.y + self.spec.chunk_resolution[1] + 1;
+        let end_z = origin.z + self.spec.chunk_resolution[2] + 1;
         for cell_z in origin.z..end_z {
             for cell_y in origin.y..end_y {
                 for cell_x in origin.x..end_x {
