@@ -43,11 +43,11 @@ impl Globe {
         Globe::new(
             Spec {
                 seed: 13,
-                floor_radius: 0.90, // TODO: make it ~Earth
+                floor_radius: 0.91, // TODO: make it ~Earth
                 // NOTE: Don't let ocean radius be a neat multiple of block
                 // height above floor radius, or we'll end up with
                 // z-fighting in evaluating what blocks are water/air.
-                ocean_radius: 1.01,
+                ocean_radius: 1.13,
                 block_height: 0.02,
                 root_resolution: [32, 32],
                 chunk_resolution: [16, 16, 4],
@@ -64,7 +64,7 @@ impl Globe {
         for root_index in 0..ROOT_QUADS {
             let root = Root { index: root_index };
             // TODO: how many to build high?
-            for z in 0..3 {
+            for z in 0..5 {
                 for y in 0..chunks_per_root[0] {
                     for x in 0..chunks_per_root[1] {
                         let origin = CellPos {
@@ -105,7 +105,7 @@ impl Globe {
                         z: cell_z,
                     };
                     let land_pt3 = self.cell_center_on_unit_sphere(cell_pos);
-                    let cell_pt3 = self.cell_center(cell_pos);
+                    let cell_pt3 = self.cell_center_center(cell_pos);
 
                     // Vary a little bit around 1.0.
                     let delta =
@@ -212,7 +212,7 @@ impl Globe {
 
                     // TODO: use functions that return just the bit they care
                     // about and... maths. This is silly.
-                    let first_vertex_index = vertex_data.len() as u32;
+                    let mut first_vertex_index = vertex_data.len() as u32;
 
                     // Output triangles made of the cell center and
                     // each pair of adjacent vertices of the hexagon.
@@ -245,17 +245,24 @@ impl Globe {
                     //                 x
                     //                 ↓
                     //
-                    let cell_center_pt3 = self.cell_center(cell_pos);
-                    const VERTEX_DIRS: [u8; 6] = [1, 3, 5, 7, 9, 11];
+                    let top_center_pt3 = self.cell_top_center(cell_pos);
+                    let top_vertices = [
+                        self.cell_top_vertex(cell_pos, Dir(1)),
+                        self.cell_top_vertex(cell_pos, Dir(3)),
+                        self.cell_top_vertex(cell_pos, Dir(5)),
+                        self.cell_top_vertex(cell_pos, Dir(7)),
+                        self.cell_top_vertex(cell_pos, Dir(9)),
+                        self.cell_top_vertex(cell_pos, Dir(11)),
+                    ];
                     for a_i in 0..6 {
                         let b_i = (a_i + 1) % 6;
-                        let a_pt3 = self.cell_vertex(cell_pos, Dir(VERTEX_DIRS[a_i]));
-                        let b_pt3 = self.cell_vertex(cell_pos, Dir(VERTEX_DIRS[b_i]));
+                        let a_pt3 = top_vertices[a_i];
+                        let b_pt3 = top_vertices[b_i];
                         // Push vertex for hexagon center.
                         vertex_data.push(::Vertex::new([
-                            cell_center_pt3[0] as f32,
-                            cell_center_pt3[1] as f32,
-                            cell_center_pt3[2] as f32,
+                            top_center_pt3[0] as f32,
+                            top_center_pt3[1] as f32,
+                            top_center_pt3[2] as f32,
                         ], cell_color));
                         // Push vertex for hexagon vertex 'a'.
                         vertex_data.push(::Vertex::new([
@@ -272,9 +279,50 @@ impl Globe {
                     }
 
                     // Output all six triangle faces for the cell.
-                    let vertex_indices: Vec<u32> =
+                    let mut vertex_indices: Vec<u32> =
                         (first_vertex_index..(first_vertex_index + 6*3))
                         .collect();
+                    index_data.extend_from_slice(&vertex_indices);
+                    // Yes indeed, this is rather a lot of hacks.
+                    first_vertex_index += 6*3;
+
+                    // Now output the vertices for the cell sides.
+                    // Darken the sides substantially to fake lighting.
+                    for mut color_channel in &mut cell_color {
+                        *color_channel *= 0.5;
+                    }
+                    let bottom_vertices = [
+                        self.cell_bottom_vertex(cell_pos, Dir(1)),
+                        self.cell_bottom_vertex(cell_pos, Dir(3)),
+                        self.cell_bottom_vertex(cell_pos, Dir(5)),
+                        self.cell_bottom_vertex(cell_pos, Dir(7)),
+                        self.cell_bottom_vertex(cell_pos, Dir(9)),
+                        self.cell_bottom_vertex(cell_pos, Dir(11)),
+                    ];
+                    for ab_i in 0..6 {
+                        let cd_i = (ab_i + 1) % 6;
+                        let a_pt3 = top_vertices[ab_i];
+                        let b_pt3 = bottom_vertices[ab_i];
+                        let c_pt3 = bottom_vertices[cd_i];
+                        let d_pt3 = top_vertices[cd_i];
+                        let quad_triangle_vertices = [
+                            a_pt3, b_pt3, d_pt3,
+                            d_pt3, b_pt3, c_pt3,
+                        ];
+                        for quad_triangle_vertex in &quad_triangle_vertices {
+                            vertex_data.push(::Vertex::new([
+                                quad_triangle_vertex[0] as f32,
+                                quad_triangle_vertex[1] as f32,
+                                quad_triangle_vertex[2] as f32,
+                            ], cell_color));
+                        }
+                    }
+
+                    // Output triangles for 6 triangles * 2 triangles * 3 vertices each.
+                    let new_vertex_indices: Vec<u32> =
+                        (first_vertex_index..(first_vertex_index + 6*2*3))
+                        .collect();
+                    vertex_indices.extend_from_slice(&new_vertex_indices);
                     index_data.extend_from_slice(&vertex_indices);
                 }
             }
@@ -295,10 +343,22 @@ impl Globe {
         super::project(cell_pos.root, pt_in_root_quad)
     }
 
-    fn cell_center(&self, cell_pos: CellPos) -> Pt3 {
+    fn cell_center_center(&self, cell_pos: CellPos) -> Pt3 {
+        let radius = self.spec.floor_radius +
+            self.spec.block_height * (cell_pos.z as f64 + 0.5);
+        radius * self.cell_center_on_unit_sphere(cell_pos)
+    }
+
+    fn cell_bottom_center(&self, cell_pos: CellPos) -> Pt3 {
         let radius = self.spec.floor_radius +
             self.spec.block_height * cell_pos.z as f64;
         radius * self.cell_center_on_unit_sphere(cell_pos)
+    }
+
+    fn cell_top_center(&self, mut cell_pos: CellPos) -> Pt3 {
+        // The top of one cell is the bottom of the next.
+        cell_pos.z += 1;
+        self.cell_bottom_center(cell_pos)
     }
 
     fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
@@ -387,9 +447,15 @@ impl Globe {
         super::project(cell_pos.root, pt_in_root_quad)
     }
 
-    fn cell_vertex(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
+    fn cell_bottom_vertex(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
         let radius = self.spec.floor_radius +
             self.spec.block_height * cell_pos.z as f64;
         radius * self.cell_vertex_on_unit_sphere(cell_pos, dir)
+    }
+
+    fn cell_top_vertex(&self, mut cell_pos: CellPos, dir: Dir) -> Pt3 {
+        // The top of one cell is the bottom of the next.
+        cell_pos.z += 1;
+        self.cell_bottom_vertex(cell_pos, dir)
     }
 }
