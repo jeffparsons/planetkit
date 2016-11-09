@@ -4,9 +4,10 @@ use rand::Rng;
 use noise;
 
 use types::*;
-use super::{ Root, Dir };
+use super::Root;
 use super::chunk::{ Chunk, CellPos, Cell, Material };
 use super::spec::Spec;
+use super::cell_shape;
 
 const ROOT_QUADS: u8 = 10;
 
@@ -214,45 +215,21 @@ impl Globe {
                     // about and... maths. This is silly.
                     let mut first_vertex_index = vertex_data.len() as u32;
 
-                    // Output triangles made of the cell center and
-                    // each pair of adjacent vertices of the hexagon.
-                    // See `cell_vertex_on_unit_sphere` below for explanation
-                    // of the directions we've chosen here.
+                    // Output triangles to make up the hexagon.
                     //
                     // TODO: we shouldn't be drawing the full hexagon for all cells;
                     // otherwise adjacent chunks will both be trying to draw the same
                     // hexagon at the edges. Instead we should determine which
-                    // vertices we need, and draw partial hexagons like so:
-                    //
-                    //                 6
-                    //        7                 5
-                    //           ◌ · · ●─────●
-                    //          ·   ◌  │  ◌   \
-                    //         · ◌     ◌     ◌ \
-                    //     8  ◌     ◌  │  ◌     ◌  4
-                    //       ·   ◌     ◌     ◌   \
-                    //      · ◌     ◌  │  ◌     ◌ \
-                    //  9  ◌     ◌     ●     ◌     ●  3
-                    //      · ◌     ◌  │  ◌     ◌ /
-                    //       ·   ◌     ◌     ◌   /
-                    //        ◌     ◌  │  ◌     ◌
-                    //    10   · ◌     ◌     ◌ /   2
-                    //          ·   ◌  │  ◌   /         y
-                    //           ◌ · · ●─────●           ↘
-                    //       11                 1
-                    //                 0
-                    //
-                    //                 x
-                    //                 ↓
-                    //
+                    // vertices we need, and draw partial hexagons.
                     let top_center_pt3 = self.cell_top_center(cell_pos);
+                    let offsets = &cell_shape::FULL_HEX.top_outline_dir_offsets;
                     let top_vertices = [
-                        self.cell_top_vertex(cell_pos, Dir(1)),
-                        self.cell_top_vertex(cell_pos, Dir(3)),
-                        self.cell_top_vertex(cell_pos, Dir(5)),
-                        self.cell_top_vertex(cell_pos, Dir(7)),
-                        self.cell_top_vertex(cell_pos, Dir(9)),
-                        self.cell_top_vertex(cell_pos, Dir(11)),
+                        self.cell_top_vertex(cell_pos, offsets[0]),
+                        self.cell_top_vertex(cell_pos, offsets[1]),
+                        self.cell_top_vertex(cell_pos, offsets[2]),
+                        self.cell_top_vertex(cell_pos, offsets[3]),
+                        self.cell_top_vertex(cell_pos, offsets[4]),
+                        self.cell_top_vertex(cell_pos, offsets[5]),
                     ];
                     for a_i in 0..6 {
                         let b_i = (a_i + 1) % 6;
@@ -292,12 +269,12 @@ impl Globe {
                         *color_channel *= 0.5;
                     }
                     let bottom_vertices = [
-                        self.cell_bottom_vertex(cell_pos, Dir(1)),
-                        self.cell_bottom_vertex(cell_pos, Dir(3)),
-                        self.cell_bottom_vertex(cell_pos, Dir(5)),
-                        self.cell_bottom_vertex(cell_pos, Dir(7)),
-                        self.cell_bottom_vertex(cell_pos, Dir(9)),
-                        self.cell_bottom_vertex(cell_pos, Dir(11)),
+                        self.cell_bottom_vertex(cell_pos, offsets[0]),
+                        self.cell_bottom_vertex(cell_pos, offsets[1]),
+                        self.cell_bottom_vertex(cell_pos, offsets[2]),
+                        self.cell_bottom_vertex(cell_pos, offsets[3]),
+                        self.cell_bottom_vertex(cell_pos, offsets[4]),
+                        self.cell_bottom_vertex(cell_pos, offsets[5]),
                     ];
                     for ab_i in 0..6 {
                         let cd_i = (ab_i + 1) % 6;
@@ -361,101 +338,26 @@ impl Globe {
         self.cell_bottom_center(cell_pos)
     }
 
-    fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
-        // We can imagine a hexagon laid out on a quad
-        // that wraps in both directions, such that its
-        // center exists at all four corners of the quad:
-        //
-        //  (0, 0)
-        //          ●       y
-        //    x        ◌      ↘
-        //    ↓     ◌     ◌
-        //             ◌     ●
-        //          ◌     ◌ /   ◌
-        //             ◌   / ◌     ◌     (0, 0)
-        //          ●─────●     ◌     ●
-        //             ◌   \ ◌     ◌
-        //          ◌     ◌ \   ◌     ◌
-        //             ◌     ●     ◌
-        //          ◌     ◌   \ ◌     ◌
-        //             ◌     ◌ \   ◌
-        //          ●     ◌     ●─────●
-        //  (0, 0)     ◌     ◌ /   ◌
-        //                ◌   / ◌     ◌
-        //                   ●     ◌
-        //                      ◌     ◌
-        //                         ◌
-        //                            ●
-        //                               (0, 0)
-        //
-        // This makes it visually obvious that we're dealing
-        // with a grid of 6 units between hexagon centers (count it)
-        // to calculate cell vertex positions (if we want all vertices
-        // to lie at integer coordinate pairs) as opposed to the 1 unit
-        // between cell centers when we're only concerned with the
-        // center points of each cell.
-        //
-        // Then, if we list out points for the middle of
-        // each side and each vertex, starting from the
-        // middle of the side in the positive x direction
-        // and travelling counterclockwise, we end up with
-        // 12 offset coordinate pairs in this grid, labelled as follows:
-        //
-        //                 6
-        //        7                 5
-        //           ●─────●─────●
-        //          /   ◌     ◌   \
-        //         / ◌     ◌     ◌ \
-        //     8  ●     ◌     ◌     ●  4
-        //       /   ◌     ◌     ◌   \
-        //      / ◌     ◌     ◌     ◌ \
-        //  9  ●     ◌     ●     ◌     ●  3
-        //      \ ◌     ◌     ◌     ◌ /
-        //       \   ◌     ◌     ◌   /
-        //        ●     ◌     ◌     ●
-        //    10   \ ◌     ◌     ◌ /   2
-        //          \   ◌     ◌   /         y
-        //           ●─────●─────●           ↘
-        //       11                 1
-        //                 0
-        //
-        //                 x
-        //                 ↓
-        //
-        // Referring to the top figure for the offsets and the
-        // bottom for the labelling, that gives us:
-        const DIR_OFFSETS: [[i64; 2]; 12] = [
-            [ 3,  0], // edge (+x)
-            [ 2,  2], // vertex
-            [ 0,  3], // edge (+y)
-            [-2,  4], // vertex
-            [-3,  3], // edge
-            [-4,  2], // vertex
-            [-3,  0], // edge (-x)
-            [-2, -2], // vertex
-            [ 0, -3], // edge (-y)
-            [ 2, -4], // vertex
-            [ 3, -3], // edge
-            [ 4, -2], // vertex
-        ];
+    // TODO: describe meaning of offsets, where to get it from, etc.?
+    fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
         let res_x = (self.spec.root_resolution[0] * 6) as f64;
         let res_y = (self.spec.root_resolution[1] * 6) as f64;
         let pt_in_root_quad = Pt2::new(
-            (cell_pos.x as i64 * 6 + DIR_OFFSETS[dir.0 as usize][0]) as f64 / res_x,
-            (cell_pos.y as i64 * 6 + DIR_OFFSETS[dir.0 as usize][1]) as f64 / res_y,
+            (cell_pos.x as i64 * 6 + offset[0]) as f64 / res_x,
+            (cell_pos.y as i64 * 6 + offset[1]) as f64 / res_y,
         );
         super::project(cell_pos.root, pt_in_root_quad)
     }
 
-    fn cell_bottom_vertex(&self, cell_pos: CellPos, dir: Dir) -> Pt3 {
+    fn cell_bottom_vertex(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
         let radius = self.spec.floor_radius +
             self.spec.block_height * cell_pos.z as f64;
-        radius * self.cell_vertex_on_unit_sphere(cell_pos, dir)
+        radius * self.cell_vertex_on_unit_sphere(cell_pos, offset)
     }
 
-    fn cell_top_vertex(&self, mut cell_pos: CellPos, dir: Dir) -> Pt3 {
+    fn cell_top_vertex(&self, mut cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
         // The top of one cell is the bottom of the next.
         cell_pos.z += 1;
-        self.cell_bottom_vertex(cell_pos, dir)
+        self.cell_bottom_vertex(cell_pos, offset)
     }
 }

@@ -5,6 +5,7 @@ mod icosahedron;
 mod spec;
 pub mod chunk;
 mod root;
+mod cell_shape;
 
 use types::*;
 
@@ -13,8 +14,6 @@ pub use self::globe::*;
 pub use self::spec::*;
 
 pub type IntCoord = u64;
-
-pub struct Dir(u8);
 
 // Project a position in a given root quad into a unit sphere.
 // Assumes that one corner is represented in `pt_in_root_quad`
