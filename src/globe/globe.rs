@@ -179,12 +179,12 @@ impl Globe {
         let origin = chunk.origin;
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
-        let end_x = origin.x + self.spec.chunk_resolution[0] + 1;
-        let end_y = origin.y + self.spec.chunk_resolution[1] + 1;
-        let end_z = origin.z + self.spec.chunk_resolution[2] + 1;
+        let end_x = origin.x + self.spec.chunk_resolution[0];
+        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_z = origin.z + self.spec.chunk_resolution[2];
         for cell_z in origin.z..end_z {
-            for cell_y in origin.y..end_y {
-                for cell_x in origin.x..end_x {
+            for cell_y in origin.y..(end_y + 1) {
+                for cell_x in origin.x..(end_x + 1) {
                     // Use cell centre as first vertex of each triangle.
                     let cell_pos = CellPos {
                         x: cell_x,
@@ -215,8 +215,32 @@ impl Globe {
                     // about and... maths. This is silly.
                     let first_top_vertex_index = vertex_data.len() as u32;
 
+                    // TODO: don't switch; split all this out into calls
+                    // over different ranges of cells.
+                    //
+                    // For now, put the most specific cases first.
+                    let cell_shape = if cell_x == 0 && cell_y == 0 {
+                        cell_shape::NORTH_PORTION
+                    } else if cell_x == end_x && cell_y == end_y {
+                        cell_shape::SOUTH_PORTION
+                    } else if cell_x == end_x && cell_y == 0 {
+                        cell_shape::WEST_PORTION
+                    } else if cell_x == 0 && cell_y == end_y {
+                        cell_shape::EAST_PORTION
+                    } else if cell_y == 0 {
+                        cell_shape::NORTH_WEST_PORTION
+                    } else if cell_x == 0 {
+                        cell_shape::NORTH_EAST_PORTION
+                    } else if cell_x == end_x {
+                        cell_shape::SOUTH_WEST_PORTION
+                    } else if cell_y == end_y {
+                        cell_shape::SOUTH_EAST_PORTION
+                    } else {
+                        cell_shape::FULL_HEX
+                    };
+
                     // Emit each top vertex of whatever shape we're using for this cell.
-                    let offsets = &cell_shape::FULL_HEX.top_outline_dir_offsets;
+                    let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
                         let vertex_pt3 = self.cell_top_vertex(cell_pos, *offset);
                         vertex_data.push(::Vertex::new([
@@ -304,18 +328,6 @@ impl Globe {
         let radius = self.spec.floor_radius +
             self.spec.block_height * (cell_pos.z as f64 + 0.5);
         radius * self.cell_center_on_unit_sphere(cell_pos)
-    }
-
-    fn cell_bottom_center(&self, cell_pos: CellPos) -> Pt3 {
-        let radius = self.spec.floor_radius +
-            self.spec.block_height * cell_pos.z as f64;
-        radius * self.cell_center_on_unit_sphere(cell_pos)
-    }
-
-    fn cell_top_center(&self, mut cell_pos: CellPos) -> Pt3 {
-        // The top of one cell is the bottom of the next.
-        cell_pos.z += 1;
-        self.cell_bottom_center(cell_pos)
     }
 
     // TODO: describe meaning of offsets, where to get it from, etc.?

@@ -142,3 +142,81 @@ pub const FULL_HEX: CellShape = CellShape {
         DIR_OFFSETS[11],
     ],
 };
+
+pub const NORTH_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        [0, 0],
+        DIR_OFFSETS[0],
+        DIR_OFFSETS[1],
+        DIR_OFFSETS[2],
+    ],
+};
+
+pub const SOUTH_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        [0, 0],
+        DIR_OFFSETS[6],
+        DIR_OFFSETS[7],
+        DIR_OFFSETS[8],
+    ],
+};
+
+pub const WEST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        [0, 0],
+        DIR_OFFSETS[2],
+        DIR_OFFSETS[3],
+        DIR_OFFSETS[5],
+        DIR_OFFSETS[6],
+    ],
+};
+
+pub const EAST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        [0, 0],
+        DIR_OFFSETS[8],
+        DIR_OFFSETS[9],
+        DIR_OFFSETS[11],
+        DIR_OFFSETS[0],
+    ],
+};
+
+pub const NORTH_WEST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        DIR_OFFSETS[0],
+        DIR_OFFSETS[1],
+        DIR_OFFSETS[3],
+        DIR_OFFSETS[5],
+        DIR_OFFSETS[6],
+    ],
+};
+
+pub const NORTH_EAST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        DIR_OFFSETS[8],
+        DIR_OFFSETS[9],
+        DIR_OFFSETS[11],
+        DIR_OFFSETS[1],
+        DIR_OFFSETS[2],
+    ],
+};
+
+pub const SOUTH_WEST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        DIR_OFFSETS[2],
+        DIR_OFFSETS[3],
+        DIR_OFFSETS[5],
+        DIR_OFFSETS[7],
+        DIR_OFFSETS[8],
+    ],
+};
+
+pub const SOUTH_EAST_PORTION: CellShape = CellShape {
+    top_outline_dir_offsets: &[
+        DIR_OFFSETS[0],
+        DIR_OFFSETS[6],
+        DIR_OFFSETS[7],
+        DIR_OFFSETS[9],
+        DIR_OFFSETS[11],
+    ],
+};
