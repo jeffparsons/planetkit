@@ -213,94 +213,74 @@ impl Globe {
 
                     // TODO: use functions that return just the bit they care
                     // about and... maths. This is silly.
-                    let mut first_vertex_index = vertex_data.len() as u32;
+                    let first_top_vertex_index = vertex_data.len() as u32;
 
-                    // Output triangles to make up the hexagon.
-                    //
-                    // TODO: we shouldn't be drawing the full hexagon for all cells;
-                    // otherwise adjacent chunks will both be trying to draw the same
-                    // hexagon at the edges. Instead we should determine which
-                    // vertices we need, and draw partial hexagons.
-                    let top_center_pt3 = self.cell_top_center(cell_pos);
+                    // Emit each top vertex of whatever shape we're using for this cell.
                     let offsets = &cell_shape::FULL_HEX.top_outline_dir_offsets;
-                    let top_vertices = [
-                        self.cell_top_vertex(cell_pos, offsets[0]),
-                        self.cell_top_vertex(cell_pos, offsets[1]),
-                        self.cell_top_vertex(cell_pos, offsets[2]),
-                        self.cell_top_vertex(cell_pos, offsets[3]),
-                        self.cell_top_vertex(cell_pos, offsets[4]),
-                        self.cell_top_vertex(cell_pos, offsets[5]),
-                    ];
-                    for a_i in 0..6 {
-                        let b_i = (a_i + 1) % 6;
-                        let a_pt3 = top_vertices[a_i];
-                        let b_pt3 = top_vertices[b_i];
-                        // Push vertex for hexagon center.
+                    for offset in offsets.iter() {
+                        let vertex_pt3 = self.cell_top_vertex(cell_pos, *offset);
                         vertex_data.push(::Vertex::new([
-                            top_center_pt3[0] as f32,
-                            top_center_pt3[1] as f32,
-                            top_center_pt3[2] as f32,
-                        ], cell_color));
-                        // Push vertex for hexagon vertex 'a'.
-                        vertex_data.push(::Vertex::new([
-                            a_pt3[0] as f32,
-                            a_pt3[1] as f32,
-                            a_pt3[2] as f32,
-                        ], cell_color));
-                        // Push vertex for hexagon vertex 'b'.
-                        vertex_data.push(::Vertex::new([
-                            b_pt3[0] as f32,
-                            b_pt3[1] as f32,
-                            b_pt3[2] as f32,
+                            vertex_pt3[0] as f32,
+                            vertex_pt3[1] as f32,
+                            vertex_pt3[2] as f32,
                         ], cell_color));
                     }
 
-                    // Output all six triangle faces for the cell.
-                    let mut vertex_indices: Vec<u32> =
-                        (first_vertex_index..(first_vertex_index + 6*3))
-                        .collect();
-                    index_data.extend_from_slice(&vertex_indices);
-                    // Yes indeed, this is rather a lot of hacks.
-                    first_vertex_index += 6*3;
+                    // Emit triangles for the top of the cell. All triangles
+                    // will contain the first vertex, plus two others.
+                    for i in 1..(offsets.len() as u32 - 1) {
+                        index_data.extend_from_slice(&[
+                            first_top_vertex_index,
+                            first_top_vertex_index + i,
+                            first_top_vertex_index + i + 1,
+                        ]);
+                    }
 
-                    // Now output the vertices for the cell sides.
-                    // Darken the sides substantially to fake lighting.
+                    // Emit each top vertex of whatever shape we're using for this cell
+                    // AGAIN for the top of the sides, so they can have a different colour.
+                    // Darken the top of the sides slightly to fake lighting.
+                    for mut color_channel in &mut cell_color {
+                        *color_channel *= 0.9;
+                    }
+                    let first_side_top_vertex_index = first_top_vertex_index
+                        + offsets.len() as u32;
+                    for offset in offsets.iter() {
+                        let vertex_pt3 = self.cell_top_vertex(cell_pos, *offset);
+                        vertex_data.push(::Vertex::new([
+                            vertex_pt3[0] as f32,
+                            vertex_pt3[1] as f32,
+                            vertex_pt3[2] as f32,
+                        ], cell_color));
+                    }
+
+                    // Emit each bottom vertex of whatever shape we're using for this cell.
+                    // Darken the bottom of the sides substantially to fake lighting.
                     for mut color_channel in &mut cell_color {
                         *color_channel *= 0.5;
                     }
-                    let bottom_vertices = [
-                        self.cell_bottom_vertex(cell_pos, offsets[0]),
-                        self.cell_bottom_vertex(cell_pos, offsets[1]),
-                        self.cell_bottom_vertex(cell_pos, offsets[2]),
-                        self.cell_bottom_vertex(cell_pos, offsets[3]),
-                        self.cell_bottom_vertex(cell_pos, offsets[4]),
-                        self.cell_bottom_vertex(cell_pos, offsets[5]),
-                    ];
-                    for ab_i in 0..6 {
-                        let cd_i = (ab_i + 1) % 6;
-                        let a_pt3 = top_vertices[ab_i];
-                        let b_pt3 = bottom_vertices[ab_i];
-                        let c_pt3 = bottom_vertices[cd_i];
-                        let d_pt3 = top_vertices[cd_i];
-                        let quad_triangle_vertices = [
-                            a_pt3, b_pt3, d_pt3,
-                            d_pt3, b_pt3, c_pt3,
-                        ];
-                        for quad_triangle_vertex in &quad_triangle_vertices {
-                            vertex_data.push(::Vertex::new([
-                                quad_triangle_vertex[0] as f32,
-                                quad_triangle_vertex[1] as f32,
-                                quad_triangle_vertex[2] as f32,
-                            ], cell_color));
-                        }
+                    let first_side_bottom_vertex_index = first_side_top_vertex_index
+                        + offsets.len() as u32;
+                    for offset in offsets.iter() {
+                        let vertex_pt3 = self.cell_bottom_vertex(cell_pos, *offset);
+                        vertex_data.push(::Vertex::new([
+                            vertex_pt3[0] as f32,
+                            vertex_pt3[1] as f32,
+                            vertex_pt3[2] as f32,
+                        ], cell_color));
                     }
 
-                    // Output triangles for 6 triangles * 2 triangles * 3 vertices each.
-                    let new_vertex_indices: Vec<u32> =
-                        (first_vertex_index..(first_vertex_index + 6*2*3))
-                        .collect();
-                    vertex_indices.extend_from_slice(&new_vertex_indices);
-                    index_data.extend_from_slice(&vertex_indices);
+                    // Emit triangles for the cell sides.
+                    for ab_i in 0..(offsets.len() as u32) {
+                        let cd_i = (ab_i + 1) % offsets.len() as u32;
+                        let a_i = first_side_top_vertex_index + ab_i;
+                        let b_i = first_side_bottom_vertex_index + ab_i;
+                        let c_i = first_side_bottom_vertex_index + cd_i;
+                        let d_i = first_side_top_vertex_index + cd_i;
+                        index_data.extend_from_slice(&[
+                            a_i, b_i, d_i,
+                            d_i, b_i, c_i,
+                        ]);
+                    }
                 }
             }
         }
