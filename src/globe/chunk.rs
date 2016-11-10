@@ -23,6 +23,7 @@ pub struct CellPos {
 
 pub struct Cell {
     pub material: Material,
+    pub shade: f32,
 }
 
 // Stores from (0, 0) to (resolution, resolution) _inclusive_.

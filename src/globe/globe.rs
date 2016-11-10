@@ -124,8 +124,10 @@ impl Globe {
                     } else {
                         Material::Air
                     };
+                    let mut rng = rand::thread_rng();
                     cells.push(Cell {
                         material: material,
+                        shade: 1.0 - 0.5 * rng.next_f32(),
                     });
                 }
             }
@@ -206,9 +208,8 @@ impl Globe {
                         // Don't draw air or anything else we don't understand.
                         continue;
                     };
-                    let mut rng = rand::thread_rng();
                     for mut color_channel in &mut cell_color {
-                        *color_channel *= 1.0 - 0.5 * rng.next_f32();
+                        *color_channel *= 1.0 - 0.5 * cell.shade;
                     }
 
                     // TODO: use functions that return just the bit they care
