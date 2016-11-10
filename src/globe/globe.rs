@@ -9,7 +9,7 @@ use super::chunk::{ Chunk, CellPos, Cell, Material };
 use super::spec::Spec;
 use super::cell_shape;
 
-const ROOT_QUADS: u8 = 10;
+const ROOT_QUADS: u8 = 5;
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -50,7 +50,7 @@ impl Globe {
                 // z-fighting in evaluating what blocks are water/air.
                 ocean_radius: 1.13,
                 block_height: 0.02,
-                root_resolution: [32, 32],
+                root_resolution: [32, 64],
                 chunk_resolution: [16, 16, 4],
             }
         )
@@ -66,8 +66,8 @@ impl Globe {
             let root = Root { index: root_index };
             // TODO: how many to build high?
             for z in 0..5 {
-                for y in 0..chunks_per_root[0] {
-                    for x in 0..chunks_per_root[1] {
+                for y in 0..chunks_per_root[1] {
+                    for x in 0..chunks_per_root[0] {
                         let origin = CellPos {
                             root: root,
                             x: x * self.spec.chunk_resolution[0],
