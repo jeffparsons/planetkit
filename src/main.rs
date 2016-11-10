@@ -20,6 +20,8 @@ use piston::input::*;
 use opengl_graphics::OpenGL;
 use piston_window::PistonWindow;
 use gfx::pso::bundle::Bundle;
+use gfx::Primitive;
+use gfx::state::Rasterizer;
 
 mod globe;
 mod types;
@@ -144,13 +146,21 @@ fn main() {
     );
 
     let glsl = opengl.to_glsl();
-    let pso = factory.create_pipeline_simple(
-        Shaders::new()
-            .set(GLSL::V1_50, include_str!("shaders/copypasta_150.glslv"))
-            .get(glsl).unwrap().as_bytes(),
-        Shaders::new()
-            .set(GLSL::V1_50, include_str!("shaders/copypasta_150.glslf"))
-            .get(glsl).unwrap().as_bytes(),
+
+    // Create pipeline state object.
+    let mut vs = Shaders::new();
+    let vs_bytes = vs
+        .set(GLSL::V1_50, include_str!("shaders/copypasta_150.glslv"))
+        .get(glsl).unwrap().as_bytes();
+    let mut ps = Shaders::new();
+    let ps_bytes = ps
+        .set(GLSL::V1_50, include_str!("shaders/copypasta_150.glslf"))
+        .get(glsl).unwrap().as_bytes();
+    let shader_set = factory.create_shader_set(vs_bytes, ps_bytes).unwrap();
+    let pso = factory.create_pipeline_state(
+        &shader_set,
+        Primitive::TriangleList,
+        Rasterizer::new_fill().with_cull_back(),
         pipe::new()
     ).unwrap();
 
