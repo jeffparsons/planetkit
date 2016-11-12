@@ -1,12 +1,10 @@
 use rand;
 use rand::Rng;
 
-use noise;
-
-use types::*;
 use super::Root;
-use super::chunk::{ Chunk, CellPos, Cell, Material };
+use super::chunk::{ Chunk, CellPos, Cell };
 use super::spec::Spec;
+use super::gen::Gen;
 
 const ROOT_QUADS: u8 = 5;
 
@@ -15,8 +13,7 @@ const ROOT_QUADS: u8 = 5;
 // with the realised Globe.
 pub struct Globe {
     spec: Spec,
-    // Permutation table for noise
-    pt: noise::Seed,
+    gen: Gen,
     // TODO: figure out what structure to store these in.
     // You'll never have all chunks loaded in the real world.
     //
@@ -40,11 +37,9 @@ impl<'a> GlobeGuts<'a> for Globe {
 
 impl Globe {
     pub fn new(spec: Spec) -> Globe {
-        assert!(spec.is_valid(), "Invalid globe spec!");
-        let pt = noise::Seed::new(spec.seed);
         let mut globe = Globe {
             spec: spec,
-            pt: pt,
+            gen: Gen::new(spec),
             chunks: Vec::new(),
         };
         globe.build_all_chunks();
@@ -97,8 +92,6 @@ impl Globe {
     }
 
     pub fn build_chunk(&mut self, origin: CellPos) {
-        // TODO: get parameters from spec
-        let noise = noise::Brownian3::new(noise::open_simplex3::<f64>, 6).wavelength(1.0);
         let mut cells: Vec<Cell> = Vec::new();
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
@@ -108,42 +101,17 @@ impl Globe {
         for cell_z in origin.z..end_z {
             for cell_y in origin.y..end_y {
                 for cell_x in origin.x..end_x {
-                    // Calculate height for this cell from world spec.
-                    // To do this, project the cell onto a unit sphere
-                    // and sample 3D simplex noise to get a height value.
-                    //
-                    // TODO: split out a proper world generator
-                    // that layers in lots of different kinds of noise etc.
                     let cell_pos = CellPos {
                         root: origin.root,
                         x: cell_x,
                         y: cell_y,
                         z: cell_z,
                     };
-                    let land_pt3 = self.cell_center_on_unit_sphere(cell_pos);
-                    let cell_pt3 = self.cell_center_center(cell_pos);
-
-                    // Vary a little bit around 1.0.
-                    let delta =
-                        noise.apply(&self.pt, land_pt3.as_ref())
-                        * self.spec.ocean_radius
-                        * 0.3;
-                    let land_height = self.spec.ocean_radius + delta;
-                    // TEMP: ...
-                    use na::Norm;
-                    let cell_height = cell_pt3.as_vector().norm();
-                    let material = if cell_height < land_height {
-                        Material::Dirt
-                    } else if cell_height < self.spec.ocean_radius {
-                        Material::Water
-                    } else {
-                        Material::Air
-                    };
+                    let mut cell = self.gen.cell_at(cell_pos);
+                    // Temp hax?
                     let mut rng = rand::thread_rng();
-                    cells.push(Cell {
-                        material: material,
-                        shade: 1.0 - 0.5 * rng.next_f32(),
-                    });
+                    cell.shade = 1.0 - 0.5 * rng.next_f32();
+                    cells.push(cell);
                 }
             }
         }
@@ -152,25 +120,5 @@ impl Globe {
             cells: cells,
             resolution: self.spec.chunk_resolution,
         });
-    }
-
-    // Ignore the z-coordinate; just project to a unit sphere.
-    // This is useful for, e.g., sampling noise to determine elevation
-    // at a particular point on the surface, or other places where you're
-    // really just talking about longitude/latitude.
-    fn cell_center_on_unit_sphere(&self, cell_pos: CellPos) -> Pt3 {
-        let res_x = self.spec.root_resolution[0] as f64;
-        let res_y = self.spec.root_resolution[1] as f64;
-        let pt_in_root_quad = Pt2::new(
-            cell_pos.x as f64 / res_x,
-            cell_pos.y as f64 / res_y,
-        );
-        super::project(cell_pos.root, pt_in_root_quad)
-    }
-
-    fn cell_center_center(&self, cell_pos: CellPos) -> Pt3 {
-        let radius = self.spec.floor_radius +
-            self.spec.block_height * (cell_pos.z as f64 + 0.5);
-        radius * self.cell_center_on_unit_sphere(cell_pos)
     }
 }

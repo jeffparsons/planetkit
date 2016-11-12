@@ -1,5 +1,3 @@
-use types::*;
-
 use super::spec::Spec;
 use super::globe::{Globe, GlobeGuts};
 use super::chunk::{ Chunk, CellPos, Material };
@@ -129,7 +127,7 @@ impl View {
                     // Emit each top vertex of whatever shape we're using for this cell.
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.cell_top_vertex(cell_pos, *offset);
+                        let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
                         vertex_data.push(::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
@@ -156,7 +154,7 @@ impl View {
                     let first_side_top_vertex_index = first_top_vertex_index
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.cell_top_vertex(cell_pos, *offset);
+                        let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
                         vertex_data.push(::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
@@ -172,7 +170,7 @@ impl View {
                     let first_side_bottom_vertex_index = first_side_top_vertex_index
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.cell_bottom_vertex(cell_pos, *offset);
+                        let vertex_pt3 = self.spec.cell_bottom_vertex(cell_pos, *offset);
                         vertex_data.push(::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
@@ -195,28 +193,5 @@ impl View {
                 }
             }
         }
-    }
-
-    // TODO: describe meaning of offsets, where to get it from, etc.?
-    fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
-        let res_x = (self.spec.root_resolution[0] * 6) as f64;
-        let res_y = (self.spec.root_resolution[1] * 6) as f64;
-        let pt_in_root_quad = Pt2::new(
-            (cell_pos.x as i64 * 6 + offset[0]) as f64 / res_x,
-            (cell_pos.y as i64 * 6 + offset[1]) as f64 / res_y,
-        );
-        super::project(cell_pos.root, pt_in_root_quad)
-    }
-
-    fn cell_bottom_vertex(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
-        let radius = self.spec.floor_radius +
-            self.spec.block_height * cell_pos.z as f64;
-        radius * self.cell_vertex_on_unit_sphere(cell_pos, offset)
-    }
-
-    fn cell_top_vertex(&self, mut cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
-        // The top of one cell is the bottom of the next.
-        cell_pos.z += 1;
-        self.cell_bottom_vertex(cell_pos, offset)
     }
 }

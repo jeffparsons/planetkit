@@ -7,6 +7,7 @@ pub mod chunk;
 mod root;
 mod cell_shape;
 mod view;
+mod gen;
 
 use types::*;
 

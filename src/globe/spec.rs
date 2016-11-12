@@ -1,6 +1,19 @@
-use super::IntCoord;
+use types::*;
 
+use super::IntCoord;
+use super::chunk::CellPos;
+
+// Contains the specifications (dimensions, seed, etc.)
+// needed to deterministically generate a `Globe`.
+//
+// Provides helper functions that don't need to know anything
+// beyond these values.
+//
 // TODO: accessors for all the fields, and make them private.
+//
+// TODO: split out parameters that are applicable to all
+// kinds of globes, and those specific to individual kinds
+// of globes.
 #[derive(Clone, Copy)]
 pub struct Spec {
     pub seed: u32,
@@ -31,5 +44,48 @@ impl Spec {
             self.root_resolution[0] / self.chunk_resolution[0],
             self.root_resolution[1] / self.chunk_resolution[1],
         ]
+    }
+
+    // Ignore the z-coordinate; just project to a unit sphere.
+    // This is useful for, e.g., sampling noise to determine elevation
+    // at a particular point on the surface, or other places where you're
+    // really just talking about longitude/latitude.
+    pub fn cell_center_on_unit_sphere(&self, cell_pos: CellPos) -> Pt3 {
+        let res_x = self.root_resolution[0] as f64;
+        let res_y = self.root_resolution[1] as f64;
+        let pt_in_root_quad = Pt2::new(
+            cell_pos.x as f64 / res_x,
+            cell_pos.y as f64 / res_y,
+        );
+        super::project(cell_pos.root, pt_in_root_quad)
+    }
+
+    pub fn cell_center_center(&self, cell_pos: CellPos) -> Pt3 {
+        let radius = self.floor_radius +
+            self.block_height * (cell_pos.z as f64 + 0.5);
+        radius * self.cell_center_on_unit_sphere(cell_pos)
+    }
+
+    // TODO: describe meaning of offsets, where to get it from, etc.?
+    pub fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
+        let res_x = (self.root_resolution[0] * 6) as f64;
+        let res_y = (self.root_resolution[1] * 6) as f64;
+        let pt_in_root_quad = Pt2::new(
+            (cell_pos.x as i64 * 6 + offset[0]) as f64 / res_x,
+            (cell_pos.y as i64 * 6 + offset[1]) as f64 / res_y,
+        );
+        super::project(cell_pos.root, pt_in_root_quad)
+    }
+
+    pub fn cell_bottom_vertex(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
+        let radius = self.floor_radius +
+            self.block_height * cell_pos.z as f64;
+        radius * self.cell_vertex_on_unit_sphere(cell_pos, offset)
+    }
+
+    pub fn cell_top_vertex(&self, mut cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
+        // The top of one cell is the bottom of the next.
+        cell_pos.z += 1;
+        self.cell_bottom_vertex(cell_pos, offset)
     }
 }
