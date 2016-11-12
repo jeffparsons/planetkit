@@ -78,6 +78,11 @@ impl View {
                         z: cell_z,
                         root: origin.root,
                     };
+
+                    if self.cull_cell(chunk, cell_pos) {
+                       continue;
+                    }
+
                     let cell = chunk.cell(cell_pos);
 
                     // TEMP color dirt as green, ocean as blue.
@@ -193,5 +198,79 @@ impl View {
                 }
             }
         }
+    }
+
+    fn cull_cell(&self, chunk: &Chunk, cell_pos: CellPos) -> bool {
+        // For now, be super-lazy and don't look at
+        // the values that belong to neighbouring chunks.
+        // (At the time of writing, we're not even storing
+        // enough to do this consistently.)
+        //
+        // Instead, if we have enough data (i.e. this cell
+        // is not on the edge of the chunk) to know that there
+        // are _no_ non-air neighbouring cells, then we won't
+        // render the cell at all.
+        let origin = chunk.origin;
+        let end_x = origin.x + self.spec.chunk_resolution[0];
+        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_z = origin.z + self.spec.chunk_resolution[2];
+        let on_edge =
+            cell_pos.x <= origin.x ||
+            cell_pos.y <= origin.y ||
+            cell_pos.z <= origin.z ||
+            cell_pos.x >= end_x ||
+            cell_pos.y >= end_y ||
+            cell_pos.z >= end_z;
+        if on_edge {
+            return false;
+        }
+
+        // All neighbouring cells, assuming we're not
+        // on the edge of the chunk.
+        //
+        // TODO: this is evil hacks; we should be
+        // checking what directions this cell has
+        // neighbours in, and then using functions
+        // that walk in those directions to find the
+        // cells.
+        //
+        // TODO: this is also casting to a smaller
+        // size than CellPos. Lots of opportunity
+        // for oopsies there. Should CellPos be based
+        // on i64 anyway? It probably should!
+        const NEIGHBOUR_OFFSETS: [[i64; 2]; 6] = [
+            [  1,  0 ],
+            [  0,  1 ],
+            [ -1,  1 ],
+            [ -1,  0 ],
+            [  0, -1 ],
+            [  1, -1 ],
+        ];
+        for d_z in &[-1, 0, 1] {
+            for d_xy in &NEIGHBOUR_OFFSETS {
+                let d_x = d_xy[0];
+                let d_y = d_xy[1];
+
+                // Don't compare against this block.
+                if d_x == 0 && d_y == 0 && *d_z == 0 {
+                    continue;
+                }
+
+                let mut neighbour_pos = cell_pos;
+                neighbour_pos.x = ((neighbour_pos.x as i64) + d_x) as u64;
+                neighbour_pos.y = ((neighbour_pos.y as i64) + d_y) as u64;
+                neighbour_pos.z = ((neighbour_pos.z as i64) + d_z) as u64;
+
+                let neighbour = chunk.cell(neighbour_pos);
+                if neighbour.material == Material::Air {
+                    // This cell can be seen; we can't cull it.
+                    return false;
+                }
+            }
+        }
+
+        // If there was no reason to save it,
+        // then assume we can cull it!
+        true
     }
 }
