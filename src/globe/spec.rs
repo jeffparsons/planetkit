@@ -1,6 +1,7 @@
 use super::IntCoord;
 
 // TODO: accessors for all the fields, and make them private.
+#[derive(Clone, Copy)]
 pub struct Spec {
     pub seed: u32,
     pub floor_radius: f64,

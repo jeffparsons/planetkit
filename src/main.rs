@@ -123,7 +123,8 @@ fn main() {
     window.set_capture_cursor(false);
 
     let globe = globe::Globe::new_example();
-    let (vertices, indices) = globe.make_geometry();
+    let globe_view = globe::View::new(&globe);
+    let (vertices, indices) = globe_view.make_geometry(&globe);
     let index_data: &[u32] = indices.as_slice();
 
     // Make OpenGL resource factory.

@@ -6,12 +6,14 @@ mod spec;
 pub mod chunk;
 mod root;
 mod cell_shape;
+mod view;
 
 use types::*;
 
 pub use self::root::*;
-pub use self::globe::*;
+pub use self::globe::Globe;
 pub use self::spec::*;
+pub use self::view::*;
 
 pub type IntCoord = u64;
 
