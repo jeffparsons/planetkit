@@ -1,6 +1,6 @@
 use globe::{ IntCoord, Root };
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Material {
     Air,
     Dirt,
@@ -13,7 +13,7 @@ pub enum Material {
 // sized partition of the world that would be loaded and
 // unloaded into the world as a unit.
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct CellPos {
     pub root: Root,
     pub x: IntCoord,
@@ -21,6 +21,7 @@ pub struct CellPos {
     pub z: IntCoord,
 }
 
+#[derive(Clone, Copy)]
 pub struct Cell {
     pub material: Material,
     pub shade: f32,
@@ -38,18 +39,32 @@ pub struct Chunk {
     pub cells: Vec<Cell>,
 }
 
-impl<'a> Chunk {
-    // Panics if given coordinates of a cell we don't have data for.
+impl Chunk {
+    // Panics or returns nonsense if given coordinates of a cell we don't have data for.
     //
     // TODO: _store_ more information to make lookups cheaper.
-    pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
+    fn cell_index(&self, pos: CellPos) -> usize {
         let local_x = pos.x - self.origin.x;
         let local_y = pos.y - self.origin.y;
         let local_z = pos.z - self.origin.z;
-        let cell_i =
+        (
             local_z * (self.resolution[0] + 1) * (self.resolution[1] + 1) +
             local_y * (self.resolution[0] + 1) +
-            local_x;
-        &self.cells[cell_i as usize]
+            local_x
+        ) as usize
+    }
+}
+
+impl<'a> Chunk {
+    // Panics if given coordinates of a cell we don't have data for.
+    pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
+        let cell_i = self.cell_index(pos);
+        &self.cells[cell_i]
+    }
+
+    // Panics if given coordinates of a cell we don't have data for.
+    pub fn cell_mut(&'a mut self, pos: CellPos) -> &'a mut Cell {
+        let cell_i = self.cell_index(pos);
+        &mut self.cells[cell_i]
     }
 }

@@ -67,8 +67,10 @@ impl View {
         // even though we don't own them we'll need to draw part of them.
         let end_x = origin.x + self.spec.chunk_resolution[0];
         let end_y = origin.y + self.spec.chunk_resolution[1];
-        let end_z = origin.z + self.spec.chunk_resolution[2];
-        for cell_z in origin.z..end_z {
+        // Chunks don't share cells in the z-direction,
+        // but do in the x- and y-directions.
+        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
+        for cell_z in origin.z..(end_z + 1) {
             for cell_y in origin.y..(end_y + 1) {
                 for cell_x in origin.x..(end_x + 1) {
                     // Use cell centre as first vertex of each triangle.
@@ -213,7 +215,9 @@ impl View {
         let origin = chunk.origin;
         let end_x = origin.x + self.spec.chunk_resolution[0];
         let end_y = origin.y + self.spec.chunk_resolution[1];
-        let end_z = origin.z + self.spec.chunk_resolution[2];
+        // Chunks don't share cells in the z-direction,
+        // but do in the x- and y-directions.
+        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
         let on_edge =
             cell_pos.x <= origin.x ||
             cell_pos.y <= origin.y ||
