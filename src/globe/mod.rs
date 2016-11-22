@@ -8,6 +8,7 @@ mod root;
 mod cell_shape;
 mod view;
 mod gen;
+mod draw;
 
 use types::*;
 
@@ -15,8 +16,11 @@ pub use self::root::*;
 pub use self::globe::Globe;
 pub use self::spec::*;
 pub use self::view::*;
+pub use self::draw::*;
 
 pub type IntCoord = u64;
+
+// TODO: move project into icosahedron module.
 
 // Project a position in a given root quad into a unit sphere.
 // Assumes that one corner is represented in `pt_in_root_quad`

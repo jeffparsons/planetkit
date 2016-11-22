@@ -2,6 +2,12 @@ use super::spec::Spec;
 use super::globe::{Globe, GlobeGuts};
 use super::chunk::{ Chunk, CellPos, Material };
 use super::cell_shape;
+use super::draw;
+
+// TODO: between this and "draw" we now have some confusing names.
+// Shuffle this code into something that implies it's just about
+// generating geometry for other components/systems, e.g., drawing
+// and physics.
 
 // `View` doesn't store a reference to a `Globe`,
 // to avoid complex lifetime wrangling; we might want
@@ -24,8 +30,8 @@ impl View {
     }
 
     // Make vertices and list of indices into that array for triangle faces.
-    pub fn make_geometry(&self, globe: &Globe) -> (Vec<::Vertex>, Vec<u32>) {
-        let mut vertex_data: Vec<::Vertex> = Vec::new();
+    pub fn make_geometry(&self, globe: &Globe) -> (Vec<draw::Vertex>, Vec<u32>) {
+        let mut vertex_data: Vec<draw::Vertex> = Vec::new();
         let mut index_data: Vec<u32> = Vec::new();
 
         // Build geometry for each chunk into our buffers.
@@ -59,7 +65,7 @@ impl View {
     pub fn make_chunk_geometry(
         &self,
         chunk: &Chunk,
-        vertex_data: &mut Vec<::Vertex>,
+        vertex_data: &mut Vec<draw::Vertex>,
         index_data: &mut Vec<u32>
     ) {
         let origin = chunk.origin;
@@ -135,7 +141,7 @@ impl View {
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
                         let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
-                        vertex_data.push(::Vertex::new([
+                        vertex_data.push(draw::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
                             vertex_pt3[2] as f32,
@@ -162,7 +168,7 @@ impl View {
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
-                        vertex_data.push(::Vertex::new([
+                        vertex_data.push(draw::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
                             vertex_pt3[2] as f32,
@@ -178,7 +184,7 @@ impl View {
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = self.spec.cell_bottom_vertex(cell_pos, *offset);
-                        vertex_data.push(::Vertex::new([
+                        vertex_data.push(draw::Vertex::new([
                             vertex_pt3[0] as f32,
                             vertex_pt3[1] as f32,
                             vertex_pt3[2] as f32,
