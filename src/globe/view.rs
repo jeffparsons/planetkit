@@ -30,20 +30,25 @@ impl View {
     }
 
     // Make vertices and list of indices into that array for triangle faces.
-    pub fn make_geometry(&self, globe: &Globe) -> (Vec<draw::Vertex>, Vec<u32>) {
-        let mut vertex_data: Vec<draw::Vertex> = Vec::new();
-        let mut index_data: Vec<u32> = Vec::new();
-
-        // Build geometry for each chunk into our buffers.
+    pub fn make_geometry(&self, globe: &Globe)
+        -> Vec<(Vec<draw::Vertex>, Vec<u32>)>
+    {
+        let mut all_geometry = Vec::new();
         for chunk in globe.chunks() {
+            // Build geometry for this chunk into vertex
+            // and index buffers.
+            let mut vertex_data: Vec<draw::Vertex> = Vec::new();
+            let mut index_data: Vec<u32> = Vec::new();
+
             // TODO: factor out
             self.make_chunk_geometry(
                 &chunk,
                 &mut vertex_data,
                 &mut index_data,
             );
+            all_geometry.push((vertex_data, index_data));
         }
-        (vertex_data, index_data)
+        all_geometry
     }
 
     // TODO: don't take a reference to a chunk

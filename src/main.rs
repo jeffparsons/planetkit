@@ -78,22 +78,29 @@ fn main() {
         .unwrap();
     window.set_capture_cursor(false);
 
-    let globe = globe::Globe::new_example();
-    let globe_view = globe::View::new(&globe);
-    let (vertices, vertex_indices) = globe_view.make_geometry(&globe);
-
     // Make OpenGL resource factory.
     // We'll use this for creating all our vertex buffers, etc.
     let factory = &mut window.factory.clone();
 
-    // Create bundle to draw globe.
-    let draw = globe::Draw::new(
+    // Rendering system.
+    let mut draw = globe::Draw::new(
         factory,
-        window.output_color.clone(),
-        window.output_stencil.clone(),
-        vertices,
-        vertex_indices,
     );
+
+    // Make globe and create a mesh for each of its chunks.
+    let globe = globe::Globe::new_example();
+    let globe_view = globe::View::new(&globe);
+    let geometry = globe_view.make_geometry(&globe);
+    for (vertices, vertex_indices) in geometry {
+        let mesh = globe::Mesh::new(
+            factory,
+            vertices,
+            vertex_indices,
+            window.output_color.clone(),
+            window.output_stencil.clone(),
+        );
+        draw.add_mesh(mesh);
+    }
 
     let get_projection = |w: &PistonWindow| {
         let draw_size = w.window.draw_size();

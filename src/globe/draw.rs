@@ -43,16 +43,47 @@ gfx_pipeline!(
     }
 );
 
-struct Mesh<R: gfx::Resources> {
+pub struct Mesh<R: gfx::Resources> {
     data: pipe::Data<R>,
     slice: gfx::Slice<R>,
 }
 
 impl<R: gfx::Resources> Mesh<R> {
-    fn new(
-        data: pipe::Data<R>,
-        slice: gfx::Slice<R>,
+    pub fn new<F: gfx::Factory<R>>(
+        factory: &mut F,
+        vertices: Vec<Vertex>,
+        vertex_indices: Vec<u32>,
+
+        // TODO: this stuff belongs on `Draw` at least by default;
+        // we're unlikely to want to customise it per mesh.
+        out_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+        out_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
     ) -> Mesh<R> {
+        // Create sampler.
+        // TODO: surely there are some sane defaults for this stuff
+        // I can just fall back to...
+        // TODO: What are these magic numbers? o_0
+        use gfx::traits::FactoryExt;
+        let texels = [[0x20, 0xA0, 0xC0, 0x00]];
+        let (_, texture_view) = factory.create_texture_const::<gfx::format::Rgba8>(
+            gfx::tex::Kind::D2(1, 1, gfx::tex::AaMode::Single),
+            &[&texels]).unwrap();
+        let sinfo = gfx::tex::SamplerInfo::new(
+            gfx::tex::FilterMethod::Bilinear,
+            gfx::tex::WrapMode::Clamp
+        );
+
+        let index_data: &[u32] = vertex_indices.as_slice();
+        let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
+            &vertices, index_data
+        );
+        let data = pipe::Data {
+            vbuf: vbuf.clone(),
+            u_model_view_proj: [[0.0; 4]; 4],
+            t_color: (texture_view, factory.create_sampler(sinfo)),
+            out_color: out_color,
+            out_depth: out_stencil,
+        };
         Mesh {
             data: data,
             slice: slice,
@@ -69,10 +100,6 @@ pub struct Draw<R: gfx::Resources> {
 impl<R: gfx::Resources> Draw<R> {
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
-        out_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
-        out_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
-        vertices: Vec<Vertex>,
-        vertex_indices: Vec<u32>,
     ) -> Draw<R> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
@@ -86,39 +113,14 @@ impl<R: gfx::Resources> Draw<R> {
             pipe::new()
         ).unwrap();
 
-        // Create sampler.
-        // TODO: surely there are some sane defaults for this stuff
-        // I can just fall back to...
-        // TODO: What are these magic numbers? o_0
-        let texels = [[0x20, 0xA0, 0xC0, 0x00]];
-        let (_, texture_view) = factory.create_texture_const::<gfx::format::Rgba8>(
-            gfx::tex::Kind::D2(1, 1, gfx::tex::AaMode::Single),
-            &[&texels]).unwrap();
-        let sinfo = gfx::tex::SamplerInfo::new(
-            gfx::tex::FilterMethod::Bilinear,
-            gfx::tex::WrapMode::Clamp
-        );
-
-        // Create bundle to render per mesh, minus PSO.
-        let index_data: &[u32] = vertex_indices.as_slice();
-        let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
-            &vertices, index_data
-        );
-        let data = pipe::Data {
-            vbuf: vbuf.clone(),
-            u_model_view_proj: [[0.0; 4]; 4],
-            t_color: (texture_view, factory.create_sampler(sinfo)),
-            out_color: out_color,
-            out_depth: out_stencil,
-        };
-
-        let meshes = vec![
-            Mesh::new(data, slice),
-        ];
         Draw {
             pso: pso,
-            meshes: meshes,
+            meshes: Vec::new(),
         }
+    }
+
+    pub fn add_mesh(&mut self, mesh: Mesh<R>) {
+        self.meshes.push(mesh);
     }
 
     pub fn draw<C: gfx::CommandBuffer<R>>(
