@@ -1,5 +1,4 @@
 use gfx;
-use gfx::pso::bundle::Bundle;
 use gfx::Primitive;
 use gfx::state::Rasterizer;
 
@@ -44,8 +43,27 @@ gfx_pipeline!(
     }
 );
 
+struct Mesh<R: gfx::Resources> {
+    data: pipe::Data<R>,
+    slice: gfx::Slice<R>,
+}
+
+impl<R: gfx::Resources> Mesh<R> {
+    fn new(
+        data: pipe::Data<R>,
+        slice: gfx::Slice<R>,
+    ) -> Mesh<R> {
+        Mesh {
+            data: data,
+            slice: slice,
+        }
+    }
+}
+
 pub struct Draw<R: gfx::Resources> {
-    bundle: Bundle<R, pipe::Data<R>>,
+    // TODO: multiple PSOs
+    pso: gfx::PipelineState<R, pipe::Meta>,
+    meshes: Vec<Mesh<R>>,
 }
 
 impl<R: gfx::Resources> Draw<R> {
@@ -81,7 +99,7 @@ impl<R: gfx::Resources> Draw<R> {
             gfx::tex::WrapMode::Clamp
         );
 
-        // Create bundle to render.
+        // Create bundle to render per mesh, minus PSO.
         let index_data: &[u32] = vertex_indices.as_slice();
         let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
             &vertices, index_data
@@ -93,10 +111,13 @@ impl<R: gfx::Resources> Draw<R> {
             out_color: out_color,
             out_depth: out_stencil,
         };
-        let bundle = Bundle::new(slice, pso, data);
 
+        let meshes = vec![
+            Mesh::new(data, slice),
+        ];
         Draw {
-            bundle: bundle,
+            pso: pso,
+            meshes: meshes,
         }
     }
 
@@ -105,11 +126,13 @@ impl<R: gfx::Resources> Draw<R> {
         encoder: &mut gfx::Encoder<R, C>,
         model_view_projection: [[f32; 4]; 4],
     ) {
-        self.bundle.data.u_model_view_proj = model_view_projection;
-        encoder.draw(
-            &self.bundle.slice,
-            &self.bundle.pso,
-            &self.bundle.data,
-        );
+        for mesh in &mut self.meshes {
+            mesh.data.u_model_view_proj = model_view_projection;
+            encoder.draw(
+                &mesh.slice,
+                &self.pso,
+                &mesh.data,
+            );
+        }
     }
 }
