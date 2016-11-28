@@ -1,3 +1,4 @@
+extern crate chrono;
 extern crate rand;
 extern crate noise;
 extern crate piston;
@@ -12,6 +13,9 @@ extern crate camera_controllers;
 extern crate vecmath;
 extern crate shader_version;
 extern crate nalgebra as na;
+#[macro_use]
+extern crate slog;
+extern crate slog_term;
 
 // TODO: move most of these into specific functions
 use piston::window::WindowSettings;
@@ -67,7 +71,13 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
+    use slog::DrainExt;
+    let drain = slog_term::streamer().compact().build().fuse();
+    let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
+    let log = root_log;
+
     // Create an Glutin window.
+    info!(log, "Creating main window");
     let mut window: PistonWindow = WindowSettings::new(
         "planetkit",
         [800, 600]
@@ -77,6 +87,7 @@ fn main() {
         .build()
         .unwrap();
     window.set_capture_cursor(false);
+    debug!(log, "Main window created");
 
     // Make OpenGL resource factory.
     // We'll use this for creating all our vertex buffers, etc.
@@ -88,8 +99,8 @@ fn main() {
     );
 
     // Make globe and create a mesh for each of its chunks.
-    let globe = globe::Globe::new_example();
-    let globe_view = globe::View::new(&globe);
+    let globe = globe::Globe::new_example(&log);
+    let globe_view = globe::View::new(&globe, &log);
     let geometry = globe_view.make_geometry(&globe);
     for (vertices, vertex_indices) in geometry {
         let mesh = globe::Mesh::new(
@@ -142,4 +153,6 @@ fn main() {
             app.update(&u);
         }
     }
+
+    info!(log, "Quitting");
 }

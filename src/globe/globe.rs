@@ -1,3 +1,7 @@
+use chrono::Duration;
+
+use slog::Logger;
+
 use rand;
 use rand::Rng;
 
@@ -21,6 +25,7 @@ pub struct Globe {
     // pseudo-chunks for rendering planets at a distance.
     // But maybe you can put that off?
     chunks: Vec<Chunk>,
+    log: Logger,
 }
 
 // Allowing sibling modules to reach into semi-private parts
@@ -36,17 +41,18 @@ impl<'a> GlobeGuts<'a> for Globe {
 }
 
 impl Globe {
-    pub fn new(spec: Spec) -> Globe {
+    pub fn new(spec: Spec, parent_log: &Logger) -> Globe {
         let mut globe = Globe {
             spec: spec,
             gen: Gen::new(spec),
             chunks: Vec::new(),
+            log: parent_log.new(o!()),
         };
         globe.build_all_chunks();
         globe
     }
 
-    pub fn new_example() -> Globe {
+    pub fn new_example(parent_log: &Logger) -> Globe {
         Globe::new(
             Spec {
                 seed: 13,
@@ -58,7 +64,8 @@ impl Globe {
                 block_height: 0.02,
                 root_resolution: [32, 64],
                 chunk_resolution: [16, 16, 4],
-            }
+            },
+            parent_log,
         )
     }
 
@@ -75,22 +82,29 @@ impl Globe {
             self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
             self.spec.root_resolution[1] / self.spec.chunk_resolution[1],
         ];
-        for root_index in 0..ROOT_QUADS {
-            let root = Root { index: root_index };
-            for z in 0..Z_CHUNKS {
-                for y in 0..chunks_per_root[1] {
-                    for x in 0..chunks_per_root[0] {
-                        let origin = CellPos {
-                            root: root,
-                            x: x * self.spec.chunk_resolution[0],
-                            y: y * self.spec.chunk_resolution[1],
-                            z: z * self.spec.chunk_resolution[2],
-                        };
-                        self.build_chunk(origin);
+
+        debug!(self.log, "Making chunks...");
+
+        let dt = Duration::span(|| {
+            for root_index in 0..ROOT_QUADS {
+                let root = Root { index: root_index };
+                for z in 0..Z_CHUNKS {
+                    for y in 0..chunks_per_root[1] {
+                        for x in 0..chunks_per_root[0] {
+                            let origin = CellPos {
+                                root: root,
+                                x: x * self.spec.chunk_resolution[0],
+                                y: y * self.spec.chunk_resolution[1],
+                                z: z * self.spec.chunk_resolution[2],
+                            };
+                            self.build_chunk(origin);
+                        }
                     }
                 }
             }
-        }
+        });
+
+        debug!(self.log, "Finished making chunks"; "chunks" => self.chunks.len(), "dt" => format!("{}", dt));
 
         // Copy cells over from chunks that own cells to those that
         // contain the same cells but don't own them.

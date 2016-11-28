@@ -1,3 +1,7 @@
+use chrono::Duration;
+
+use slog::Logger;
+
 use super::spec::Spec;
 use super::globe::{Globe, GlobeGuts};
 use super::chunk::{ Chunk, CellPos, Material };
@@ -20,12 +24,14 @@ use super::draw;
 // globe when it wants us to build geometry.
 pub struct View {
     spec: Spec,
+    log: Logger,
 }
 
 impl View {
-    pub fn new(globe: &Globe) -> View {
+    pub fn new(globe: &Globe, parent_log: &Logger) -> View {
         View {
             spec: globe.spec(),
+            log: parent_log.new(o!()),
         }
     }
 
@@ -33,21 +39,28 @@ impl View {
     pub fn make_geometry(&self, globe: &Globe)
         -> Vec<(Vec<draw::Vertex>, Vec<u32>)>
     {
-        let mut all_geometry = Vec::new();
-        for chunk in globe.chunks() {
-            // Build geometry for this chunk into vertex
-            // and index buffers.
-            let mut vertex_data: Vec<draw::Vertex> = Vec::new();
-            let mut index_data: Vec<u32> = Vec::new();
+        debug!(self.log, "Making chunk geometry for globe"; "chunks" => globe.chunks().len());
 
-            // TODO: factor out
-            self.make_chunk_geometry(
-                &chunk,
-                &mut vertex_data,
-                &mut index_data,
-            );
-            all_geometry.push((vertex_data, index_data));
-        }
+        let mut all_geometry = Vec::new();
+        let dt = Duration::span(|| {
+            for chunk in globe.chunks() {
+                // Build geometry for this chunk into vertex
+                // and index buffers.
+                let mut vertex_data: Vec<draw::Vertex> = Vec::new();
+                let mut index_data: Vec<u32> = Vec::new();
+
+                // TODO: factor out
+                self.make_chunk_geometry(
+                    &chunk,
+                    &mut vertex_data,
+                    &mut index_data,
+                );
+                all_geometry.push((vertex_data, index_data));
+            }
+        });
+
+        debug!(self.log, "Finished making geometry for chunks"; "chunks" => globe.chunks().len(), "dt" => format!("{}", dt));
+
         all_geometry
     }
 
