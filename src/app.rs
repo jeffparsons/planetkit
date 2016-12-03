@@ -4,6 +4,7 @@ use slog::Logger;
 use vecmath;
 use gfx_device_gl;
 use camera_controllers;
+use specs;
 
 use globe;
 
@@ -21,6 +22,7 @@ fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
 pub struct App {
     t: f64,
     log: Logger,
+    planner: specs::Planner<f64>,
     draw: globe::Draw<gfx_device_gl::Resources>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
@@ -38,26 +40,18 @@ impl App {
         // We'll use this for creating all our vertex buffers, etc.
         let factory = &mut window.factory.clone();
 
+        // Create SPECS world and, system execution planner
+        // for it with two threads.
+        //
+        // This manages execution of all game systems,
+        // i.e. the interaction between sets of components.
+        let world = specs::World::new();
+        let planner = specs::Planner::new(world, 2);
+
         // Rendering system.
-        let mut draw = globe::Draw::new(factory);
+        let draw = globe::Draw::new(factory);
 
         let log = parent_log.new(o!());
-
-        // Make globe and create a mesh for each of its chunks.
-        // TODO: move this out of app
-        let globe = globe::Globe::new_example(&log);
-        let globe_view = globe::View::new(&globe, &log);
-        let geometry = globe_view.make_geometry(&globe);
-        for (vertices, vertex_indices) in geometry {
-            let mesh = globe::Mesh::new(
-                factory,
-                vertices,
-                vertex_indices,
-                window.output_color.clone(),
-                window.output_stencil.clone(),
-            );
-            draw.add_mesh(mesh);
-        }
 
         let model: vecmath::Matrix4<f32> = vecmath::mat4_id();
         let projection = get_projection(&window);
@@ -69,6 +63,7 @@ impl App {
         App {
             t: 0.0,
             log: log,
+            planner: planner,
             draw: draw,
             model: model,
             projection: projection,
@@ -103,6 +98,10 @@ impl App {
         info!(self.log, "Quitting");
     }
 
+    pub fn render_sys(&mut self) -> &mut globe::Draw<gfx_device_gl::Resources> {
+        &mut self.draw
+    }
+
     fn render(&mut self, args: &RenderArgs, window: &mut PistonWindow) {
         const CLEAR_COLOR: [f32; 4] = [0.3, 0.3, 0.3, 1.0];
         window.encoder.clear(&window.output_color, CLEAR_COLOR);
@@ -123,5 +122,6 @@ impl App {
 
     fn update(&mut self, args: &UpdateArgs) {
         self.t += args.dt;
+        self.planner.dispatch(args.dt);
     }
 }

@@ -16,6 +16,7 @@ extern crate nalgebra as na;
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
+extern crate specs;
 
 mod globe;
 mod types;
@@ -31,5 +32,25 @@ fn main() {
 
     let mut window = window::make_window(&log);
     let mut app = app::App::new(&log, &window);
+
+    // Make globe and create a mesh for each of its chunks.
+    //
+    // TODO: move the geometry generation bits somewhere else;
+    // the user shouldn't have to mess with any of this.
+    let factory = &mut window.factory.clone();
+    let globe = globe::Globe::new_example(&log);
+    let globe_view = globe::View::new(&globe, &log);
+    let geometry = globe_view.make_geometry(&globe);
+    for (vertices, vertex_indices) in geometry {
+        let mesh = globe::Mesh::new(
+            factory,
+            vertices,
+            vertex_indices,
+            window.output_color.clone(),
+            window.output_stencil.clone(),
+        );
+        app.render_sys().add_mesh(mesh);
+    }
+
     app.run(&mut window);
 }
