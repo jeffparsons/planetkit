@@ -6,7 +6,7 @@ use gfx_device_gl;
 use camera_controllers;
 use specs;
 
-use globe;
+use render_sys;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use piston::window::Window;
@@ -23,7 +23,7 @@ pub struct App {
     t: f64,
     log: Logger,
     planner: specs::Planner<f64>,
-    draw: globe::Draw<gfx_device_gl::Resources>,
+    render_sys: render_sys::Draw<gfx_device_gl::Resources>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
     first_person: camera_controllers::FirstPerson,
@@ -49,7 +49,7 @@ impl App {
         let planner = specs::Planner::new(world, 2);
 
         // Rendering system.
-        let draw = globe::Draw::new(factory);
+        let render_sys = render_sys::Draw::new(factory);
 
         let log = parent_log.new(o!());
 
@@ -64,7 +64,7 @@ impl App {
             t: 0.0,
             log: log,
             planner: planner,
-            draw: draw,
+            render_sys: render_sys,
             model: model,
             projection: projection,
             first_person: first_person,
@@ -98,8 +98,8 @@ impl App {
         info!(self.log, "Quitting");
     }
 
-    pub fn render_sys(&mut self) -> &mut globe::Draw<gfx_device_gl::Resources> {
-        &mut self.draw
+    pub fn render_sys(&mut self) -> &mut render_sys::Draw<gfx_device_gl::Resources> {
+        &mut self.render_sys
     }
 
     fn render(&mut self, args: &RenderArgs, window: &mut PistonWindow) {
@@ -114,7 +114,7 @@ impl App {
         );
 
         // Draw the globe.
-        self.draw.draw(
+        self.render_sys.draw(
             &mut window.encoder,
             model_view_projection,
         );

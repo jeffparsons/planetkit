@@ -103,8 +103,8 @@ impl<R: gfx::Resources> Draw<R> {
     ) -> Draw<R> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
-        let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
-        let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
+        let vs_bytes = include_bytes!("shaders/copypasta_150.glslv");
+        let ps_bytes = include_bytes!("./shaders/copypasta_150.glslf");
         let program = factory.link_program(vs_bytes, ps_bytes).unwrap();
         let pso = factory.create_pipeline_from_program(
             &program,

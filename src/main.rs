@@ -22,6 +22,7 @@ mod globe;
 mod types;
 mod app;
 mod window;
+mod render_sys;
 
 fn main() {
     // Set up logger.
@@ -42,7 +43,7 @@ fn main() {
     let globe_view = globe::View::new(&globe, &log);
     let geometry = globe_view.make_geometry(&globe);
     for (vertices, vertex_indices) in geometry {
-        let mesh = globe::Mesh::new(
+        let mesh = render_sys::Mesh::new(
             factory,
             vertices,
             vertex_indices,
