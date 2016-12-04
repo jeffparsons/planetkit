@@ -11,3 +11,5 @@ pub type Vec2 = Vector2<f64>;
 pub type Vec3 = Vector3<f64>;
 pub type Pt2 = Point2<f64>;
 pub type Pt3 = Point3<f64>;
+
+pub type TimeDelta = f64;

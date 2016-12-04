@@ -7,6 +7,7 @@ use camera_controllers;
 use specs;
 
 use render_sys;
+use types::*;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use piston::window::Window;
@@ -20,9 +21,9 @@ fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
 }
 
 pub struct App {
-    t: f64,
+    t: TimeDelta,
     log: Logger,
-    planner: specs::Planner<f64>,
+    planner: specs::Planner<TimeDelta>,
     render_sys: render_sys::Draw<gfx_device_gl::Resources>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
