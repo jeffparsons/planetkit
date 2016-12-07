@@ -9,7 +9,7 @@ use super::EncoderChannel;
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
 
-pub struct Draw<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
+pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     // TODO: multiple PSOs
     pso: gfx::PipelineState<R, pipe::Meta>,
     meshes: Vec<Mesh<R>>,
@@ -18,13 +18,13 @@ pub struct Draw<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 }
 
-impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> Draw<R, C> {
+impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
         encoder_channel: EncoderChannel<R, C>,
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
         output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
-    ) -> Draw<R, C> {
+    ) -> System<R, C> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
         let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
@@ -37,7 +37,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> Draw<R, C> {
             pipe::new()
         ).unwrap();
 
-        Draw {
+        System {
             pso: pso,
             meshes: Vec::new(),
             encoder_channel: encoder_channel,

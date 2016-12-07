@@ -25,7 +25,7 @@ pub struct App {
     t: TimeDelta,
     log: Logger,
     planner: specs::Planner<TimeDelta>,
-    render_sys: render::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+    render_sys: render::System<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
@@ -85,7 +85,7 @@ impl App {
         render_sys_encoder_channel.sender.send(enc1).unwrap();
         device_encoder_channel.sender.send(enc2).unwrap();
 
-        let render_sys = render::Draw::new(
+        let render_sys = render::System::new(
             factory,
             render_sys_encoder_channel,
             window.output_color.clone(),
@@ -139,7 +139,7 @@ impl App {
         info!(self.log, "Quitting");
     }
 
-    pub fn render_sys(&mut self) -> &mut render::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+    pub fn render_sys(&mut self) -> &mut render::System<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
         &mut self.render_sys
     }
 
