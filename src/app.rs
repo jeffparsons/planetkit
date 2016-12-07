@@ -7,7 +7,7 @@ use gfx_device_gl;
 use camera_controllers;
 use specs;
 
-use render_sys;
+use render;
 use types::*;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
@@ -25,8 +25,8 @@ pub struct App {
     t: TimeDelta,
     log: Logger,
     planner: specs::Planner<TimeDelta>,
-    render_sys: render_sys::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    encoder_channel: render_sys::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+    render_sys: render::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+    encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
     first_person: camera_controllers::FirstPerson,
@@ -56,11 +56,11 @@ impl App {
         // the graphics device) and any number of game threads managed by Specs.
         let (render_sys_send, device_recv) = mpsc::channel();
         let (device_send, render_sys_recv) = mpsc::channel();
-        let render_sys_encoder_channel = render_sys::EncoderChannel {
+        let render_sys_encoder_channel = render::EncoderChannel {
             sender: render_sys_send,
             receiver: render_sys_recv,
         };
-        let device_encoder_channel = render_sys::EncoderChannel {
+        let device_encoder_channel = render::EncoderChannel {
             sender: device_send,
             receiver: device_recv,
         };
@@ -85,7 +85,7 @@ impl App {
         render_sys_encoder_channel.sender.send(enc1).unwrap();
         device_encoder_channel.sender.send(enc2).unwrap();
 
-        let render_sys = render_sys::Draw::new(
+        let render_sys = render::Draw::new(
             factory,
             render_sys_encoder_channel,
             window.output_color.clone(),
@@ -139,7 +139,7 @@ impl App {
         info!(self.log, "Quitting");
     }
 
-    pub fn render_sys(&mut self) -> &mut render_sys::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
+    pub fn render_sys(&mut self) -> &mut render::Draw<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
         &mut self.render_sys
     }
 

@@ -3,15 +3,8 @@ use gfx;
 use gfx::Primitive;
 use gfx::state::Rasterizer;
 
-// Most of this boilerplate stuff adapted from
-// <https://github.com/PistonDevelopers/piston-examples/blob/master/src/cube.rs>.
-// TODO: This is incomprehensible! Do something about it.
-
-// Most of this was then brought into this `draw` module,
-// which is currently super-specific to `globe`, but will soon
-// be abstracted to handle different kinds of meshes.
-
-// SHOULD BE BACK-END AGNOSTIC -- I.e. try not to tie this to OpenGL.
+// System to render all visible entities. This is back-end agnostic;
+// i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
 
 gfx_vertex_struct!(
     _Vertex {
@@ -117,8 +110,8 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> Draw<R, C> {
     ) -> Draw<R, C> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
-        let vs_bytes = include_bytes!("shaders/copypasta_150.glslv");
-        let ps_bytes = include_bytes!("./shaders/copypasta_150.glslf");
+        let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
+        let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
         let program = factory.link_program(vs_bytes, ps_bytes).unwrap();
         let pso = factory.create_pipeline_from_program(
             &program,
