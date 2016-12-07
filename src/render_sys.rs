@@ -1,3 +1,4 @@
+use std::sync::mpsc;
 use gfx;
 use gfx::Primitive;
 use gfx::state::Rasterizer;
@@ -56,8 +57,8 @@ impl<R: gfx::Resources> Mesh<R> {
 
         // TODO: this stuff belongs on `Draw` at least by default;
         // we're unlikely to want to customise it per mesh.
-        out_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
-        out_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+        output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+        output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
     ) -> Mesh<R> {
         // Create sampler.
         // TODO: surely there are some sane defaults for this stuff
@@ -81,8 +82,8 @@ impl<R: gfx::Resources> Mesh<R> {
             vbuf: vbuf.clone(),
             u_model_view_proj: [[0.0; 4]; 4],
             t_color: (texture_view, factory.create_sampler(sinfo)),
-            out_color: out_color,
-            out_depth: out_stencil,
+            out_color: output_color,
+            out_depth: output_stencil,
         };
         Mesh {
             data: data,
@@ -91,16 +92,29 @@ impl<R: gfx::Resources> Mesh<R> {
     }
 }
 
-pub struct Draw<R: gfx::Resources> {
+// Bi-directional channel to send Encoder between game thread(s)
+// (as managed by Specs), and the thread owning the graphics device.
+pub struct EncoderChannel<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
+    pub receiver: mpsc::Receiver<gfx::Encoder<R, C>>,
+    pub sender: mpsc::Sender<gfx::Encoder<R, C>>,
+}
+
+pub struct Draw<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     // TODO: multiple PSOs
     pso: gfx::PipelineState<R, pipe::Meta>,
     meshes: Vec<Mesh<R>>,
+    encoder_channel: EncoderChannel<R, C>,
+    output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+    output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 }
 
-impl<R: gfx::Resources> Draw<R> {
+impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> Draw<R, C> {
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
-    ) -> Draw<R> {
+        encoder_channel: EncoderChannel<R, C>,
+        output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
+        output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+    ) -> Draw<R, C> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
         let vs_bytes = include_bytes!("shaders/copypasta_150.glslv");
@@ -116,6 +130,9 @@ impl<R: gfx::Resources> Draw<R> {
         Draw {
             pso: pso,
             meshes: Vec::new(),
+            encoder_channel: encoder_channel,
+            output_color: output_color,
+            output_stencil: output_stencil,
         }
     }
 
@@ -123,11 +140,16 @@ impl<R: gfx::Resources> Draw<R> {
         self.meshes.push(mesh);
     }
 
-    pub fn draw<C: gfx::CommandBuffer<R>>(
+    pub fn draw(
         &mut self,
-        encoder: &mut gfx::Encoder<R, C>,
         model_view_projection: [[f32; 4]; 4],
     ) {
+        let mut encoder = self.encoder_channel.receiver.recv().expect("Device owner hung up. That wasn't supposed to happen!");
+
+        const CLEAR_COLOR: [f32; 4] = [0.3, 0.3, 0.3, 1.0];
+        encoder.clear(&self.output_color, CLEAR_COLOR);
+        encoder.clear_depth(&self.output_stencil, 1.0);
+
         for mesh in &mut self.meshes {
             mesh.data.u_model_view_proj = model_view_projection;
             encoder.draw(
@@ -136,5 +158,7 @@ impl<R: gfx::Resources> Draw<R> {
                 &mesh.data,
             );
         }
+
+        self.encoder_channel.sender.send(encoder).unwrap();
     }
 }
