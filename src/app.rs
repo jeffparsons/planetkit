@@ -1,4 +1,4 @@
-use std::sync::mpsc;
+use std::sync::{ Arc, Mutex, mpsc };
 use piston_window::PistonWindow;
 use piston::input::{ UpdateArgs, RenderArgs };
 use slog::Logger;
@@ -29,7 +29,9 @@ pub struct App {
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     model: vecmath::Matrix4<f32>,
     projection: [[f32; 4]; 4],
-    first_person: camera_controllers::FirstPerson,
+    // TEMP: Share with rendering system until the rendering system
+    // is smart enough to take full ownership of it.
+    first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
 }
 
 impl App {
@@ -85,13 +87,6 @@ impl App {
         render_sys_encoder_channel.sender.send(enc1).unwrap();
         device_encoder_channel.sender.send(enc2).unwrap();
 
-        let render_sys = render::System::new(
-            factory,
-            render_sys_encoder_channel,
-            window.output_color.clone(),
-            window.output_stencil.clone(),
-        );
-
         let log = parent_log.new(o!());
 
         let model: vecmath::Matrix4<f32> = vecmath::mat4_id();
@@ -99,6 +94,15 @@ impl App {
         let first_person = FirstPerson::new(
             [0.5, 0.5, 4.0],
             FirstPersonSettings::keyboard_wasd()
+        );
+        let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
+
+        let render_sys = render::System::new(
+            factory,
+            render_sys_encoder_channel,
+            window.output_color.clone(),
+            window.output_stencil.clone(),
+            first_person_mutex_arc.clone(),
         );
 
         App {
@@ -109,7 +113,7 @@ impl App {
             encoder_channel: device_encoder_channel,
             model: model,
             projection: projection,
-            first_person: first_person,
+            first_person: first_person_mutex_arc,
         }
     }
 
@@ -121,7 +125,7 @@ impl App {
 
         let mut events = window.events();
         while let Some(e) = events.next(window) {
-            self.first_person.event(&e);
+            self.first_person.lock().unwrap().event(&e);
 
             if let Some(r) = e.render_args() {
                 self.render(&r, &mut window);
@@ -156,9 +160,10 @@ impl App {
         // is the "extrapolated time", and I'm guessing there's
         // a far better way to go about that. (I.e. track it in
         // the render system.)
+        let fp = self.first_person.lock().unwrap();
         let model_view_projection = camera_controllers::model_view_projection(
             self.model,
-            self.first_person.camera(args.ext_dt).orthogonal(),
+            fp.camera(args.ext_dt).orthogonal(),
             self.projection
         );
 

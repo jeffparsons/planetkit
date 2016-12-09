@@ -1,6 +1,8 @@
+use std::sync::{ Arc, Mutex };
 use gfx;
 use gfx::Primitive;
 use gfx::state::Rasterizer;
+use camera_controllers;
 
 use super::default_pipeline::pipe;
 use super::mesh::{ Mesh, MeshGuts };
@@ -16,6 +18,7 @@ pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     encoder_channel: EncoderChannel<R, C>,
     output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+    first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
 }
 
 impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
@@ -24,6 +27,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         encoder_channel: EncoderChannel<R, C>,
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
         output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
+        first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
     ) -> System<R, C> {
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
@@ -43,6 +47,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             encoder_channel: encoder_channel,
             output_color: output_color,
             output_stencil: output_stencil,
+            first_person: first_person,
         }
     }
 
