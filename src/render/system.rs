@@ -37,6 +37,9 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         projection: Arc<Mutex<[[f32; 4]; 4]>>,
         parent_log: &Logger,
     ) -> System<R, C> {
+        let log = parent_log.new(o!("system" => "render"));
+        debug!(log, "Initialising");
+
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
         let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
@@ -57,13 +60,12 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             output_stencil: output_stencil,
             first_person: first_person,
             projection: projection,
-            log: parent_log.new(o!("system" => "render")),
+            log: log,
         }
     }
 
     pub fn add_mesh(&mut self, mesh: Mesh<R>) {
-        debug!(self.log, "Adding mesh...");
-
+        trace!(self.log, "Adding mesh");
         self.meshes.push(mesh);
     }
 
