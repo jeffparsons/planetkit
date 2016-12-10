@@ -2,13 +2,13 @@ use std::sync::{ Arc, Mutex, mpsc };
 use piston_window::PistonWindow;
 use piston::input::{ UpdateArgs, RenderArgs };
 use slog::Logger;
-use vecmath;
 use gfx_device_gl;
 use camera_controllers;
 use specs;
 
 use render;
 use types::*;
+use globe;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use piston::window::Window;
@@ -25,12 +25,10 @@ pub struct App {
     t: TimeDelta,
     log: Logger,
     planner: specs::Planner<TimeDelta>,
-    render_sys: render::System<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    model: vecmath::Matrix4<f32>,
-    projection: [[f32; 4]; 4],
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
+    projection: Arc<Mutex<[[f32; 4]; 4]>>,
     first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
 }
 
@@ -44,14 +42,6 @@ impl App {
         // Make OpenGL resource factory.
         // We'll use this for creating all our vertex buffers, etc.
         let factory = &mut window.factory.clone();
-
-        // Create SPECS world and, system execution planner
-        // for it with two threads.
-        //
-        // This manages execution of all game systems,
-        // i.e. the interaction between sets of components.
-        let world = specs::World::new();
-        let planner = specs::Planner::new(world, 2);
 
         // Rendering system, with bi-directional channel to pass
         // encoder back and forth between this thread (which owns
@@ -89,29 +79,58 @@ impl App {
 
         let log = parent_log.new(o!());
 
-        let model: vecmath::Matrix4<f32> = vecmath::mat4_id();
-        let projection = get_projection(&window);
+        let projection = Arc::new(Mutex::new(get_projection(&window)));
         let first_person = FirstPerson::new(
             [0.5, 0.5, 4.0],
             FirstPersonSettings::keyboard_wasd()
         );
         let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
 
-        let render_sys = render::System::new(
+        let mut render_sys = render::System::new(
             factory,
             render_sys_encoder_channel,
             window.output_color.clone(),
             window.output_stencil.clone(),
             first_person_mutex_arc.clone(),
+            projection.clone(),
+            &parent_log,
         );
+
+        // Make globe and create a mesh for each of its chunks.
+        //
+        // TODO: move the geometry generation bits somewhere else;
+        // the user shouldn't have to mess with any of this.
+        //
+        // TODO: don't bake this into the generic app!
+        let factory = &mut window.factory.clone();
+        let globe = globe::Globe::new_example(&log);
+        let globe_view = globe::View::new(&globe, &log);
+        let geometry = globe_view.make_geometry(&globe);
+        for (vertices, vertex_indices) in geometry {
+            let mesh = render::Mesh::new(
+                factory,
+                vertices,
+                vertex_indices,
+                window.output_color.clone(),
+                window.output_stencil.clone(),
+            );
+            render_sys.add_mesh(mesh);
+        }
+
+        // Create SPECS world and, system execution planner
+        // for it with two threads.
+        //
+        // This manages execution of all game systems,
+        // i.e. the interaction between sets of components.
+        let world = specs::World::new();
+        let mut planner = specs::Planner::new(world, 2);
+        planner.add_system(render_sys, "render", 100);
 
         App {
             t: 0.0,
             log: log,
             planner: planner,
-            render_sys: render_sys,
             encoder_channel: device_encoder_channel,
-            model: model,
             projection: projection,
             first_person: first_person_mutex_arc,
         }
@@ -132,7 +151,8 @@ impl App {
             }
 
             if let Some(_) = e.resize_args() {
-                self.projection = get_projection(&window);
+                let mut projection = self.projection.lock().unwrap();
+                *projection = get_projection(&window);
             }
 
             if let Some(u) = e.update_args() {
@@ -143,35 +163,23 @@ impl App {
         info!(self.log, "Quitting");
     }
 
-    pub fn render_sys(&mut self) -> &mut render::System<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer> {
-        &mut self.render_sys
-    }
-
-    fn render(&mut self, args: &RenderArgs, window: &mut PistonWindow) {
-        let mut encoder = self.encoder_channel.receiver.recv().expect("Render system hung up. That wasn't supposed to happen!");
+    fn render(&mut self, _args: &RenderArgs, window: &mut PistonWindow) {
+        // TODO: Systems are currently run on the main thread,
+        // so we need to `try_recv` to avoid deadlock.
+        // This is only because I don't want to burn CPU, and I've yet
+        // to get around to frame/update rate limiting, so I'm
+        // relying on Piston's for now.
+        use std::sync::mpsc::TryRecvError;
+        let mut encoder = match self.encoder_channel.receiver.try_recv() {
+            Ok(encoder) => encoder,
+            Err(TryRecvError::Empty) => return,
+            Err(TryRecvError::Disconnected) => panic!("Render system hung up. That wasn't supposed to happen!"),
+        };
 
         // TODO: what's make_current actually necessary for?
         // Do I even need to do this? (Ripped off `draw_3d`.)
         use piston::window::OpenGLWindow;
         window.window.make_current();
-
-        // TODO: move into render system
-        // The only thing we're using the render args for here
-        // is the "extrapolated time", and I'm guessing there's
-        // a far better way to go about that. (I.e. track it in
-        // the render system.)
-        let fp = self.first_person.lock().unwrap();
-        let model_view_projection = camera_controllers::model_view_projection(
-            self.model,
-            fp.camera(args.ext_dt).orthogonal(),
-            self.projection
-        );
-
-        // Draw the globe.
-        // TODO: move whole thing into render system.
-        self.render_sys.draw(
-            model_view_projection,
-        );
 
         encoder.flush(&mut window.device);
 
