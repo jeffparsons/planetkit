@@ -18,21 +18,9 @@ extern crate slog;
 extern crate slog_term;
 extern crate specs;
 
-mod globe;
-mod types;
-mod app;
-mod window;
-mod render;
-
-fn main() {
-    // Set up logger.
-    use slog::DrainExt;
-    let drain = slog_term::streamer().compact().build().fuse();
-    let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-    let log = root_log;
-
-    let mut window = window::make_window(&log);
-    let mut app = app::App::new(&log, &window);
-
-    app.run(&mut window);
-}
+pub mod globe;
+pub mod types;
+pub mod app;
+pub mod window;
+pub mod render;
+pub mod simple;

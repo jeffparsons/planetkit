@@ -1,6 +1,6 @@
 [root]
 name = "planetkit"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "camera_controllers 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
