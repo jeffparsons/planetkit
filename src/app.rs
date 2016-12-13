@@ -9,6 +9,7 @@ use specs;
 use render;
 use types::*;
 use globe;
+use cell_dweller;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use piston::window::Window;
@@ -26,6 +27,7 @@ pub struct App {
     log: Logger,
     planner: specs::Planner<TimeDelta>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
+    input_sender: mpsc::Sender<cell_dweller::ControlEvent>,
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
@@ -96,6 +98,12 @@ impl App {
             &parent_log,
         );
 
+        let (input_sender, input_receiver) = mpsc::channel();
+        let control_sys = cell_dweller::ControlSystem::new(
+            input_receiver,
+            &parent_log,
+        );
+
         // Make globe and create a mesh for each of its chunks.
         //
         // TODO: move the geometry generation bits somewhere else;
@@ -122,15 +130,34 @@ impl App {
         //
         // This manages execution of all game systems,
         // i.e. the interaction between sets of components.
-        let world = specs::World::new();
+        let mut world = specs::World::new();
+        world.register::<cell_dweller::CellDweller>();
+
+        // Add some things to the world.
+        use globe::chunk::CellPos;
+        use globe::Root;
+        world.create_now()
+            .with(cell_dweller::CellDweller::new(
+                // TODO: helper function
+                CellPos {
+                    root: Root::new(0),
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                }
+            ))
+            .build();
+
         let mut planner = specs::Planner::new(world, 2);
-        planner.add_system(render_sys, "render", 100);
+        planner.add_system(render_sys, "render", 50);
+        planner.add_system(control_sys, "control", 100);
 
         App {
             t: 0.0,
             log: log,
             planner: planner,
             encoder_channel: device_encoder_channel,
+            input_sender: input_sender,
             projection: projection,
             first_person: first_person_mutex_arc,
         }
@@ -157,6 +184,21 @@ impl App {
 
             if let Some(u) = e.update_args() {
                 self.update(&u);
+            }
+
+            use piston::input::keyboard::Key;
+            use cell_dweller::ControlEvent;
+            if let Some(Button::Keyboard(key)) = e.press_args() {
+                match key {
+                    Key::I => self.input_sender.send(ControlEvent::MoveForward(true)).unwrap(),
+                    _ => (),
+                }
+            }
+            if let Some(Button::Keyboard(key)) = e.release_args() {
+                match key {
+                    Key::I => self.input_sender.send(ControlEvent::MoveForward(false)).unwrap(),
+                    _ => (),
+                }
             }
         }
 

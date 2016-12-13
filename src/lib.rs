@@ -24,3 +24,4 @@ pub mod app;
 pub mod window;
 pub mod render;
 pub mod simple;
+pub mod cell_dweller;

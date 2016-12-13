@@ -13,7 +13,7 @@ pub enum Material {
 // sized partition of the world that would be loaded and
 // unloaded into the world as a unit.
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CellPos {
     pub root: Root,
     pub x: IntCoord,
