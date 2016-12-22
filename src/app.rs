@@ -134,8 +134,7 @@ impl App {
         world.register::<cell_dweller::CellDweller>();
 
         // Add some things to the world.
-        use globe::CellPos;
-        use globe::Root;
+        use globe::{ CellPos, Root, Dir };
         world.create_now()
             .with(cell_dweller::CellDweller::new(
                 // TODO: helper function
@@ -144,7 +143,8 @@ impl App {
                     x: 0,
                     y: 0,
                     z: 0,
-                }
+                },
+                Dir::new(0),
             ))
             .build();
 

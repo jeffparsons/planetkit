@@ -19,6 +19,8 @@ impl Root {
     }
 }
 
+// TODO: we'll probably want to make this panic if you enter something
+// out of bounds, so this implementation is probably illegal. (IIRC `from` should not panic.)
 impl From<RootIndex> for Root {
     fn from(root_index: RootIndex) -> Root {
         Root::new(root_index)

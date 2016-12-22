@@ -1,33 +1,36 @@
 use specs;
 
-use globe::CellPos;
+use globe::{ CellPos, Dir };
+use globe::movement::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
     // TODO: is this guts pattern worth a separate macro crate of its own?
-    cell_pos: CellPos,
+    pos: CellPos,
+    dir: Dir,
 }
 
 impl CellDweller {
-    pub fn new(cell_pos: CellPos) -> CellDweller {
+    pub fn new(pos: CellPos, dir: Dir) -> CellDweller {
         CellDweller {
-            cell_pos: cell_pos,
+            pos: pos,
+            dir: dir,
         }
     }
 
-    pub fn cell_pos(&self) -> CellPos {
-        self.cell_pos
+    pub fn pos(&self) -> CellPos {
+        self.pos
     }
 
     pub fn set_cell_pos(&mut self, new_pos: CellPos) {
-        self.cell_pos = new_pos;
+        self.pos = new_pos;
     }
 
     /// Temporary function for testing until we have actual
     /// movement on the grid. This just adds one to the x-coordinate
     /// of the current position.
     pub fn temp_advance_pos(&mut self) {
-        self.cell_pos.x += 1;
+        advance(&mut self.pos, &mut self.dir);
     }
 }
 

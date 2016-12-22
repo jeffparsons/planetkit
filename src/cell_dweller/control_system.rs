@@ -45,7 +45,7 @@ impl specs::System<TimeDelta> for ControlSystem {
             if self.move_forward {
                 // TODO: only step forward if it's been long enough since last step.
                 cd.temp_advance_pos();
-                debug!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.cell_pos()));
+                debug!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()));
             }
         }
     }
