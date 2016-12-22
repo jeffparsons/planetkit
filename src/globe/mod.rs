@@ -8,6 +8,7 @@ mod root;
 mod cell_shape;
 mod view;
 mod gen;
+mod cell_pos;
 
 use types::*;
 
@@ -15,6 +16,7 @@ pub use self::root::*;
 pub use self::globe::Globe;
 pub use self::spec::*;
 pub use self::view::*;
+pub use self::cell_pos::*;
 
 pub type IntCoord = u64;
 

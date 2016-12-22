@@ -1,7 +1,7 @@
 use types::*;
 
 use super::IntCoord;
-use super::chunk::CellPos;
+use super::CellPos;
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.

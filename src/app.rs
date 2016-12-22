@@ -134,7 +134,7 @@ impl App {
         world.register::<cell_dweller::CellDweller>();
 
         // Add some things to the world.
-        use globe::chunk::CellPos;
+        use globe::CellPos;
         use globe::Root;
         world.create_now()
             .with(cell_dweller::CellDweller::new(

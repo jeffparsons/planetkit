@@ -1,6 +1,6 @@
 use specs;
 
-use globe::chunk::CellPos;
+use globe::CellPos;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.

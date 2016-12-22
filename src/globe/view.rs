@@ -3,8 +3,9 @@ use chrono::Duration;
 use slog::Logger;
 
 use super::spec::Spec;
-use super::globe::{Globe, GlobeGuts};
-use super::chunk::{ Chunk, CellPos, Material };
+use super::{Globe, CellPos};
+use super::globe::GlobeGuts;
+use super::chunk::{ Chunk, Material };
 use super::cell_shape;
 use ::render;
 

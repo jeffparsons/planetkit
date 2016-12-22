@@ -1,4 +1,4 @@
-use globe::{ IntCoord, Root };
+use globe::{ IntCoord, CellPos };
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Material {
@@ -12,14 +12,6 @@ pub enum Material {
 // entity that owns everything related to a conveniently
 // sized partition of the world that would be loaded and
 // unloaded into the world as a unit.
-
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct CellPos {
-    pub root: Root,
-    pub x: IntCoord,
-    pub y: IntCoord,
-    pub z: IntCoord,
-}
 
 #[derive(Clone, Copy)]
 pub struct Cell {

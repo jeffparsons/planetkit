@@ -6,7 +6,8 @@ use rand;
 use rand::Rng;
 
 use super::Root;
-use super::chunk::{ Chunk, CellPos, Cell };
+use super::CellPos;
+use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;
 

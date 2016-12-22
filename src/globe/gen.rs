@@ -1,7 +1,8 @@
 use noise;
 
 use super::spec::Spec;
-use super::chunk::{ CellPos, Cell, Material };
+use super::CellPos;
+use super::chunk::{ Cell, Material };
 
 // Globe content generator. Stores all the state for generating
 // the terrain and any other parts of the globe that are derived
