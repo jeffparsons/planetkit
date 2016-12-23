@@ -76,7 +76,7 @@ impl Globe {
 
     pub fn build_all_chunks(&mut self) {
         // TODO: how many to build high?
-        const Z_CHUNKS: u64 = 5;
+        const Z_CHUNKS: i64 = 5;
 
         // Calculate how many chunks to a root in each direction in (x, y).
         let chunks_per_root = [

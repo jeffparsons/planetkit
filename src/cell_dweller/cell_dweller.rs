@@ -30,7 +30,7 @@ impl CellDweller {
     /// movement on the grid. This just adds one to the x-coordinate
     /// of the current position.
     pub fn temp_advance_pos(&mut self) {
-        advance(&mut self.pos, &mut self.dir);
+        move_forward(&mut self.pos, &mut self.dir).unwrap();
     }
 }
 

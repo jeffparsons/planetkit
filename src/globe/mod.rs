@@ -21,7 +21,7 @@ pub use self::view::*;
 pub use self::cell_pos::*;
 pub use self::dir::*;
 
-pub type IntCoord = u64;
+pub type IntCoord = i64;
 
 // TODO: move project into icosahedron module.
 

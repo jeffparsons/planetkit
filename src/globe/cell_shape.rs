@@ -3,6 +3,8 @@
 //! are analogous to circular sectors, and are used in rendering the edges and
 //! corners of chunks where a full hexagon will not fit.
 
+use super::IntCoord;
+
 // We can imagine a hexagon laid out on a quad
 // that wraps in both directions, such that its
 // center exists at all four corners of the quad:
@@ -220,3 +222,33 @@ pub const SOUTH_EAST_PORTION: CellShape = CellShape {
         DIR_OFFSETS[11],
     ],
 };
+
+// If we number hexagonal cell edges from 0 through 5,
+// then the (x, y) offsets to reach each neighbouring hexagon are:
+//
+//           (-1, 0)
+//        \     3     /
+//         \         /
+// (0, -1)  ●-------●      (-1, +1)
+//    4    /         \   2
+//        /           \
+//       /             \
+// -----●       ◌       ●-----
+//       \             /
+//        \           /
+//     5   \         /   1
+// (+1, -1) ●-------●      (0, +1)
+//         /         \
+//        /     0     \
+//           (+1, 0)
+//
+//              x
+//              ↓
+pub const NEIGHBOR_OFFSETS: [(IntCoord, IntCoord); 6] = [
+    (  1,  0 ),
+    (  0,  1 ),
+    ( -1,  1 ),
+    ( -1,  0 ),
+    (  0, -1 ),
+    (  1, -1 ),
+];
