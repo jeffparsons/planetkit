@@ -11,19 +11,14 @@ pub fn advance(pos: &mut CellPos, dir: &mut Dir) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use super::super::{ Root, CellPos, Dir };
+    use super::super::{ CellPos, Dir };
 
     #[test]
     fn advance_in_positive_x_direction() {
         let mut pos = CellPos::default();
         let mut dir = Dir::default();
         advance(&mut pos, &mut dir);
-        assert_eq!(CellPos {
-            root: Root::new(0),
-            x: 1,
-            y: 0,
-            z: 0,
-        }, pos);
-        assert_eq!(Dir::new(0), dir);
+        assert_eq!(CellPos::default().set_x(1), pos);
+        assert_eq!(Dir::default(), dir);
     }
 }
