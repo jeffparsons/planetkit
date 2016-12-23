@@ -12,6 +12,12 @@ impl Root {
         }
     }
 
+    pub fn next_east(&self) -> Root {
+        Root {
+            index: ((self.index + 1) % 5),
+        }
+    }
+
     pub fn next_west(&self) -> Root {
         Root {
             index: ((self.index + (5 - 1)) % 5),
@@ -32,8 +38,20 @@ mod test {
     use super::Root;
 
     #[test]
+    fn next_east() {
+        let root: Root = 3.into();
+        assert_eq!(4, root.next_east().index);
+
+        let root: Root = 4.into();
+        assert_eq!(0, root.next_east().index);
+    }
+
+    #[test]
     fn next_west() {
         let root: Root = 3.into();
         assert_eq!(2, root.next_west().index);
+
+        let root: Root = 0.into();
+        assert_eq!(4, root.next_west().index);
     }
 }

@@ -1,6 +1,6 @@
 use specs;
 
-use globe::{ CellPos, Dir };
+use globe::{ CellPos, Dir, Spec };
 use globe::movement::*;
 
 pub struct CellDweller {
@@ -8,13 +8,15 @@ pub struct CellDweller {
     // TODO: is this guts pattern worth a separate macro crate of its own?
     pos: CellPos,
     dir: Dir,
+    globe_spec: Spec,
 }
 
 impl CellDweller {
-    pub fn new(pos: CellPos, dir: Dir) -> CellDweller {
+    pub fn new(pos: CellPos, dir: Dir, globe_spec: Spec) -> CellDweller {
         CellDweller {
             pos: pos,
             dir: dir,
+            globe_spec: globe_spec,
         }
     }
 
@@ -30,7 +32,11 @@ impl CellDweller {
     /// movement on the grid. This just adds one to the x-coordinate
     /// of the current position.
     pub fn temp_advance_pos(&mut self) {
-        move_forward(&mut self.pos, &mut self.dir).unwrap();
+        move_forward(
+            &mut self.pos,
+            &mut self.dir,
+            self.globe_spec.root_resolution,
+        ).unwrap();
     }
 }
 

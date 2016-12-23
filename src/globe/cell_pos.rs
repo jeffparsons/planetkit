@@ -1,4 +1,4 @@
-use globe::{ IntCoord, Root };
+use globe::{ IntCoord, Root, RootIndex };
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct CellPos {
@@ -15,8 +15,22 @@ impl CellPos {
     //
     // I toyed with using a proper builder for this
     // but its use was just too verbose to justify.
+    //
+    // TODO: move them into a special module that you
+    // only import in tests?
+
+    pub fn set_root(mut self, new_root_index: RootIndex) -> Self {
+        self.root.index = new_root_index;
+        self
+    }
+
     pub fn set_x(mut self, new_x: IntCoord) -> Self {
         self.x = new_x;
+        self
+    }
+
+    pub fn set_y(mut self, new_y: IntCoord) -> Self {
+        self.y = new_y;
         self
     }
 }
