@@ -15,13 +15,8 @@ mod test {
 
     #[test]
     fn advance_in_positive_x_direction() {
-        let mut pos = CellPos {
-            root: Root::new(0),
-            x: 0,
-            y: 0,
-            z: 0,
-        };
-        let mut dir: Dir = 0.into();
+        let mut pos = CellPos::default();
+        let mut dir = Dir::default();
         advance(&mut pos, &mut dir);
         assert_eq!(CellPos {
             root: Root::new(0),
