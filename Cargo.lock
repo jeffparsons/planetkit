@@ -4,7 +4,7 @@ version = "0.0.1"
 dependencies = [
  "camera_controllers 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "noise 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -228,7 +228,7 @@ dependencies = [
 
 [[package]]
 name = "gfx"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "draw_state 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -618,7 +618,7 @@ name = "piston-gfx_texture"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-texture 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -653,7 +653,7 @@ version = "0.31.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "draw_state 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-gfx_texture 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston-shaders_graphics2d 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -703,7 +703,7 @@ name = "piston_window"
 version = "0.53.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gfx 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1128,7 +1128,7 @@ dependencies = [
 "checksum fs2 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "bcd414e5a1a979b931bb92f41b7a54106d3f6d2e6c253e9ce943b7cd468251ef"
 "checksum gcc 0.3.35 (registry+https://github.com/rust-lang/crates.io-index)" = "91ecd03771effb0c968fd6950b37e89476a578aaf1c70297d8e92b6516ec3312"
 "checksum gdi32-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "65256ec4dc2592e6f05bfc1ca3b956a4e0698aa90b1dff1f5687d55a5a3fd59a"
-"checksum gfx 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bc1395d9c99a2ca0c37bb0a897f589cfd2cc2d5b64d90fe764f530893150cb08"
+"checksum gfx 0.12.2 (registry+https://github.com/rust-lang/crates.io-index)" = "379c306eed37d3c55976d10b2aff119ebd640ba27afbe812fea6d3d4efbd5e16"
 "checksum gfx_core 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "58e5aefe4daeef65e95af13a15414de86275774c7d4cc5c83f3400add586fc93"
 "checksum gfx_device_gl 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1600ec98e87a1efdf4d119766e59abf63b11da5ba4ff44be860ccdaed06841b8"
 "checksum gfx_gl 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f25c3866329ab91b92bfbc4d5e1d8172607e804564d90b8fbecb96cbc366845d"

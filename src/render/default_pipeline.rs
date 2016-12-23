@@ -1,3 +1,5 @@
+use gfx;
+
 // Pretty basic pipeline currently used for terrain.
 //
 // TODO: determine how aggressively you should be trying
