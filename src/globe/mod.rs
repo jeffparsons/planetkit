@@ -14,6 +14,7 @@ pub mod movement;
 
 use types::*;
 
+// TODO: be selective in what you export; no wildcards!
 pub use self::root::*;
 pub use self::globe::Globe;
 pub use self::spec::*;

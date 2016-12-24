@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::{ Arc, Mutex };
 use gfx;
 use gfx::Primitive;
@@ -8,9 +9,14 @@ use specs;
 use slog::Logger;
 
 use super::default_pipeline::pipe;
+use super::Vertex;
 use super::mesh::{ Mesh, MeshGuts };
 use super::EncoderChannel;
+use super::Visual;
 use ::types::*;
+
+// TODO: make this opaque and handle mesh removal.
+pub type MeshHandle = usize;
 
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
@@ -64,14 +70,37 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         }
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh<R>) {
-        trace!(self.log, "Adding mesh");
-        self.meshes.push(mesh);
+    pub fn create_mesh<F: gfx::Factory<R>>(
+        &mut self,
+        // TODO: store factory on render system? Need to wrap it in an Arc.
+        factory: &mut F,
+        vertices: Vec<Vertex>,
+        vertex_indices: Vec<u32>,
+    ) -> MeshHandle {
+        let mesh = Mesh::new(
+            factory,
+            vertices,
+            vertex_indices,
+            self.output_color.clone(),
+            self.output_stencil.clone(),
+        );
+        self.add_mesh(mesh)
     }
 
-    pub fn draw(
+    pub fn add_mesh(&mut self, mesh: Mesh<R>) -> MeshHandle {
+        trace!(self.log, "Adding mesh");
+        self.meshes.push(mesh);
+        self.meshes.len() - 1
+    }
+
+    // Abstract over `specs` storage types with `A`, and `D`.
+    fn draw<
+        A: Deref<Target = specs::Allocator>,
+        D: Deref<Target = specs::MaskedStorage<Visual>>,
+    >(
         &mut self,
         dt: TimeDelta,
+        mut visuals: specs::Storage<Visual, A, D>,
     ) {
         // TODO: Systems are currently run on the main thread,
         // so we need to `try_recv` to avoid deadlock.
@@ -98,13 +127,20 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             fp.camera(dt).orthogonal(),
             *projection
         );
-        for mesh in &mut self.meshes {
-            mesh.data_mut().u_model_view_proj = model_view_projection;
-            encoder.draw(
-                mesh.slice(),
-                &self.pso,
-                mesh.data(),
-            );
+
+        // Try to draw all visuals.
+        use specs::Join;
+        for v in (&mut visuals).iter() {
+            // Visual might not have its mesh created yet.
+            if let Some(mesh_handle) = v.mesh_handle() {
+                let mesh = &mut self.meshes[mesh_handle];
+                mesh.data_mut().u_model_view_proj = model_view_projection;
+                encoder.draw(
+                    mesh.slice(),
+                    &self.pso,
+                    mesh.data(),
+                );
+            }
         }
 
         self.encoder_channel.sender.send(encoder).unwrap();
@@ -116,14 +152,13 @@ R: 'static + gfx::Resources,
 C: 'static + gfx::CommandBuffer<R> + Send,
 {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
-        // Stop Specs from freaking out about us not having fetched
-        // components and assuming we've panicked.
-        arg.fetch(|_w| { () });
+        let visuals = arg.fetch(|w|
+            w.read::<Visual>()
+        );
+        self.draw(dt, visuals);
 
         // TODO: implement own "extrapolated time" concept or similar
         // to decide how often we should actually be trying to render?
         // See https://github.com/PistonDevelopers/piston/issues/193
-
-        self.draw(dt);
     }
 }

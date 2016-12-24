@@ -104,6 +104,15 @@ impl App {
             &parent_log,
         );
 
+        // Create SPECS world and, system execution planner
+        // for it with two threads.
+        //
+        // This manages execution of all game systems,
+        // i.e. the interaction between sets of components.
+        let mut world = specs::World::new();
+        world.register::<cell_dweller::CellDweller>();
+        world.register::<render::Visual>();
+
         // Make globe and create a mesh for each of its chunks.
         //
         // TODO: move the geometry generation bits somewhere else;
@@ -115,23 +124,19 @@ impl App {
         let globe_view = globe::View::new(&globe, &log);
         let geometry = globe_view.make_geometry(&globe);
         for (vertices, vertex_indices) in geometry {
-            let mesh = render::Mesh::new(
+            let mesh_handle = render_sys.create_mesh(
                 factory,
                 vertices,
                 vertex_indices,
-                window.output_color.clone(),
-                window.output_stencil.clone(),
             );
-            render_sys.add_mesh(mesh);
+            let mut visual = render::Visual::new();
+            // TODO: defer creating the meshes for all these chunks.
+            // Best to offload it to a background thread.
+            visual.set_mesh_handle(mesh_handle);
+            world.create_now()
+                .with(visual)
+                .build();
         }
-
-        // Create SPECS world and, system execution planner
-        // for it with two threads.
-        //
-        // This manages execution of all game systems,
-        // i.e. the interaction between sets of components.
-        let mut world = specs::World::new();
-        world.register::<cell_dweller::CellDweller>();
 
         // Add some things to the world.
         use globe::{ CellPos, Dir };
