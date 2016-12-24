@@ -1,7 +1,7 @@
 // Don't make `globe` public; we re-export the
 // main bits at this level below.
 mod globe;
-mod icosahedron;
+pub mod icosahedron;
 mod spec;
 pub mod chunk;
 mod root;

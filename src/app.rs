@@ -113,6 +113,8 @@ impl App {
         world.register::<cell_dweller::CellDweller>();
         world.register::<render::Visual>();
 
+        // Add some things to the world.
+
         // Make globe and create a mesh for each of its chunks.
         //
         // TODO: move the geometry generation bits somewhere else;
@@ -138,14 +140,20 @@ impl App {
                 .build();
         }
 
-        // Add some things to the world.
         use globe::{ CellPos, Dir };
+        let dummy_mesh = render::make_dummy_mesh(
+            factory,
+            &mut render_sys,
+        );
+        let mut cell_dweller_visual = render::Visual::new();
+        cell_dweller_visual.set_mesh_handle(dummy_mesh);
         world.create_now()
             .with(cell_dweller::CellDweller::new(
                 CellPos::default(),
                 Dir::default(),
                 globe.spec(),
             ))
+            .with(cell_dweller_visual)
             .build();
 
         let mut planner = specs::Planner::new(world, 2);
