@@ -40,6 +40,7 @@ impl App {
             FirstPersonSettings,
             FirstPerson,
         };
+        use ::Spatial;
 
         // Make OpenGL resource factory.
         // We'll use this for creating all our vertex buffers, etc.
@@ -112,6 +113,7 @@ impl App {
         let mut world = specs::World::new();
         world.register::<cell_dweller::CellDweller>();
         world.register::<render::Visual>();
+        world.register::<Spatial>();
 
         // Add some things to the world.
 
@@ -137,6 +139,7 @@ impl App {
             visual.set_mesh_handle(mesh_handle);
             world.create_now()
                 .with(visual)
+                .with(Spatial::root())
                 .build();
         }
 
@@ -154,6 +157,7 @@ impl App {
                 globe.spec(),
             ))
             .with(cell_dweller_visual)
+            .with(Spatial::root())
             .build();
 
         let mut planner = specs::Planner::new(world, 2);

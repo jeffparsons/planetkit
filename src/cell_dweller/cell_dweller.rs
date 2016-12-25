@@ -1,5 +1,6 @@
 use specs;
 
+use ::types::*;
 use globe::{ CellPos, Dir, Spec };
 use globe::movement::*;
 
@@ -37,6 +38,11 @@ impl CellDweller {
             &mut self.dir,
             self.globe_spec.root_resolution,
         ).unwrap();
+    }
+
+    /// Calculate position in real-space.
+    pub fn real_pos(&self) -> Pt3 {
+        self.globe_spec.cell_bottom_center(self.pos)
     }
 }
 

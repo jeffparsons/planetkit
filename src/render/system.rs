@@ -13,6 +13,7 @@ use super::Vertex;
 use super::mesh::{ Mesh, MeshGuts };
 use super::EncoderChannel;
 use super::Visual;
+use ::Spatial;
 use ::types::*;
 
 // TODO: make this opaque and handle mesh removal.
@@ -96,11 +97,13 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     // Abstract over `specs` storage types with `A`, and `D`.
     fn draw<
         A: Deref<Target = specs::Allocator>,
-        D: Deref<Target = specs::MaskedStorage<Visual>>,
+        Vd: Deref<Target = specs::MaskedStorage<Visual>>,
+        Sd: Deref<Target = specs::MaskedStorage<Spatial>>,
     >(
         &mut self,
         dt: TimeDelta,
-        mut visuals: specs::Storage<Visual, A, D>,
+        visuals: specs::Storage<Visual, A, Vd>,
+        spatials: specs::Storage<Spatial, A, Sd>,
     ) {
         // TODO: Systems are currently run on the main thread,
         // so we need to `try_recv` to avoid deadlock.
@@ -120,19 +123,32 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         let fp = self.first_person.lock().unwrap();
         let projection = self.projection.lock().unwrap();
-        // TODO: store this
-        let model: vecmath::Matrix4<f32> = vecmath::mat4_id();
-        let model_view_projection = camera_controllers::model_view_projection(
-            model,
-            fp.camera(dt).orthogonal(),
-            *projection
-        );
 
         // Try to draw all visuals.
         use specs::Join;
-        for v in (&mut visuals).iter() {
+        for (v, s) in (&visuals, &spatials).iter() {
             // Visual might not have its mesh created yet.
             if let Some(mesh_handle) = v.mesh_handle() {
+                // TODO: cache the model matrix separately per Visual
+                use na;
+                use na::{ Point3, Rotation3, Isometry3, ToHomogeneous };
+                use num_traits::identities::One;
+                let pos_f32: Point3<f32> = na::Cast::<Point3<f64>>::from(s.pos);
+                let translation = pos_f32.to_vector();
+                let rotation = Rotation3::<f32>::one();
+                let iso3 = Isometry3::from_rotation_matrix(translation, rotation);
+                let model = iso3.to_homogeneous();
+                // Massage it into a nested array structure and clone it,
+                // because `camera_controllers` wants to take ownership.
+                let mut model_for_camera_controllers: vecmath::Matrix4<f32> = vecmath::mat4_id();
+                model_for_camera_controllers.copy_from_slice(model.as_ref());
+
+                let model_view_projection = camera_controllers::model_view_projection(
+                    model_for_camera_controllers,
+                    fp.camera(dt).orthogonal(),
+                    *projection
+                );
+
                 let mesh = &mut self.meshes[mesh_handle];
                 mesh.data_mut().u_model_view_proj = model_view_projection;
                 encoder.draw(
@@ -152,10 +168,10 @@ R: 'static + gfx::Resources,
 C: 'static + gfx::CommandBuffer<R> + Send,
 {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
-        let visuals = arg.fetch(|w|
-            w.read::<Visual>()
+        let (visuals, spatials) = arg.fetch(|w|
+            (w.read::<Visual>(), w.read::<Spatial>()),
         );
-        self.draw(dt, visuals);
+        self.draw(dt, visuals, spatials);
 
         // TODO: implement own "extrapolated time" concept or similar
         // to decide how often we should actually be trying to render?

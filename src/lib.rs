@@ -17,6 +17,7 @@ extern crate nalgebra as na;
 extern crate slog;
 extern crate slog_term;
 extern crate specs;
+extern crate num_traits;
 
 pub mod globe;
 pub mod types;
@@ -25,3 +26,6 @@ pub mod window;
 pub mod render;
 pub mod simple;
 pub mod cell_dweller;
+
+mod spatial;
+pub use spatial::Spatial;

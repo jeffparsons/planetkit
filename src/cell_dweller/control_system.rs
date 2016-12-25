@@ -3,7 +3,8 @@ use specs;
 use slog::Logger;
 
 use types::*;
-use super::cell_dweller::CellDweller;
+use super::CellDweller;
+use ::Spatial;
 
 pub enum Event {
     MoveForward(bool),
@@ -38,13 +39,15 @@ impl specs::System<TimeDelta> for ControlSystem {
     fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
         use specs::Join;
         self.consume_input();
-        let mut cell_dwellers = arg.fetch(|w|
-            w.write::<CellDweller>()
+        let (mut cell_dwellers, mut spatials) = arg.fetch(|w|
+            (w.write::<CellDweller>(), w.write::<Spatial>())
         );
-        for cd in (&mut cell_dwellers).iter() {
+        for (cd, spatial) in (&mut cell_dwellers, &mut spatials).iter() {
             if self.move_forward {
                 // TODO: only step forward if it's been long enough since last step.
                 cd.temp_advance_pos();
+                // Update real-space coordinates.
+                spatial.pos = cd.real_pos();
                 debug!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()));
             }
         }

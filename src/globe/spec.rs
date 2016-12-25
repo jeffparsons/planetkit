@@ -78,6 +78,12 @@ impl Spec {
         radius * self.cell_center_on_unit_sphere(cell_pos)
     }
 
+    pub fn cell_bottom_center(&self, cell_pos: CellPos) -> Pt3 {
+        let radius = self.floor_radius +
+            self.block_height * (cell_pos.z as f64);
+        radius * self.cell_center_on_unit_sphere(cell_pos)
+    }
+
     // TODO: describe meaning of offsets, where to get it from, etc.?
     pub fn cell_vertex_on_unit_sphere(&self, cell_pos: CellPos, offset: [i64; 2]) -> Pt3 {
         let res_x = (self.root_resolution[0] * 6) as f64;

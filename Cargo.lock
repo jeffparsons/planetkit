@@ -8,6 +8,7 @@ dependencies = [
  "gfx_device_gl 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "noise 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-traits 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-graphics 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-opengl_graphics 0.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
