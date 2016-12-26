@@ -28,6 +28,14 @@ impl Dir {
         // points to an edge.
         self.index % 2 == 0
     }
+
+    pub fn next_hex_edge_left(&self) -> Dir {
+        Dir::new((self.index + 2) % 12)
+    }
+
+    pub fn next_hex_edge_right(&self) -> Dir {
+        Dir::new((self.index + 12 - 2) % 12)
+    }
 }
 
 impl From<DirIndex> for Dir {
