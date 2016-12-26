@@ -46,9 +46,16 @@ impl specs::System<TimeDelta> for ControlSystem {
             if self.move_forward {
                 // TODO: only step forward if it's been long enough since last step.
                 cd.temp_advance_pos();
-                // Update real-space coordinates.
-                spatial.pos = cd.real_pos();
                 debug!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()));
+            }
+
+            // Update real-space coordinates if necessary.
+            // TODO: do this in a separate system; it needs to be done before
+            // things are rendered, but there might be other effects like gravity,
+            // enemies shunting the cell dweller around, etc. that happen
+            // after control.
+            if cd.is_real_space_transform_dirty() {
+                spatial.pos = cd.get_real_transform_and_mark_as_clean();
             }
         }
     }
