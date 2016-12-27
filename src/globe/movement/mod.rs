@@ -200,11 +200,8 @@ fn closest_triangle_to_point(
     type Pos2 = na::Point2<IntCoord>;
     let pos2 = Pos2::new(pos.x, pos.y);
     candidate_triangles.iter().min_by_key(|triangle| {
-        let apex = Pos2::new(
-            // Both parts of the apex are expressed in terms of x-dimension.
-            triangle.apex.x * resolution[0],
-            triangle.apex.y * resolution[0],
-        );
+        // Both parts of the apex are expressed in terms of x-dimension.
+        let apex = triangle.apex * resolution[0];
         let apex_to_pos = na::Absolute::abs(&(pos2 - apex));
         let hex_distance_from_apex_to_pos = apex_to_pos.x + apex_to_pos.y;
         hex_distance_from_apex_to_pos

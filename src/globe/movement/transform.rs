@@ -40,11 +40,9 @@ pub fn local_to_world(
 
     // Translate `pos` from being relative to `apex`, to being
     // relative to the world, ignoring orientation.
-    let apex = Pos2::new(
-        // Both parts of the apex are expressed in terms of x-dimension.
-        tri.apex.x * resolution[0],
-        tri.apex.y * resolution[0],
-    );
+    //
+    // Both parts of the apex are expressed in terms of x-dimension.
+    let apex = tri.apex * resolution[0];
     new_pos2 += apex.to_vector();
     let mut new_pos = pos.clone();
     new_pos.x = new_pos2.x;
@@ -60,11 +58,8 @@ pub fn world_to_local(
     resolution: [IntCoord; 2],
     tri: &Triangle,
 ) -> (CellPos, Dir) {
-    let apex = Pos2::new(
-        // Both parts of the apex are expressed in terms of x-dimension.
-        tri.apex.x * resolution[0],
-        tri.apex.y * resolution[0],
-    );
+    // Both parts of the apex are expressed in terms of x-dimension.
+    let apex = tri.apex * resolution[0];
 
     // Translate `pos` relative to `apex` ignoring orientation.
     let pos2 = Pos2::new(pos.x, pos.y);
