@@ -116,7 +116,9 @@ fn maybe_rebase_on_adjacent_root(
     // Transform `pos` and `dir` to be relative to triangle apex;
     // i.e. so we can treat them as if they're in arctic space,
     // and then transform them back when we're done.
-    transform_relative_to_triangle(pos, dir, resolution, tri);
+    let (new_pos, new_dir) = world_to_local(*pos, *dir, resolution, tri);
+    *pos = new_pos;
+    *dir = new_dir;
 
     let next_pos = adjacent_pos_in_dir(
         pos.clone(), dir.clone()
@@ -145,8 +147,12 @@ fn maybe_rebase_on_adjacent_root(
         *dir = dir.next_hex_edge_right();
 
         // Transform (x, y, dir) back to where we started.
+        // TODO: this is wrong! Needs to have the root offset here, too.
         let exit_tri = &TRIANGLES[tri.exits[0]];
-        transform_relative_to_triangle(pos, dir, resolution, exit_tri);
+        // TODO: this doesn't make sense.
+        let (new_pos, new_dir) = world_to_local(*pos, *dir, resolution, exit_tri);
+        *pos = new_pos;
+        *dir = new_dir;
 
         return;
     }
@@ -159,8 +165,12 @@ fn maybe_rebase_on_adjacent_root(
         *dir = dir.next_hex_edge_left();
 
         // Transform (x, y, dir) back to where we started.
+        // TODO: this is wrong! Needs to have the root offset here, too.
         let exit_tri = &TRIANGLES[tri.exits[0]];
-        transform_relative_to_triangle(pos, dir, resolution, exit_tri);
+        // TODO: this doesn't make sense.
+        let (new_pos, new_dir) = world_to_local(*pos, *dir, resolution, exit_tri);
+        *pos = new_pos;
+        *dir = new_dir;
 
         return;
     }

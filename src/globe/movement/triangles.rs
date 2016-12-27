@@ -57,6 +57,8 @@ pub struct Triangle {
     // Only after all tests are passing for slow version!
     pub x_dir: DirIndex,
     // Travelling anti-clockwise around triangle apex.
+    // TODO: this is totally wrong; all need to include
+    // a root offset as well.
     pub exits: [usize; 4],
 }
 
@@ -75,8 +77,15 @@ pub const TRIANGLES: [Triangle; 12] = [
     Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
     // 3
     Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+
     // 4
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle {
+        apex: Pos2 { x: 0, y: 1 },
+        x_dir: 10,
+        // TODO:
+        exits: [ 0, 0, 0, 0 ],
+    },
+
     // 5
     Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
     // 6
