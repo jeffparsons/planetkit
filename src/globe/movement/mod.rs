@@ -149,8 +149,7 @@ fn maybe_rebase_on_adjacent_root(
         // Transform (x, y, dir) back to where we started.
         // TODO: this is wrong! Needs to have the root offset here, too.
         let exit_tri = &TRIANGLES[tri.exits[0]];
-        // TODO: this doesn't make sense.
-        let (new_pos, new_dir) = world_to_local(*pos, *dir, resolution, exit_tri);
+        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
         *pos = new_pos;
         *dir = new_dir;
 
@@ -167,8 +166,7 @@ fn maybe_rebase_on_adjacent_root(
         // Transform (x, y, dir) back to where we started.
         // TODO: this is wrong! Needs to have the root offset here, too.
         let exit_tri = &TRIANGLES[tri.exits[0]];
-        // TODO: this doesn't make sense.
-        let (new_pos, new_dir) = world_to_local(*pos, *dir, resolution, exit_tri);
+        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
         *pos = new_pos;
         *dir = new_dir;
 
