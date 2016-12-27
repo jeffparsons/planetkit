@@ -135,11 +135,7 @@ fn maybe_rebase_on_adjacent_root(
         next_pos.x >= 0 &&
         next_pos.y >= 0;
     if still_in_same_quad {
-        // Transform (x, y, dir) back to where we started.
-        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, tri);
-        *pos = new_pos;
-        *dir = new_dir;
-
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[0]);
         return;
     }
 
@@ -149,15 +145,7 @@ fn maybe_rebase_on_adjacent_root(
         pos.y = 0;
         *dir = dir.next_hex_edge_right();
 
-        // Transform (x, y, dir) back to where we started,
-        // taking account any change in root required.
-        let exit = &tri.exits[0];
-        let exit_tri = &TRIANGLES[exit.triangle_index];
-        pos.root.index = (pos.root.index + exit.root_offset) % 5;
-        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
-        *pos = new_pos;
-        *dir = new_dir;
-
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[1]);
         return;
     }
 
@@ -167,20 +155,27 @@ fn maybe_rebase_on_adjacent_root(
         pos.x = 0;
         *dir = dir.next_hex_edge_left();
 
-        // Transform (x, y, dir) back to where we started,
-        // taking account any change in root required.
-        let exit = &tri.exits[3];
-        let exit_tri = &TRIANGLES[exit.triangle_index];
-        pos.root.index = (pos.root.index + exit.root_offset) % 5;
-        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
-        *pos = new_pos;
-        *dir = new_dir;
-
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[4]);
         return;
     }
 
     // Uh oh, we must have missed a case.
     panic!("Oops, we must have forgotten a movement case. Sounds like we didn't test hard enough!")
+}
+
+// Transform (x, y, dir) back to local coordinates near where we started,
+// taking account any change in root required.
+fn transform_into_exit_triangle(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+    exit: &Exit,
+) {
+    let exit_tri = &TRIANGLES[exit.triangle_index];
+    pos.root.index = (pos.root.index + exit.root_offset) % 5;
+    let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
+    *pos = new_pos;
+    *dir = new_dir;
 }
 
 // Pick the closest triangle that is oriented such that `pos` lies
