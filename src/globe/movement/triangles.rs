@@ -62,7 +62,7 @@ pub struct Triangle {
     pub exits: [usize; 4],
 }
 
-pub const TRIANGLES: [Triangle; 12] = [
+pub static TRIANGLES: [Triangle; 12] = [
     // 0
     Triangle {
         apex: Pos2 { x: 0, y: 0 },

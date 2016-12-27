@@ -1,10 +1,12 @@
-use super::{ IntCoord, CellPos, Dir };
-use super::cell_shape::NEIGHBOR_OFFSETS;
-
 mod triangles;
 mod transform;
 #[cfg(test)]
 mod test;
+
+use na;
+
+use super::{ IntCoord, CellPos, Dir };
+use super::cell_shape::NEIGHBOR_OFFSETS;
 
 use self::triangles::*;
 use self::transform::*;
@@ -84,7 +86,8 @@ fn adjacent_pos_in_dir(
 /// two root quads, or somewhere within a root.
 ///
 /// Panics if `dir` does not point to a direction that would
-/// represent an immediately adjacent cell if in a hexagon.
+/// represent an immediately adjacent cell _if `pos` were if in a hexagon_
+/// (which is not necessarily so).
 fn maybe_rebase_on_adjacent_root(
     pos: &mut CellPos,
     dir: &mut Dir,
@@ -105,13 +108,9 @@ fn maybe_rebase_on_adjacent_root(
         return;
     }
 
-    // TODO: actually determine what triangle we're in.
-    // For now, _assume_ it's the north pole, because that's the simplest.
-    // (All movement ends up in the same triangle, so we don't need to
-    // fill out `TRIANGLES` much above.)
-    //
-    // Once the tests pass for north pole, we can start filling in the rest.
-    let tri = &TRIANGLES[0];
+    // Pick the closest triangle that is oriented such that `pos` lies
+    // between its x-axis and y-axis.
+    let tri = closest_triangle_to_point(pos, resolution);
 
     // Transform `pos` and `dir` to be relative to triangle apex;
     // i.e. so we can treat them as if they're in arctic space,
@@ -136,6 +135,13 @@ fn maybe_rebase_on_adjacent_root(
         next_pos.x >= 0 &&
         next_pos.y >= 0;
     if still_in_same_quad {
+        // Transform (x, y, dir) back to where we started.
+        // TODO: this is wrong! Needs to have the root offset here, too.
+        let exit_tri = &TRIANGLES[tri.exits[0]];
+        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
+        *pos = new_pos;
+        *dir = new_dir;
+
         return;
     }
 
@@ -175,6 +181,39 @@ fn maybe_rebase_on_adjacent_root(
 
     // Uh oh, we must have missed a case.
     panic!("Oops, we must have forgotten a movement case. Sounds like we didn't test hard enough!")
+}
+
+// Pick the closest triangle that is oriented such that `pos` lies
+// between its x-axis and y-axis.
+fn closest_triangle_to_point(
+    pos: &mut CellPos,
+    resolution: [IntCoord; 2],
+) -> &'static Triangle {
+    // First we filter down to those where
+    // pos lies between the triangle's x-axis and y-axis.
+    let candidate_triangles = if pos.x + pos.y < resolution[0] {
+        &TRIANGLES[0..3]
+    } else if pos.y < resolution[0] {
+        &TRIANGLES[3..6]
+    } else if pos.x + pos.y < resolution[1] {
+        &TRIANGLES[6..9]
+    } else {
+        &TRIANGLES[9..12]
+    };
+
+    // Pick the closest triangle.
+    type Pos2 = na::Point2<IntCoord>;
+    let pos2 = Pos2::new(pos.x, pos.y);
+    candidate_triangles.iter().min_by_key(|triangle| {
+        let apex = Pos2::new(
+            // Both parts of the apex are expressed in terms of x-dimension.
+            triangle.apex.x * resolution[0],
+            triangle.apex.y * resolution[0],
+        );
+        let apex_to_pos = na::Absolute::abs(&(pos2 - apex));
+        let hex_distance_from_apex_to_pos = apex_to_pos.x + apex_to_pos.y;
+        hex_distance_from_apex_to_pos
+    }).expect("There should have been exactly three items; this shouldn't be possible!")
 }
 
 // TODO: `turn_left` and `turn_right` functions that are smart
