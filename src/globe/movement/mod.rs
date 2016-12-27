@@ -136,9 +136,7 @@ fn maybe_rebase_on_adjacent_root(
         next_pos.y >= 0;
     if still_in_same_quad {
         // Transform (x, y, dir) back to where we started.
-        // TODO: this is wrong! Needs to have the root offset here, too.
-        let exit_tri = &TRIANGLES[tri.exits[0]];
-        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
+        let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, tri);
         *pos = new_pos;
         *dir = new_dir;
 
@@ -147,14 +145,15 @@ fn maybe_rebase_on_adjacent_root(
 
     // Moving east around north pole.
     if next_pos.x < 0 {
-        pos.root = pos.root.next_east();
         pos.x = pos.y;
         pos.y = 0;
         *dir = dir.next_hex_edge_right();
 
-        // Transform (x, y, dir) back to where we started.
-        // TODO: this is wrong! Needs to have the root offset here, too.
-        let exit_tri = &TRIANGLES[tri.exits[0]];
+        // Transform (x, y, dir) back to where we started,
+        // taking account any change in root required.
+        let exit = &tri.exits[0];
+        let exit_tri = &TRIANGLES[exit.triangle_index];
+        pos.root.index = (pos.root.index + exit.root_offset) % 5;
         let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
         *pos = new_pos;
         *dir = new_dir;
@@ -164,14 +163,15 @@ fn maybe_rebase_on_adjacent_root(
 
     // Moving west around north pole.
     if next_pos.y < 0 {
-        pos.root = pos.root.next_west();
         pos.y = pos.x;
         pos.x = 0;
         *dir = dir.next_hex_edge_left();
 
-        // Transform (x, y, dir) back to where we started.
-        // TODO: this is wrong! Needs to have the root offset here, too.
-        let exit_tri = &TRIANGLES[tri.exits[0]];
+        // Transform (x, y, dir) back to where we started,
+        // taking account any change in root required.
+        let exit = &tri.exits[3];
+        let exit_tri = &TRIANGLES[exit.triangle_index];
+        pos.root.index = (pos.root.index + exit.root_offset) % 5;
         let (new_pos, new_dir) = local_to_world(*pos, *dir, resolution, exit_tri);
         *pos = new_pos;
         *dir = new_dir;

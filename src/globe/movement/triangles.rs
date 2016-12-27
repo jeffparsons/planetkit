@@ -44,7 +44,7 @@
 
 use na;
 
-use super::super::{ IntCoord, DirIndex };
+use super::super::{ IntCoord, DirIndex, RootIndex };
 
 type Pos2 = na::Point2<IntCoord>;
 
@@ -59,7 +59,11 @@ pub struct Triangle {
     // Travelling anti-clockwise around triangle apex.
     // TODO: this is totally wrong; all need to include
     // a root offset as well.
-    pub exits: [usize; 4],
+    pub exits: [Exit; 4],
+}
+pub struct Exit {
+    pub triangle_index: usize,
+    pub root_offset: RootIndex,
 }
 
 pub static TRIANGLES: [Triangle; 12] = [
@@ -67,44 +71,54 @@ pub static TRIANGLES: [Triangle; 12] = [
     Triangle {
         apex: Pos2 { x: 0, y: 0 },
         x_dir: 0,
-        exits: [ 0, 0, 0, 0 ],
+        exits: [
+            Exit { triangle_index: 0, root_offset: 1 },
+            Exit { triangle_index: 0, root_offset: 2 },
+            Exit { triangle_index: 0, root_offset: 3 },
+            Exit { triangle_index: 0, root_offset: 4 },
+        ],
     },
 
     // TODO:
     // 1
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 2
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 3
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
 
     // 4
     Triangle {
         apex: Pos2 { x: 0, y: 1 },
         x_dir: 10,
         // TODO:
-        exits: [ 0, 0, 0, 0 ],
+        exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ],
     },
 
     // 5
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 6
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 7
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 8
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
 
     // 9
     Triangle {
         apex: Pos2 { x: 1, y: 2 },
         x_dir: 6,
-        exits: [ 9, 9, 9, 9 ],
+        exits: [
+            Exit { triangle_index: 0, root_offset: 4 },
+            Exit { triangle_index: 0, root_offset: 3 },
+            Exit { triangle_index: 0, root_offset: 2 },
+            Exit { triangle_index: 0, root_offset: 1 },
+        ],
     },
 
     // TODO:
     // 10
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
     // 11
-    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ 0, 0, 0, 0 ], },
+    Triangle { apex: Pos2 { x: 0, y: 0 }, x_dir: 0, exits: [ Exit { triangle_index: 0, root_offset: 1 }, Exit { triangle_index: 0, root_offset: 2 }, Exit { triangle_index: 0, root_offset: 3 }, Exit { triangle_index: 0, root_offset: 4 }, ], },
 ];
