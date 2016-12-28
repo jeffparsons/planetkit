@@ -36,6 +36,10 @@ impl Dir {
     pub fn next_hex_edge_right(&self) -> Dir {
         Dir::new((self.index + 12 - 2) % 12)
     }
+
+    pub fn opposite(&self) -> Dir {
+        Dir::new((self.index + 6) % 12)
+    }
 }
 
 impl From<DirIndex> for Dir {

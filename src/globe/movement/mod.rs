@@ -216,8 +216,8 @@ fn maybe_rebase_on_adjacent_root_following_movement(
         // more special cases below... :)
         //
         // Pick the triangle whose middle axis is closest to dir.
-        // triangle_on_pos_with_closest_mid_axis(pos, dir, resolution)
-        unimplemented!();
+        let dir_we_came_from = dir.opposite();
+        triangle_on_pos_with_closest_mid_axis(pos, &dir_we_came_from, resolution)
     } else {
         // Pick the closest triangle that is oriented such that `pos` lies
         // between its x-axis and y-axis.
@@ -248,6 +248,20 @@ fn maybe_rebase_on_adjacent_root_following_movement(
         next_pos.y >= 0;
     if still_in_same_quad {
         transform_into_exit_triangle(pos, dir, resolution, &tri.exits[0]);
+        return;
+    }
+
+    // Moving north-east through north pole.
+    if pos.x == 0 && pos.y == 0 && dir.index == 6 {
+        *dir = Dir::new(1);
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[2]);
+        return;
+    }
+
+    // Moving north-west through north pole.
+    if pos.x == 0 && pos.y == 0 && dir.index == 8 {
+        *dir = Dir::new(1);
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[3]);
         return;
     }
 

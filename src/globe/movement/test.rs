@@ -14,6 +14,48 @@ fn move_forward_in_positive_x_direction() {
 }
 
 #[test]
+fn move_forward_into_northern_tropic_pentagon() {
+    // Start facing east, just west of a northern tropic pentagon.
+    let mut pos = CellPos::default()
+        .set_x(1)
+        .set_y(RESOLUTION[0] - 1);
+    let mut dir = Dir::new(4);
+
+    move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // We should now be sitting on the northern tropic pentagon,
+    // facing south-east in root 1.
+    //
+    // Note that it wouldn't be legal to step in this direction.
+    assert_eq!(
+        CellPos::default()
+            .set_root(1)
+            .set_x(RESOLUTION[0]),
+        pos
+    );
+    assert_eq!(Dir::new(3), dir);
+
+    // Turn around, and walk back! Note some hacks to get back to a
+    // legal movement direction for now... and then using the smart
+    // turning functions to handle rebasing.
+    dir = Dir::new(dir.index + 1);
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // We should now be back where we started, but facing west.
+    assert_eq!(
+        CellPos::default()
+            .set_x(1)
+            .set_y(RESOLUTION[0] - 1),
+        pos
+    );
+    assert_eq!(Dir::new(10), dir);
+
+}
+
+#[test]
 fn turn_left_at_northern_tropic() {
     let triangle = &TRIANGLES[2];
     // Start at triangle apex.
@@ -280,7 +322,6 @@ fn walk_clockwise_around_all_pentagons() {
 
 // TODO: tests that run over every triangle:
 //
-// - Walk through pentagon. Turn around. Walk back through.
 // - Fuzz tests:
 //   - Random walks
 //   - Random walks with retracing steps
