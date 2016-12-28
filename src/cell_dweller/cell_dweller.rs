@@ -14,6 +14,8 @@ pub struct CellDweller {
     globe_space_transform_version: u64,
     real_space_transform_version: u64,
     globe_spec: Spec,
+    pub seconds_between_moves: TimeDelta,
+    pub seconds_until_next_move: TimeDelta,
 }
 
 impl CellDweller {
@@ -24,6 +26,9 @@ impl CellDweller {
             globe_space_transform_version: 1,
             real_space_transform_version: 0,
             globe_spec: globe_spec,
+            // TODO: accept as parameter
+            seconds_between_moves: 0.1,
+            seconds_until_next_move: 0.0,
         }
     }
 

@@ -36,17 +36,23 @@ impl ControlSystem {
 }
 
 impl specs::System<TimeDelta> for ControlSystem {
-    fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
+    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
         use specs::Join;
         self.consume_input();
         let (mut cell_dwellers, mut spatials) = arg.fetch(|w|
             (w.write::<CellDweller>(), w.write::<Spatial>())
         );
         for (cd, spatial) in (&mut cell_dwellers, &mut spatials).iter() {
-            if self.move_forward {
-                // TODO: only step forward if it's been long enough since last step.
+            // Count down until we're allowed to move next.
+            if cd.seconds_until_next_move > 0.0 {
+                cd.seconds_until_next_move = (cd.seconds_until_next_move - dt).max(0.0);
+            }
+            let still_waiting_to_move = cd.seconds_until_next_move > 0.0;
+
+            if self.move_forward && !still_waiting_to_move {
                 cd.temp_advance_pos();
                 debug!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()));
+                cd.seconds_until_next_move = cd.seconds_between_moves;
             }
 
             // Update real-space coordinates if necessary.
