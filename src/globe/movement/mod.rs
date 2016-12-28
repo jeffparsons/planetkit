@@ -14,23 +14,20 @@ use self::transform::*;
 // See `triangles.rs` for discussion about the approach used here,
 // and the list of all triangles used.
 
-// TODO: remark that it might modify the arguments
-// even if the result is an error.
-// TODO: remark on assuming a valid pos for this resolution.
+/// Behaviour is undefined if `pos` and `dir` are not already in their
+/// canonical form; i.e. if `pos` is on the boundary of two root quads,
+/// then `dir` points into that quad or along its edge, but not out.
+///
+/// This extends to behaviour being undefined if `pos` lies outside the
+/// bounds of its root quad.
+///
+/// Both these cases will panic in debug mode.
 pub fn move_forward(
     pos: &mut CellPos,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
 ) -> Result<(), ()> {
-    // TODO: panic if pos is invalid? Or just return different
-    // errors?
-
-    // TODO: rebase on other root quads as necessary
-    // both before and after stepping? It makes the rest
-    // of the logic here easier.
-    // Or maybe just assert that it's already done?
-    // Ensuring this is true could then be a responsibility
-    // of the caller... which will mostly be CellDweller?
+    debug_assert_pos_within_root(pos, resolution);
 
     // Only allow moving into immediately adjacent cells.
     //
@@ -44,6 +41,11 @@ pub fn move_forward(
     }
 
     *pos = adjacent_pos_in_dir(*pos, *dir)?;
+
+    // Pos should still be within the root bounds; otherwise it means
+    // `pos` and `dir` were not in their canonical forms when passed
+    // into this function. (`pos` should have been in a different root.)
+    debug_assert_pos_within_root(pos, resolution);
 
     // Rebase on whatever root quad we're now pointing into if necessary.
     maybe_rebase_on_adjacent_root(pos, dir, resolution);
@@ -206,6 +208,19 @@ fn closest_triangle_to_point(
         let hex_distance_from_apex_to_pos = apex_to_pos.x + apex_to_pos.y;
         hex_distance_from_apex_to_pos
     }).expect("There should have been exactly three items; this shouldn't be possible!")
+}
+
+fn debug_assert_pos_within_root(
+    pos: &mut CellPos,
+    resolution: [IntCoord; 2],
+) {
+    debug_assert!(
+        pos.x >= 0 &&
+        pos.y >= 0 &&
+        pos.x <= resolution[0] &&
+        pos.y <= resolution[1],
+        "`pos` was outside its root at the given resolution."
+    );
 }
 
 // TODO: `turn_left` and `turn_right` functions that are smart
