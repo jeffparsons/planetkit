@@ -3,6 +3,39 @@ use super::super::{ IntCoord, CellPos, Dir };
 use super::transform::*;
 use super::util::*;
 
+pub enum TurnDir {
+    Left,
+    Right,
+}
+
+/// See `turn_by_one_hex_edge`.
+pub fn turn_left_by_one_hex_edge(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+) -> Result<(), ()> {
+    turn_by_one_hex_edge(
+        pos,
+        dir,
+        resolution,
+        TurnDir::Left,
+    )
+}
+
+/// See `turn_by_one_hex_edge`.
+pub fn turn_right_by_one_hex_edge(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+) -> Result<(), ()> {
+    turn_by_one_hex_edge(
+        pos,
+        dir,
+        resolution,
+        TurnDir::Right,
+    )
+}
+
 /// Returns an error if `pos` and `dir` do not point at an edge
 /// of the current cell; this is intended for rotating to valid
 /// directions for forward movement, which isnt possible if the starting
@@ -16,10 +49,11 @@ use super::util::*;
 /// bounds of its root quad.
 ///
 /// Both these cases will panic in debug mode.
-pub fn turn_left_by_one_hex_edge(
+pub fn turn_by_one_hex_edge(
     pos: &mut CellPos,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
+    turn_dir: TurnDir,
 ) -> Result<(), ()> {
     debug_assert_pos_within_root(pos, resolution);
 
@@ -44,59 +78,10 @@ pub fn turn_left_by_one_hex_edge(
     }
 
     // Turn left by one hexagon edge.
-    *dir = dir.next_hex_edge_left();
-
-    // Rebase on whatever root quad we're now pointing into if necessary.
-    maybe_rebase_on_adjacent_root_following_rotation(pos, dir, resolution);
-
-    // Nothing bad happened up to here; presumably we successfully
-    // turned by one hexagon edge and rebased on whatever root quad we're
-    // now pointing into if necessary.
-    Ok(())
-}
-
-/// Returns an error if `pos` and `dir` do not point at an edge
-/// of the current cell; this is intended for rotating to valid
-/// directions for forward movement, which isnt possible if the starting
-/// direction is illegal.
-///
-/// Behaviour is undefined if `pos` and `dir` are not already in their
-/// canonical form; i.e. if `pos` is on the boundary of two root quads,
-/// then `dir` points into that quad or along its edge, but not out.
-///
-/// This extends to behaviour being undefined if `pos` lies outside the
-/// bounds of its root quad.
-///
-/// Both these cases will panic in debug mode.
-pub fn turn_right_by_one_hex_edge(
-    pos: &mut CellPos,
-    dir: &mut Dir,
-    resolution: [IntCoord; 2],
-) -> Result<(), ()> {
-    debug_assert_pos_within_root(pos, resolution);
-
-    // Only allow turning from and to valid directions for forward movement.
-    //
-    // We've already established at this point that we will be moving
-    // to a cell that is within the same root quad as the one we are
-    // already in. The special nature of the 12 pentagons is only relevant
-    // when considering the interface between quads, so for this part we
-    // can treat both cells as hexagons.
-    if !dir.points_at_hex_edge() {
-        return Err(());
-    }
-
-    #[cfg(debug)]
-    {
-        let next_pos = adjacent_pos_in_dir(*pos, *dir)?;
-        // Pos should still be within the root bounds; otherwise it means
-        // `pos` and `dir` were not in their canonical forms when passed
-        // into this function. (`pos` should have been in a different root.)
-        debug_assert_pos_within_root(next_pos, resolution);
-    }
-
-    // Turn right by one hexagon edge.
-    *dir = dir.next_hex_edge_right();
+    *dir = match turn_dir {
+        TurnDir::Left => dir.next_hex_edge_left(),
+        TurnDir::Right => dir.next_hex_edge_right(),
+    };
 
     // Rebase on whatever root quad we're now pointing into if necessary.
     maybe_rebase_on_adjacent_root_following_rotation(pos, dir, resolution);
