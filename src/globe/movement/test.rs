@@ -14,6 +14,115 @@ fn move_forward_in_positive_x_direction() {
 }
 
 #[test]
+fn turn_left_at_northern_tropic() {
+    let triangle = &TRIANGLES[2];
+    // Start at triangle apex.
+    // Both parts of the apex are expressed in terms of x-dimension.
+    let apex = triangle.apex * RESOLUTION[0];
+    let mut pos = CellPos::default()
+        .set_root(0)
+        .set_x(apex.x)
+        .set_y(apex.y);
+    let mut dir = Dir::new(triangle.x_dir);
+
+    // Should be facing north in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(8), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing west in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(10), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing south-west in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(0), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing south-east in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(2), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing east in root 1.
+    assert_eq!(1, pos.root.index);
+    assert_eq!(Dir::new(4), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing north in root 1.
+    // Note that this represents where we started, but we should be
+    // stable in the same root we just came from instead of unnecessarily
+    // rebasing on the neighbour.
+    assert_eq!(1, pos.root.index);
+    assert_eq!(Dir::new(6), dir);
+
+    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing west in root 0.
+    // This is a repeat of the first turn we made, but now we're
+    // coming in from a neighbouring root rather than starting in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(10), dir);
+}
+
+#[test]
+fn turn_right_at_northern_tropic() {
+    let triangle = &TRIANGLES[2];
+    // Start at triangle apex.
+    // Both parts of the apex are expressed in terms of x-dimension.
+    let apex = triangle.apex * RESOLUTION[0];
+    let mut pos = CellPos::default()
+        .set_root(0)
+        .set_x(apex.x)
+        .set_y(apex.y);
+    let mut dir = Dir::new(triangle.x_dir);
+
+    // Should be facing north in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(8), dir);
+
+    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing east in root 1.
+    assert_eq!(1, pos.root.index);
+    assert_eq!(Dir::new(4), dir);
+
+    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing south-east in root 1.
+    assert_eq!(1, pos.root.index);
+    assert_eq!(Dir::new(2), dir);
+
+    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing south-west in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(0), dir);
+
+    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing west in root 0.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(10), dir);
+
+    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+
+    // Should be facing north in root 0.
+    // Note that this represents where we started, but unlike `turn_left_at_northern_tropic`,
+    // this will be the exact same position as we started in -- not a different representation.
+    // This is because the other test has a way of representing the starting angle from a
+    // different quad, because it approaches it from a different root that shares that angle.
+    assert_eq!(0, pos.root.index);
+    assert_eq!(Dir::new(8), dir);
+}
+
+#[test]
 fn move_east_under_north_pole() {
     // Start just south of the north pole in root 4,
     // facing north-east.
@@ -97,13 +206,8 @@ fn walk_anticlockwise_around_all_pentagons() {
             // the next hexagon moving in an anticlockwise circle around
             // the starting pentagon.
             move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
-            // TODO: don't use these turning functions directly;
-            // they shoudn't be allowed in general because they don't
-            // rebase you!
-            // (TODO: consider panicking in movement functions if
-            // the input isn't in its canonical form, or have a special
-            // type to represent this so you can't even try.)
-            dir = dir.next_hex_edge_left().next_hex_edge_left();
+            turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+            turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
 
             // Remember where we're supposed to end up.
             let final_pos = pos.clone();
@@ -116,10 +220,7 @@ fn walk_anticlockwise_around_all_pentagons() {
 
                 // Turn left. This will point us back at the next root
                 // anti-clockwise from here, leaving us ready to step again.
-                //
-                // TODO: don't manipulate this directly; use the root-and-pentagon-aware
-                // rotation functions that you haven't written yet!
-                dir = dir.next_hex_edge_left();
+                turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
             }
 
             // We should now be back at the first hexagon we visited.
@@ -128,7 +229,6 @@ fn walk_anticlockwise_around_all_pentagons() {
         }
     }
 }
-
 
 #[test]
 fn walk_clockwise_around_all_pentagons() {
@@ -154,15 +254,8 @@ fn walk_clockwise_around_all_pentagons() {
             // the next hexagon moving in an clockwise circle around
             // the starting pentagon.
             move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
-            // TODO: don't use these turning functions directly;
-            // they shoudn't be allowed in general because they don't
-            // rebase you!
-            // (TODO: consider panicking in movement functions if
-            // the input isn't in its canonical form, or have a special
-            // type to represent this so you can't even try.)
-            dir = dir.next_hex_edge_right().next_hex_edge_right();
-            // TODO: Boooooo...
-            super::maybe_rebase_on_adjacent_root(&mut pos, &mut dir, RESOLUTION);
+            turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+            turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
 
             // Remember where we're supposed to end up.
             let final_pos = pos.clone();
@@ -175,10 +268,7 @@ fn walk_clockwise_around_all_pentagons() {
 
                 // Turn right. This will point us back at the next root
                 // clockwise from here, leaving us ready to step again.
-                //
-                // TODO: don't manipulate this directly; use the root-and-pentagon-aware
-                // rotation functions that you haven't written yet!
-                dir = dir.next_hex_edge_right();
+                turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
             }
 
             // We should now be back at the first hexagon we visited.
@@ -191,7 +281,6 @@ fn walk_clockwise_around_all_pentagons() {
 // TODO: tests that run over every triangle:
 //
 // - Walk through pentagon. Turn around. Walk back through.
-// - Sit at pentagon. Turn anticlockwise. Turn clockwise.
 // - Fuzz tests:
 //   - Random walks
 //   - Random walks with retracing steps
