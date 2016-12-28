@@ -41,9 +41,12 @@ impl CellDweller {
         self.globe_space_transform_version += 1;
     }
 
-    /// Temporary function for testing until we have actual
-    /// movement on the grid. This just adds one to the x-coordinate
-    /// of the current position.
+    // Temporary function for testing until we have actual
+    // movement on the grid.
+    //
+    // TODO: make this handle "last turn bias" and be smart about
+    // turning around to retrace steps. Or maybe some of that logic
+    // should go in the `movement` module.
     pub fn temp_advance_pos(&mut self) {
         move_forward(
             &mut self.pos,
