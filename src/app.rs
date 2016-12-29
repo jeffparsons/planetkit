@@ -149,12 +149,12 @@ impl App {
         let mut guy_pos = CellPos::default();
         guy_pos = globe.find_lowest_cell_containing(guy_pos, Material::Air)
             .expect("Uh oh, there's something wrong with our globe.");
-        let dummy_mesh = render::make_dummy_mesh(
+        let axes_mesh = render::make_axes_mesh(
             factory,
             &mut render_sys,
         );
         let mut cell_dweller_visual = render::Visual::new();
-        cell_dweller_visual.set_mesh_handle(dummy_mesh);
+        cell_dweller_visual.set_mesh_handle(axes_mesh);
         world.create_now()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
