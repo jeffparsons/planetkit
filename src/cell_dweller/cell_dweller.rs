@@ -17,6 +17,8 @@ pub struct CellDweller {
     globe_spec: Spec,
     pub seconds_between_moves: TimeDelta,
     pub seconds_until_next_move: TimeDelta,
+    pub seconds_between_turns: TimeDelta,
+    pub seconds_until_next_turns: TimeDelta,
 }
 
 impl CellDweller {
@@ -31,6 +33,9 @@ impl CellDweller {
             // TODO: accept as parameter
             seconds_between_moves: 0.1,
             seconds_until_next_move: 0.0,
+            // TODO: accept as parameter
+            seconds_between_turns: 0.1,
+            seconds_until_next_turns: 0.0,
         }
     }
 
@@ -43,19 +48,37 @@ impl CellDweller {
         self.globe_space_transform_version += 1;
     }
 
-    // Temporary function for testing until we have actual
-    // movement on the grid.
-    //
-    // TODO: make this handle "last turn bias" and be smart about
-    // turning around to retrace steps. Or maybe some of that logic
-    // should go in the `movement` module.
-    pub fn temp_advance_pos(&mut self) {
+    pub fn dir(&self) -> Dir {
+        self.dir
+    }
+
+    pub fn step_forward(&mut self) {
         step_forward_and_face_neighbor(
             &mut self.pos,
             &mut self.dir,
             self.globe_spec.root_resolution,
             &mut self.last_turn_bias,
-        ).unwrap();
+        ).expect("This suggests a bug in `movement` code.");
+        self.globe_space_transform_version += 1;
+    }
+
+    pub fn step_backward(&mut self) {
+        step_backward_and_face_neighbor(
+            &mut self.pos,
+            &mut self.dir,
+            self.globe_spec.root_resolution,
+            &mut self.last_turn_bias,
+        ).expect("This suggests a bug in `movement` code.");
+        self.globe_space_transform_version += 1;
+    }
+
+    pub fn turn(&mut self, turn_dir: TurnDir) {
+        turn_by_one_hex_edge(
+            &mut self.pos,
+            &mut self.dir,
+            self.globe_spec.root_resolution,
+            turn_dir,
+        ).expect("This suggests a bug in `movement` code.");
         self.globe_space_transform_version += 1;
     }
 

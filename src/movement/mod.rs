@@ -19,5 +19,6 @@ pub use self::turn::{
     TurnDir,
     turn_left_by_one_hex_edge,
     turn_right_by_one_hex_edge,
+    turn_by_one_hex_edge,
     turn_around_and_face_neighbor,
 };

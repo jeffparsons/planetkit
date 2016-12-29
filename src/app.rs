@@ -202,13 +202,19 @@ impl App {
             use cell_dweller::ControlEvent;
             if let Some(Button::Keyboard(key)) = e.press_args() {
                 match key {
-                    Key::I => self.input_sender.send(ControlEvent::MoveForward(true)).unwrap(),
+                    Key::I => self.input_sender.send(ControlEvent::StepForward(true)).unwrap(),
+                    Key::K => self.input_sender.send(ControlEvent::StepBackward(true)).unwrap(),
+                    Key::J => self.input_sender.send(ControlEvent::TurnLeft(true)).unwrap(),
+                    Key::L => self.input_sender.send(ControlEvent::TurnRight(true)).unwrap(),
                     _ => (),
                 }
             }
             if let Some(Button::Keyboard(key)) = e.release_args() {
                 match key {
-                    Key::I => self.input_sender.send(ControlEvent::MoveForward(false)).unwrap(),
+                    Key::I => self.input_sender.send(ControlEvent::StepForward(false)).unwrap(),
+                    Key::K => self.input_sender.send(ControlEvent::StepBackward(false)).unwrap(),
+                    Key::J => self.input_sender.send(ControlEvent::TurnLeft(false)).unwrap(),
+                    Key::L => self.input_sender.send(ControlEvent::TurnRight(false)).unwrap(),
                     _ => (),
                 }
             }
