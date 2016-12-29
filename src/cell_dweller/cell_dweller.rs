@@ -10,10 +10,10 @@ pub struct CellDweller {
     pos: CellPos,
     dir: Dir,
     last_turn_bias: TurnDir,
-    // Most `CellDweller`s will also be `Spatial`s. Track the version of the globe-space
-    // transform and the computed real-space transform so we know when the latter is dirty.
-    globe_space_transform_version: u64,
-    real_space_transform_version: u64,
+    // Most `CellDweller`s will also be `Spatial`s. Track whether the
+    // computed real-space transform has been updated since the globe-space
+    // transform was modified so we know when the former is dirty.
+    is_real_space_transform_dirty: bool,
     globe_spec: Spec,
     pub seconds_between_moves: TimeDelta,
     pub seconds_until_next_move: TimeDelta,
@@ -27,8 +27,7 @@ impl CellDweller {
             pos: pos,
             dir: dir,
             last_turn_bias: TurnDir::Right,
-            globe_space_transform_version: 1,
-            real_space_transform_version: 0,
+            is_real_space_transform_dirty: true,
             globe_spec: globe_spec,
             // TODO: accept as parameter
             seconds_between_moves: 0.1,
@@ -45,7 +44,7 @@ impl CellDweller {
 
     pub fn set_cell_pos(&mut self, new_pos: CellPos) {
         self.pos = new_pos;
-        self.globe_space_transform_version += 1;
+        self.is_real_space_transform_dirty = true;
     }
 
     pub fn dir(&self) -> Dir {
@@ -59,7 +58,7 @@ impl CellDweller {
             self.globe_spec.root_resolution,
             &mut self.last_turn_bias,
         ).expect("This suggests a bug in `movement` code.");
-        self.globe_space_transform_version += 1;
+        self.is_real_space_transform_dirty = true;
     }
 
     pub fn step_backward(&mut self) {
@@ -69,7 +68,7 @@ impl CellDweller {
             self.globe_spec.root_resolution,
             &mut self.last_turn_bias,
         ).expect("This suggests a bug in `movement` code.");
-        self.globe_space_transform_version += 1;
+        self.is_real_space_transform_dirty = true;
     }
 
     pub fn turn(&mut self, turn_dir: TurnDir) {
@@ -79,7 +78,7 @@ impl CellDweller {
             self.globe_spec.root_resolution,
             turn_dir,
         ).expect("This suggests a bug in `movement` code.");
-        self.globe_space_transform_version += 1;
+        self.is_real_space_transform_dirty = true;
     }
 
     /// Calculate position in real-space.
@@ -88,13 +87,13 @@ impl CellDweller {
     }
 
     pub fn is_real_space_transform_dirty(&self) -> bool {
-        self.real_space_transform_version != self.globe_space_transform_version
+        self.is_real_space_transform_dirty
     }
 
     // TODO: document responsibilities of caller.
     // TODO: return translation and orientation.
     pub fn get_real_transform_and_mark_as_clean(&mut self) -> Pt3 {
-        self.real_space_transform_version = self.globe_space_transform_version;
+        self.is_real_space_transform_dirty = false;
         self.real_pos()
     }
 }
