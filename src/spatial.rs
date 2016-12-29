@@ -3,15 +3,15 @@ use specs;
 use super::types::*;
 
 pub struct Spatial {
-    pub pos: Pt3,
+    pub transform: Iso3,
 }
 
 impl Spatial {
     // TODO: explain about hierarchical coordinate systems plan
     pub fn root() -> Self {
-        use na::Origin;
+        use num_traits::One;
         Spatial {
-            pos: Pt3::origin(),
+            transform: Iso3::one(),
         }
     }
 }

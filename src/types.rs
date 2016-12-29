@@ -11,6 +11,8 @@ pub type Vec2 = na::Vector2<f64>;
 pub type Vec3 = na::Vector3<f64>;
 pub type Pt2 = na::Point2<f64>;
 pub type Pt3 = na::Point3<f64>;
+pub type Rot3 = na::Rotation3<f64>;
+pub type Iso3 = na::Isometry3<f64>;
 
 pub type TimeDelta = f64;
 

@@ -86,15 +86,27 @@ impl CellDweller {
         self.globe_spec.cell_bottom_center(self.pos)
     }
 
+    fn real_transform(&self) -> Iso3 {
+        let eye = self.real_pos();
+        // Look one cell ahead.
+        let next_pos = adjacent_pos_in_dir(self.pos, self.dir).unwrap();
+        let target = self.globe_spec.cell_bottom_center(next_pos);
+        // Calculate up vector. Nalgebra will normalise this so we can
+        // just use the eye position as a vector; it points up out from
+        // the center of the world already!
+        let up = eye.clone().to_vector();
+        Iso3::new_observer_frame(&eye, &target, &up)
+    }
+
     pub fn is_real_space_transform_dirty(&self) -> bool {
         self.is_real_space_transform_dirty
     }
 
     // TODO: document responsibilities of caller.
     // TODO: return translation and orientation.
-    pub fn get_real_transform_and_mark_as_clean(&mut self) -> Pt3 {
+    pub fn get_real_transform_and_mark_as_clean(&mut self) -> Iso3 {
         self.is_real_space_transform_dirty = false;
-        self.real_pos()
+        self.real_transform()
     }
 }
 

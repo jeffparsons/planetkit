@@ -96,7 +96,7 @@ impl specs::System<TimeDelta> for ControlSystem {
             // enemies shunting the cell dweller around, etc. that happen
             // after control.
             if cd.is_real_space_transform_dirty() {
-                spatial.pos = cd.get_real_transform_and_mark_as_clean();
+                spatial.transform = cd.get_real_transform_and_mark_as_clean();
             }
         }
     }

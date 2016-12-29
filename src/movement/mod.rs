@@ -10,6 +10,10 @@ mod util;
 #[cfg(test)]
 mod test;
 
+// TODO: figure out how to encourage use of the "good" functions,
+// while still exposing the "raw" ones for people who really want them.
+// Consider something like session types.
+
 pub use self::step::{
     move_forward,
     step_forward_and_face_neighbor,
@@ -22,3 +26,4 @@ pub use self::turn::{
     turn_by_one_hex_edge,
     turn_around_and_face_neighbor,
 };
+pub use self::util::adjacent_pos_in_dir;

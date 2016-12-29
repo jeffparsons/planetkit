@@ -33,4 +33,9 @@ impl CellPos {
         self.y = new_y;
         self
     }
+
+    pub fn set_z(mut self, new_z: IntCoord) -> Self {
+        self.z = new_z;
+        self
+    }
 }

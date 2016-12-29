@@ -131,13 +131,15 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             if let Some(mesh_handle) = v.mesh_handle() {
                 // TODO: cache the model matrix separately per Visual
                 use na;
-                use na::{ Point3, Rotation3, Isometry3, ToHomogeneous };
-                use num_traits::identities::One;
-                let pos_f32: Point3<f32> = na::Cast::<Point3<f64>>::from(s.pos);
-                let translation = pos_f32.to_vector();
-                let rotation = Rotation3::<f32>::one();
-                let iso3 = Isometry3::from_rotation_matrix(translation, rotation);
-                let model = iso3.to_homogeneous();
+                use na::{ Vector3, Matrix3, Rotation3, Isometry3, ToHomogeneous };
+                // Do some nasty fiddling to cast down to `f32`.
+                let transform_f32: Isometry3<f32> = {
+                    let translation_f32: Vector3<f32> = na::Cast::<Vector3<f64>>::from(s.transform.translation);
+                    let rot_mat_f32: Matrix3<f32> = na::Cast::<Matrix3<f64>>::from(*s.transform.rotation.submatrix());
+                    let rotation_f32 = Rotation3::from_matrix_unchecked(rot_mat_f32);
+                    Isometry3::from_rotation_matrix(translation_f32, rotation_f32)
+                };
+                let model = transform_f32.to_homogeneous();
                 // Massage it into a nested array structure and clone it,
                 // because `camera_controllers` wants to take ownership.
                 let mut model_for_camera_controllers: vecmath::Matrix4<f32> = vecmath::mat4_id();
