@@ -8,6 +8,45 @@ pub enum TurnDir {
     Right,
 }
 
+impl TurnDir {
+    pub fn opposite(&self) -> TurnDir {
+        match *self {
+            TurnDir::Left => TurnDir::Right,
+            TurnDir::Right => TurnDir::Left,
+        }
+    }
+
+    /// Turn one unit left or right.
+    ///
+    /// Note that this does not turn from one hexagon edge
+    /// to another, but from an edge to a vertex, or vice versa.
+    ///
+    /// Note also that this can not rebase on another root quad;
+    /// the direction faced will not necessarily be the canonical
+    /// representation of that direction.
+    pub fn apply_one_unit(&self, dir: &mut Dir) {
+        match *self {
+            TurnDir::Left => dir.index = (dir.index + 1) % 12,
+            TurnDir::Right => dir.index = (dir.index + 12 - 1) % 12,
+        };
+    }
+
+    /// Turn two units left or right.
+    ///
+    /// This turns from one hexagon edge to another, or one hexagon
+    /// vertex to another.
+    ///
+    /// Note that this can not rebase on another root quad;
+    /// the direction faced will not necessarily be the canonical
+    /// representation of that direction.
+    pub fn apply_two_units(&self, dir: &mut Dir) {
+        match *self {
+            TurnDir::Left => dir.index = (dir.index + 2) % 12,
+            TurnDir::Right => dir.index = (dir.index + 12 - 2) % 12,
+        };
+    }
+}
+
 /// See `turn_by_one_hex_edge`.
 pub fn turn_left_by_one_hex_edge(
     pos: &mut CellPos,
@@ -78,10 +117,7 @@ pub fn turn_by_one_hex_edge(
     }
 
     // Turn left by one hexagon edge.
-    *dir = match turn_dir {
-        TurnDir::Left => dir.next_hex_edge_left(),
-        TurnDir::Right => dir.next_hex_edge_right(),
-    };
+    turn_dir.apply_two_units(dir);
 
     // Rebase on whatever root quad we're now pointing into if necessary.
     maybe_rebase_on_adjacent_root_following_rotation(pos, dir, resolution);

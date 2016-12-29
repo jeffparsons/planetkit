@@ -191,11 +191,11 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: Pos2 { x: 1, y: 2 },
         x_dir: 6,
         exits: [
-            Exit { triangle_index: 0, root_offset: 0 },
-            Exit { triangle_index: 0, root_offset: 4 },
-            Exit { triangle_index: 0, root_offset: 3 },
-            Exit { triangle_index: 0, root_offset: 2 },
-            Exit { triangle_index: 0, root_offset: 1 },
+            Exit { triangle_index: 9, root_offset: 0 },
+            Exit { triangle_index: 9, root_offset: 4 },
+            Exit { triangle_index: 9, root_offset: 3 },
+            Exit { triangle_index: 9, root_offset: 2 },
+            Exit { triangle_index: 9, root_offset: 1 },
         ],
     },
 

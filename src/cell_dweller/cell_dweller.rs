@@ -9,6 +9,7 @@ pub struct CellDweller {
     // TODO: is this guts pattern worth a separate macro crate of its own?
     pos: CellPos,
     dir: Dir,
+    last_turn_bias: TurnDir,
     // Most `CellDweller`s will also be `Spatial`s. Track the version of the globe-space
     // transform and the computed real-space transform so we know when the latter is dirty.
     globe_space_transform_version: u64,
@@ -23,6 +24,7 @@ impl CellDweller {
         CellDweller {
             pos: pos,
             dir: dir,
+            last_turn_bias: TurnDir::Right,
             globe_space_transform_version: 1,
             real_space_transform_version: 0,
             globe_spec: globe_spec,
@@ -48,10 +50,11 @@ impl CellDweller {
     // turning around to retrace steps. Or maybe some of that logic
     // should go in the `movement` module.
     pub fn temp_advance_pos(&mut self) {
-        move_forward(
+        step_forward_and_face_neighbor(
             &mut self.pos,
             &mut self.dir,
             self.globe_spec.root_resolution,
+            &mut self.last_turn_bias,
         ).unwrap();
         self.globe_space_transform_version += 1;
     }

@@ -3,6 +3,43 @@ use ::globe::{ IntCoord, CellPos, Dir };
 use super::transform::*;
 use super::util::*;
 
+/// Move forward by one cell and ensure `dir` now points to a
+/// legal direction for continued movement.
+///
+/// Uses `last_turn_bias` to decide which direction to turn if we,
+/// land on a pentagon, and updates it to be its opposite. In this
+/// way we balance out the direction turned over time. This is not
+/// necessary for anything to work (we could always choose to turn
+/// left) but it's aesthetically nice.
+///
+/// See `move_forward` for more details`.
+pub fn step_forward_and_face_neighbor(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+    last_turn_bias: &mut super::TurnDir,
+) -> Result<(), ()> {
+    move_forward(pos, dir, resolution)?;
+
+    // If we're on a pentagon, we'll need to update which direction
+    // we're facing to make it legal for another step.
+    if is_pentagon(pos, resolution) {
+        // We've already been re-based such that `pos` and `dir` are in
+        // their canonical form, now. This means that we're facing into
+        // a quad, and we have at least one legal direction both left and
+        // right that we can turn to while still maintaining the canonical
+        // representation. Pick the opposite of whichever we did last time.
+        // We'll then turn the other way next time we're forced to decide.
+        *last_turn_bias = last_turn_bias.opposite();
+        last_turn_bias.apply_one_unit(dir);
+    }
+
+    // Nothing bad happened up to here; presumably we successfully
+    // advanced by one step and rebased on whatever root quad we're
+    // now pointing into if necessary.
+    Ok(())
+}
+
 /// Returns an error if `pos` and `dir` do not point at an edge
 /// of the current cell; it's illegal to move toward a cell vertex.
 ///
@@ -14,6 +51,8 @@ use super::util::*;
 /// bounds of its root quad.
 ///
 /// Both these cases will panic in debug mode.
+//
+// TODO: rename to make it obvious this is usually not what you want.
 pub fn move_forward(
     pos: &mut CellPos,
     dir: &mut Dir,
