@@ -143,7 +143,12 @@ impl App {
                 .build();
         }
 
+        // Find globe surface and put player character on it.
         use globe::{ CellPos, Dir };
+        use globe::chunk::Material;
+        let mut guy_pos = CellPos::default();
+        guy_pos = globe.find_lowest_cell_containing(guy_pos, Material::Air)
+            .expect("Uh oh, there's something wrong with our globe.");
         let dummy_mesh = render::make_dummy_mesh(
             factory,
             &mut render_sys,
@@ -152,7 +157,7 @@ impl App {
         cell_dweller_visual.set_mesh_handle(dummy_mesh);
         world.create_now()
             .with(cell_dweller::CellDweller::new(
-                CellPos::default(),
+                guy_pos,
                 Dir::default(),
                 globe.spec(),
             ))

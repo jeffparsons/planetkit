@@ -7,7 +7,7 @@ use rand::Rng;
 
 use super::Root;
 use super::CellPos;
-use super::chunk::{ Chunk, Cell };
+use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
 use super::gen::Gen;
 
@@ -166,7 +166,8 @@ impl Globe {
 
     fn copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
         let origin = target_chunk_origin;
-        let target_chunk_index = self.index_of_chunk_at(origin);
+        let target_chunk_index = self.index_of_chunk_at(origin)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         let end_x = origin.x + self.spec.chunk_resolution[0];
         let end_y = origin.y + self.spec.chunk_resolution[1];
         // Chunks don't share cells in the z-direction,
@@ -187,7 +188,8 @@ impl Globe {
                     // TODO: Suuuuper inefficient doing this in the hot loop.
                     // Do this in a less brain-dead way. :)
                     let source_cell_pos = self.spec.pos_in_owning_root(target_cell_pos);
-                    let source_chunk_index = self.index_of_chunk_owning(source_cell_pos);
+                    let source_chunk_index = self.index_of_chunk_owning(source_cell_pos)
+                        .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
                     let source_cell =
                         *self.chunks[source_chunk_index].cell(source_cell_pos);
                     let target_cell =
@@ -199,24 +201,21 @@ impl Globe {
         }
     }
 
-    // Panics if given coordinates of a cell in a chunk we don't have loaded,
+    // Returns None if given coordinates of a cell in a chunk we don't have loaded,
     // or could never load because `origin` is not a valid chunk origin.
-    //
-    // TODO: return an option instead?
-    pub fn index_of_chunk_at(&self, origin: CellPos) -> usize {
+    pub fn index_of_chunk_at(&self, origin: CellPos) -> Option<usize> {
         self.chunks.iter().position(|chunk| chunk.origin == origin)
-            .expect("Specified chunk isn't loaded.")
     }
 
-    // Panics if given coordinates of a cell in a chunk we don't have loaded.
+    // Returns None if given coordinates of a cell in a chunk we don't have loaded.
     //
     // Translates given `pos` into its owning root if necessary.
     // (TODO: make a version that trusts it's already in its owning root,
     // because this will be quite wasteful if we can already trust it.
     // Maybe represent this with types. We also probably want to sometimes
-    // get a reference to a cells that aren't the authoritative source
+    // get a reference to cells that aren't the authoritative source
     // for that position.)
-    pub fn index_of_chunk_owning(&self, mut pos: CellPos) -> usize {
+    pub fn index_of_chunk_owning(&self, mut pos: CellPos) -> Option<usize> {
         // Translate into owning root.
         pos = self.spec.pos_in_owning_root(pos);
 
@@ -260,5 +259,35 @@ impl Globe {
         };
 
         self.index_of_chunk_at(chunk_origin)
+    }
+
+    pub fn find_lowest_cell_containing(
+        &self,
+        column: CellPos,
+        material: Material
+    ) -> Option<CellPos> {
+        // Translate into owning root, then start at bedrock.
+        let mut pos = self.spec.pos_in_owning_root(column);
+        pos.z = 0;
+
+        loop {
+            let chunk_index = match self.index_of_chunk_owning(pos) {
+                // We may have run out of chunks to inspect.
+                // TODO: this may become a problem if we allow infinite
+                // or very loose height for planets. Have a limit?
+                // Probably only limit to planet height, because if you
+                // legitimately have terrain that high, you probably just
+                // want to wait to find it!
+                None => return None,
+                Some(chunk_index) => chunk_index,
+            };
+
+            let cell = self.chunks[chunk_index].cell(pos);
+            if cell.material == material {
+                // Yay, we found it!
+                return pos.into();
+            }
+            pos.z += 1;
+        }
     }
 }
