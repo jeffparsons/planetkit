@@ -61,28 +61,33 @@ impl specs::System<TimeDelta> for ControlSystem {
                 cd.seconds_until_next_move = (cd.seconds_until_next_move - dt).max(0.0);
             }
             let still_waiting_to_move = cd.seconds_until_next_move > 0.0;
-            if still_waiting_to_move {
-                continue;
+            if !still_waiting_to_move {
+                if self.step_forward && !self.step_backward  {
+                    cd.step_forward();
+                    cd.seconds_until_next_move = cd.seconds_between_moves;
+                    trace!(self.log, "Stepped forward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                } else if self.step_backward && !self.step_forward {
+                    cd.step_backward();
+                    cd.seconds_until_next_move = cd.seconds_between_moves;
+                    trace!(self.log, "Stepped backward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                }
             }
 
-            if self.step_forward && !self.step_backward  {
-                cd.step_forward();
-                cd.seconds_until_next_move = cd.seconds_between_moves;
-                trace!(self.log, "Stepped forward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-            } else if self.step_backward && !self.step_forward {
-                cd.step_backward();
-                cd.seconds_until_next_move = cd.seconds_between_moves;
-                trace!(self.log, "Stepped backward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+            // Count down until we're allowed to turn next.
+            if cd.seconds_until_next_turn > 0.0 {
+                cd.seconds_until_next_turn = (cd.seconds_until_next_turn - dt).max(0.0);
             }
-
-            if self.turn_left && !self.turn_right  {
-                cd.turn(TurnDir::Left);
-                cd.seconds_until_next_move = cd.seconds_between_moves;
-                trace!(self.log, "Turned left"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-            } else if self.turn_right && !self.turn_left {
-                cd.turn(TurnDir::Right);
-                cd.seconds_until_next_move = cd.seconds_between_moves;
-                trace!(self.log, "Turned right"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+            let still_waiting_to_turn = cd.seconds_until_next_turn > 0.0;
+            if !still_waiting_to_turn {
+                if self.turn_left && !self.turn_right  {
+                    cd.turn(TurnDir::Left);
+                    cd.seconds_until_next_turn = cd.seconds_between_turns;
+                    trace!(self.log, "Turned left"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                } else if self.turn_right && !self.turn_left {
+                    cd.turn(TurnDir::Right);
+                    cd.seconds_until_next_turn = cd.seconds_between_turns;
+                    trace!(self.log, "Turned right"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                }
             }
 
             // Update real-space coordinates if necessary.

@@ -18,7 +18,7 @@ pub struct CellDweller {
     pub seconds_between_moves: TimeDelta,
     pub seconds_until_next_move: TimeDelta,
     pub seconds_between_turns: TimeDelta,
-    pub seconds_until_next_turns: TimeDelta,
+    pub seconds_until_next_turn: TimeDelta,
 }
 
 impl CellDweller {
@@ -33,8 +33,8 @@ impl CellDweller {
             seconds_between_moves: 0.1,
             seconds_until_next_move: 0.0,
             // TODO: accept as parameter
-            seconds_between_turns: 0.1,
-            seconds_until_next_turns: 0.0,
+            seconds_between_turns: 0.2,
+            seconds_until_next_turn: 0.0,
         }
     }
 
