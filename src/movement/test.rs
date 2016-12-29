@@ -377,16 +377,7 @@ fn random_walk() {
     }
 
     // Aaaand turn around and walk back home!
-    // To keep things simple here, avoid turning around on a pentagon.
-    // TODO: make helpers for turning around respecting turn bias
-    // so we don't need to care about this!
-    if super::util::is_pentagon(&pos, RESOLUTION) {
-        step_forward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias).unwrap();
-        crumbs.push(Action::StepForward);
-    }
-    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
-    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
-    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+    turn_around_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, last_turn_bias);
 
     // Retrace steps.
     crumbs.reverse();
@@ -408,9 +399,78 @@ fn random_walk() {
     assert_eq!(0, pos.y);
 }
 
+#[test]
+fn random_walk_retraced_by_stepping_backwards() {
+    use rand;
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
 
+    // Try to simulate all the kinds of stepping and turning that a
+    // CellDweller might actually be able to do in the real world.
+    //
+    // Use a small resolution; we want to very quickly stumble
+    // upon pathological cases.
+    const RESOLUTION: [i64; 2] = [4, 8];
 
-// TODO: tests that run over every triangle:
-//
-// - Fuzz tests:
-//   - Random walks with retracing steps by stepping backwards
+    // Start at (0, 0). This is not a very interesting place to start, but we'll
+    // be randomly walking all over the place, so there shouldn't be any need for
+    // the starting point to be interesting.
+    let mut pos = CellPos::default();
+    let mut dir = Dir::default();
+    let mut last_turn_bias = TurnDir::Left;
+
+    // Keep a list of the opposite steps we'll need to take to get
+    // back home.
+    enum Action {
+        StepBackward,
+        TurnLeft,
+        TurnRight,
+    }
+    let mut crumbs: Vec<Action> = Vec::new();
+
+    const STEPS: usize = 10000;
+
+    for i in 0..STEPS {
+        println!("Forward iteration {}:", i);
+
+        // Consider turning several times before stepping,
+        // with low probability on each.
+        for _ in 0..10 {
+            let f: f32 = rng.gen();
+            if f < 0.02 {
+                turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+                crumbs.push(Action::TurnLeft);
+            } else if f < 0.01 {
+                turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
+                crumbs.push(Action::TurnRight);
+            }
+        }
+
+        step_forward_and_face_neighbor(
+            &mut pos,
+            &mut dir,
+            RESOLUTION,
+            &mut last_turn_bias
+        ).unwrap();
+        crumbs.push(Action::StepBackward);
+    }
+
+    // Aaaand start walking backwards to find home!
+    crumbs.reverse();
+    for crumb in crumbs {
+        match crumb {
+            Action::StepBackward => step_backward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias).unwrap(),
+            Action::TurnLeft => turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
+            Action::TurnRight => turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
+        }
+    }
+
+    // We should now be back at the start, but re-based into another root,
+    // facing down one of its axes.
+    //
+    // Note that depending on the number of STEPS, whether we turned one
+    // or more times at the first step, and therefore via which root we
+    // arrive home, both the root and the direction will vary.
+    assert_eq!(0, pos.x);
+    assert_eq!(0, pos.y);
+}

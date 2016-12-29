@@ -3,6 +3,7 @@ use ::globe::{ IntCoord, CellPos, Dir };
 use super::transform::*;
 use super::util::*;
 
+#[derive(Clone, Copy)]
 pub enum TurnDir {
     Left,
     Right,
@@ -98,9 +99,7 @@ pub fn turn_by_one_hex_edge(
 
     // Only allow turning from and to valid directions for forward movement.
     //
-    // We've already established at this point that we will be moving
-    // to a cell that is within the same root quad as the one we are
-    // already in. The special nature of the 12 pentagons is only relevant
+    // The special nature of the 12 pentagons is only relevant
     // when considering the interface between quads, so for this part we
     // can treat both cells as hexagons.
     if !dir.points_at_hex_edge() {
@@ -200,4 +199,21 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
 
     // Uh oh, we must have missed a case.
     panic!("Oops, we must have forgotten a rotation case. Sounds like we didn't test hard enough!")
+}
+
+// Panics if we're not facing a valid direction for movement.
+pub fn turn_around_and_face_neighbor(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+    last_turn_bias: super::TurnDir,
+) {
+    if is_pentagon(pos, resolution) {
+        turn_by_one_hex_edge(pos, dir, resolution, last_turn_bias).unwrap();
+        turn_by_one_hex_edge(pos, dir, resolution, last_turn_bias).unwrap();
+    } else {
+        turn_left_by_one_hex_edge(pos, dir, resolution).unwrap();
+        turn_left_by_one_hex_edge(pos, dir, resolution).unwrap();
+        turn_left_by_one_hex_edge(pos, dir, resolution).unwrap();
+    }
 }

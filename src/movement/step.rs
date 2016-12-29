@@ -1,6 +1,7 @@
 use ::globe::{ IntCoord, CellPos, Dir };
 
 use super::transform::*;
+use super::turn::turn_around_and_face_neighbor;
 use super::util::*;
 
 /// Move forward by one cell and ensure `dir` now points to a
@@ -37,6 +38,41 @@ pub fn step_forward_and_face_neighbor(
     // Nothing bad happened up to here; presumably we successfully
     // advanced by one step and rebased on whatever root quad we're
     // now pointing into if necessary.
+    Ok(())
+}
+
+/// Move backward by one cell and ensure `dir` now points to a
+/// legal direction for continued movement.
+///
+/// This by design un-does any movement and rotation performed
+/// by stepping forwards.
+///
+/// See `step_forward_and_face_neighbor` for more details`.
+pub fn step_backward_and_face_neighbor(
+    pos: &mut CellPos,
+    dir: &mut Dir,
+    resolution: [IntCoord; 2],
+    last_turn_bias: &mut super::TurnDir,
+) -> Result<(), ()> {
+    // Turn around.
+    turn_around_and_face_neighbor(pos, dir, resolution, *last_turn_bias);
+    if is_pentagon(pos, resolution) {
+        // Update turn bias; if we walk forward again, we want a _repeat_
+        // of the movement we just un-did.
+        *last_turn_bias = last_turn_bias.opposite();
+    }
+
+    // Step forward.
+    step_forward_and_face_neighbor(pos, dir, resolution, last_turn_bias)?;
+
+    // Turn back around.
+    turn_around_and_face_neighbor(pos, dir, resolution, *last_turn_bias);
+    if is_pentagon(pos, resolution) {
+        // Update turn bias; if we walk forward again, we want a _repeat_
+        // of the movement we just un-did.
+        *last_turn_bias = last_turn_bias.opposite();
+    }
+
     Ok(())
 }
 
