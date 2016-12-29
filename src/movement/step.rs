@@ -1,45 +1,10 @@
-use super::super::{ IntCoord, CellPos, Dir };
+use ::globe::{ IntCoord, CellPos, Dir };
 
 use super::transform::*;
 use super::util::*;
 
-pub enum TurnDir {
-    Left,
-    Right,
-}
-
-/// See `turn_by_one_hex_edge`.
-pub fn turn_left_by_one_hex_edge(
-    pos: &mut CellPos,
-    dir: &mut Dir,
-    resolution: [IntCoord; 2],
-) -> Result<(), ()> {
-    turn_by_one_hex_edge(
-        pos,
-        dir,
-        resolution,
-        TurnDir::Left,
-    )
-}
-
-/// See `turn_by_one_hex_edge`.
-pub fn turn_right_by_one_hex_edge(
-    pos: &mut CellPos,
-    dir: &mut Dir,
-    resolution: [IntCoord; 2],
-) -> Result<(), ()> {
-    turn_by_one_hex_edge(
-        pos,
-        dir,
-        resolution,
-        TurnDir::Right,
-    )
-}
-
 /// Returns an error if `pos` and `dir` do not point at an edge
-/// of the current cell; this is intended for rotating to valid
-/// directions for forward movement, which isnt possible if the starting
-/// direction is illegal.
+/// of the current cell; it's illegal to move toward a cell vertex.
 ///
 /// Behaviour is undefined if `pos` and `dir` are not already in their
 /// canonical form; i.e. if `pos` is on the boundary of two root quads,
@@ -49,15 +14,14 @@ pub fn turn_right_by_one_hex_edge(
 /// bounds of its root quad.
 ///
 /// Both these cases will panic in debug mode.
-pub fn turn_by_one_hex_edge(
+pub fn move_forward(
     pos: &mut CellPos,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
-    turn_dir: TurnDir,
 ) -> Result<(), ()> {
     debug_assert_pos_within_root(pos, resolution);
 
-    // Only allow turning from and to valid directions for forward movement.
+    // Only allow moving into immediately adjacent cells.
     //
     // We've already established at this point that we will be moving
     // to a cell that is within the same root quad as the one we are
@@ -68,26 +32,18 @@ pub fn turn_by_one_hex_edge(
         return Err(());
     }
 
-    #[cfg(debug)]
-    {
-        let next_pos = adjacent_pos_in_dir(*pos, *dir)?;
-        // Pos should still be within the root bounds; otherwise it means
-        // `pos` and `dir` were not in their canonical forms when passed
-        // into this function. (`pos` should have been in a different root.)
-        debug_assert_pos_within_root(next_pos, resolution);
-    }
+    *pos = adjacent_pos_in_dir(*pos, *dir)?;
 
-    // Turn left by one hexagon edge.
-    *dir = match turn_dir {
-        TurnDir::Left => dir.next_hex_edge_left(),
-        TurnDir::Right => dir.next_hex_edge_right(),
-    };
+    // Pos should still be within the root bounds; otherwise it means
+    // `pos` and `dir` were not in their canonical forms when passed
+    // into this function. (`pos` should have been in a different root.)
+    debug_assert_pos_within_root(pos, resolution);
 
     // Rebase on whatever root quad we're now pointing into if necessary.
-    maybe_rebase_on_adjacent_root_following_rotation(pos, dir, resolution);
+    maybe_rebase_on_adjacent_root_following_movement(pos, dir, resolution);
 
     // Nothing bad happened up to here; presumably we successfully
-    // turned by one hexagon edge and rebased on whatever root quad we're
+    // advanced by one step and rebased on whatever root quad we're
     // now pointing into if necessary.
     Ok(())
 }
@@ -98,7 +54,7 @@ pub fn turn_by_one_hex_edge(
 /// Panics if `dir` does not point to a direction that would
 /// represent an immediately adjacent cell _if `pos` were if in a hexagon_
 /// (which is not necessarily so).
-fn maybe_rebase_on_adjacent_root_following_rotation(
+fn maybe_rebase_on_adjacent_root_following_movement(
     pos: &mut CellPos,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
@@ -108,13 +64,17 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
         return;
     }
 
-    // See diagram in `triangles.rs` to help reason about these.
     let tri = if is_pentagon(pos, resolution) {
+        // TODO: handle pentagons. This might be as easy as recognising
+        // this case, taking the exact opposite orientation, and then
+        // using `triangle_on_pos_with_closest_mid_axis` to identify the
+        // triangle we want to work with. Here's the code from handling
+        // _rotation_ around a pentagon. You may just be able to add two
+        // more special cases below... :)
+        //
         // Pick the triangle whose middle axis is closest to dir.
-        // This only applies if we're sitting and rotating on a pentagon,
-        // because that's when it's ambiguous which triangle we should
-        // choose otherwise.
-        triangle_on_pos_with_closest_mid_axis(pos, dir, resolution)
+        let dir_we_came_from = dir.opposite();
+        triangle_on_pos_with_closest_mid_axis(pos, &dir_we_came_from, resolution)
     } else {
         // Pick the closest triangle that is oriented such that `pos` lies
         // between its x-axis and y-axis.
@@ -132,8 +92,14 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
         pos.clone(), dir.clone()
     ).expect("Caller should have assured we're pointing at a hex edge.");
 
-    // If the next step would be into the same root, then we can just transform
-    // straight back to world coordinates via the same triangle
+    // Next check if `pos` doesn't need to be re-based on a neighboring root quad
+    // because it's `next_pos` is still in this root. Note that we're not checking
+    // the far edges because re-orienting `pos` and `next_pos` on arctic-equivalent
+    // triangles like we're doing guarantees they'll never be near the far end.
+    //
+    // Prefer this to falling through to this case so that we can avoid all the
+    // computation below, and also detect movement cases we've missed and panic.
+    // (See bottom of function.)
     let still_in_same_quad =
         next_pos.x >= 0 &&
         next_pos.y >= 0;
@@ -142,7 +108,21 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
         return;
     }
 
-    // Turning left (pointing more east) around north pole.
+    // Moving north-east through north pole.
+    if pos.x == 0 && pos.y == 0 && dir.index == 6 {
+        *dir = Dir::new(1);
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[2]);
+        return;
+    }
+
+    // Moving north-west through north pole.
+    if pos.x == 0 && pos.y == 0 && dir.index == 8 {
+        *dir = Dir::new(1);
+        transform_into_exit_triangle(pos, dir, resolution, &tri.exits[3]);
+        return;
+    }
+
+    // Moving east around north pole.
     if next_pos.x < 0 {
         pos.x = pos.y;
         pos.y = 0;
@@ -152,7 +132,7 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
         return;
     }
 
-    // Turning right (pointing more west) around north pole.
+    // Moving west around north pole.
     if next_pos.y < 0 {
         pos.y = pos.x;
         pos.x = 0;
@@ -163,5 +143,5 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
     }
 
     // Uh oh, we must have missed a case.
-    panic!("Oops, we must have forgotten a rotation case. Sounds like we didn't test hard enough!")
+    panic!("Oops, we must have forgotten a movement case. Sounds like we didn't test hard enough!")
 }

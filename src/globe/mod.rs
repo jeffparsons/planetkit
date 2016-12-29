@@ -5,12 +5,11 @@ pub mod icosahedron;
 mod spec;
 pub mod chunk;
 mod root;
-mod cell_shape;
+pub mod cell_shape;
 mod view;
 mod gen;
 mod cell_pos;
 mod dir;
-pub mod movement;
 
 use types::*;
 

@@ -2,7 +2,7 @@ use specs;
 
 use ::types::*;
 use globe::{ CellPos, Dir, Spec };
-use globe::movement::*;
+use ::movement::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.

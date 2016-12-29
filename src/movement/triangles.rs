@@ -47,7 +47,7 @@
 
 use na;
 
-use super::super::{ IntCoord, DirIndex, RootIndex };
+use ::globe::{ IntCoord, DirIndex, RootIndex };
 
 type Pos2 = na::Point2<IntCoord>;
 

@@ -26,6 +26,7 @@ pub mod window;
 pub mod render;
 pub mod simple;
 pub mod cell_dweller;
+pub mod movement;
 
 mod spatial;
 pub use spatial::Spatial;
