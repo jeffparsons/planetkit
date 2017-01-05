@@ -1,3 +1,8 @@
+// Hook up Clippy plugin if explicitly requested.
+// You should only do this on nightly Rust.
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 extern crate chrono;
 extern crate rand;
 extern crate noise;
