@@ -6,6 +6,8 @@ use types::*;
 use super::CellDweller;
 use ::Spatial;
 use ::movement::*;
+use globe::Globe;
+use globe::chunk::Material;
 
 pub enum Event {
     StepForward(bool),
@@ -21,6 +23,11 @@ pub struct ControlSystem {
     step_backward: bool,
     turn_left: bool,
     turn_right: bool,
+}
+
+enum ForwardOrBackward {
+    Forward,
+    Backward,
 }
 
 impl ControlSystem {
@@ -46,31 +53,83 @@ impl ControlSystem {
             }
         }
     }
+
+    fn step_if_possible(
+        &self,
+        cd: &mut CellDweller,
+        globe: &Globe,
+        forward_or_backward: ForwardOrBackward,
+    ) {
+        // Find out whether we're actually allowed to step there.
+        let mut new_pos = cd.pos;
+        let mut new_dir = cd.dir;
+        let mut new_last_turn_bias = cd.last_turn_bias;
+
+        match forward_or_backward {
+            ForwardOrBackward::Forward => {
+                step_forward_and_face_neighbor(&mut new_pos, &mut new_dir, globe.spec().root_resolution, &mut new_last_turn_bias)
+            },
+            ForwardOrBackward::Backward => {
+                step_backward_and_face_neighbor(&mut new_pos, &mut new_dir, globe.spec().root_resolution, &mut new_last_turn_bias)
+            },
+        }.expect("CellDweller should have been in good state.");
+
+        // Ask the globe if we can go there.
+        let cell = globe.cell(new_pos);
+        let can_move_to_cell = cell.material == Material::Air;
+
+        if can_move_to_cell {
+            cd.set_cell_pos(new_pos, new_dir, new_last_turn_bias);
+            cd.seconds_until_next_move = cd.seconds_between_moves;
+            trace!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+        }
+    }
 }
 
 impl specs::System<TimeDelta> for ControlSystem {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
         use specs::Join;
         self.consume_input();
-        let (mut cell_dwellers, mut spatials) = arg.fetch(|w|
-            (w.write::<CellDweller>(), w.write::<Spatial>())
+        let (mut cell_dwellers, mut spatials, globes) = arg.fetch(|w|
+            (w.write::<CellDweller>(), w.write::<Spatial>(), w.read::<Globe>())
         );
         for (cd, spatial) in (&mut cell_dwellers, &mut spatials).iter() {
+            // Get the associated globe, complaining loudly if we fail.
+            let globe_entity = match cd.globe_entity {
+                Some(globe_entity) => globe_entity,
+                None => {
+                    warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
+                    continue;
+                },
+            };
+            let globe = match globes.get(globe_entity) {
+                Some(globe) => globe,
+                None => {
+                    warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                    continue;
+                },
+            };
+
             // Count down until we're allowed to move next.
             if cd.seconds_until_next_move > 0.0 {
                 cd.seconds_until_next_move = (cd.seconds_until_next_move - dt).max(0.0);
             }
             let still_waiting_to_move = cd.seconds_until_next_move > 0.0;
-            if !still_waiting_to_move {
-                if self.step_forward && !self.step_backward  {
-                    cd.step_forward();
-                    cd.seconds_until_next_move = cd.seconds_between_moves;
-                    trace!(self.log, "Stepped forward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-                } else if self.step_backward && !self.step_forward {
-                    cd.step_backward();
-                    cd.seconds_until_next_move = cd.seconds_between_moves;
-                    trace!(self.log, "Stepped backward"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-                }
+            // We can only step if forward XOR backward.
+            // Otherwise we're not trying to go anywhere,
+            // or we're trying to go both directions.
+            let forward_xor_backward = self.step_forward != self.step_backward;
+            if !still_waiting_to_move && forward_xor_backward {
+                let forward_or_backward = if self.step_forward {
+                    ForwardOrBackward::Forward
+                } else {
+                    ForwardOrBackward::Backward
+                };
+                self.step_if_possible(
+                    cd,
+                    globe,
+                    forward_or_backward,
+                );
             }
 
             // Count down until we're allowed to turn next.

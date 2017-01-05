@@ -4,6 +4,10 @@ use super::transform::*;
 use super::turn::turn_around_and_face_neighbor;
 use super::util::*;
 
+// TODO: rename these methods so that there's
+// no method with an obvious name like "move_forward"
+// that doesn't actually do what you want most of the time.
+
 /// Move forward by one cell and ensure `dir` now points to a
 /// legal direction for continued movement.
 ///

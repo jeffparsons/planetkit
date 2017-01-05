@@ -114,6 +114,7 @@ impl App {
         world.register::<cell_dweller::CellDweller>();
         world.register::<render::Visual>();
         world.register::<Spatial>();
+        world.register::<globe::Globe>();
 
         // Add some things to the world.
 
@@ -155,11 +156,18 @@ impl App {
         );
         let mut cell_dweller_visual = render::Visual::new();
         cell_dweller_visual.set_mesh_handle(axes_mesh);
+        let globe_spec = globe.spec();
+        // First add the globe to the world so we can get a
+        // handle on its entity.
+        let globe_entity = world.create_now()
+            .with(globe)
+            .build();
         world.create_now()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
                 Dir::default(),
-                globe.spec(),
+                globe_spec,
+                Some(globe_entity),
             ))
             .with(cell_dweller_visual)
             .with(Spatial::root())

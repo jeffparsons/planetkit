@@ -1,3 +1,5 @@
+use specs;
+
 use chrono::Duration;
 
 use slog::Logger;
@@ -290,4 +292,23 @@ impl Globe {
             pos.z += 1;
         }
     }
+}
+
+impl<'a> Globe {
+    pub fn cell(
+        &'a self,
+        mut pos: CellPos,
+    ) -> &'a Cell {
+        // Translate into owning root.
+        // TODO: wrapper types so we don't have to do
+        // this sort of thing defensively!
+        pos = self.spec.pos_in_owning_root(pos);
+        let chunk_index = self.index_of_chunk_owning(pos)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
+        self.chunks[chunk_index].cell(pos)
+    }
+}
+
+impl specs::Component for Globe {
+    type Storage = specs::HashMapStorage<Globe>;
 }

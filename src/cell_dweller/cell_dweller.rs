@@ -7,22 +7,23 @@ use ::movement::*;
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
     // TODO: is this guts pattern worth a separate macro crate of its own?
-    pos: CellPos,
-    dir: Dir,
-    last_turn_bias: TurnDir,
+    pub pos: CellPos,
+    pub dir: Dir,
+    pub last_turn_bias: TurnDir,
     // Most `CellDweller`s will also be `Spatial`s. Track whether the
     // computed real-space transform has been updated since the globe-space
     // transform was modified so we know when the former is dirty.
     is_real_space_transform_dirty: bool,
-    globe_spec: Spec,
+    pub globe_spec: Spec,
     pub seconds_between_moves: TimeDelta,
     pub seconds_until_next_move: TimeDelta,
     pub seconds_between_turns: TimeDelta,
     pub seconds_until_next_turn: TimeDelta,
+    pub globe_entity: Option<specs::Entity>,
 }
 
 impl CellDweller {
-    pub fn new(pos: CellPos, dir: Dir, globe_spec: Spec) -> CellDweller {
+    pub fn new(pos: CellPos, dir: Dir, globe_spec: Spec, globe_entity: Option<specs::Entity>) -> CellDweller {
         CellDweller {
             pos: pos,
             dir: dir,
@@ -35,6 +36,7 @@ impl CellDweller {
             // TODO: accept as parameter
             seconds_between_turns: 0.2,
             seconds_until_next_turn: 0.0,
+            globe_entity: globe_entity,
         }
     }
 
@@ -42,33 +44,20 @@ impl CellDweller {
         self.pos
     }
 
-    pub fn set_cell_pos(&mut self, new_pos: CellPos) {
+    pub fn set_cell_pos(
+        &mut self,
+        new_pos: CellPos,
+        new_dir: Dir,
+        new_last_turn_bias: TurnDir,
+    ) {
         self.pos = new_pos;
+        self.dir = new_dir;
+        self.last_turn_bias = new_last_turn_bias;
         self.is_real_space_transform_dirty = true;
     }
 
     pub fn dir(&self) -> Dir {
         self.dir
-    }
-
-    pub fn step_forward(&mut self) {
-        step_forward_and_face_neighbor(
-            &mut self.pos,
-            &mut self.dir,
-            self.globe_spec.root_resolution,
-            &mut self.last_turn_bias,
-        ).expect("This suggests a bug in `movement` code.");
-        self.is_real_space_transform_dirty = true;
-    }
-
-    pub fn step_backward(&mut self) {
-        step_backward_and_face_neighbor(
-            &mut self.pos,
-            &mut self.dir,
-            self.globe_spec.root_resolution,
-            &mut self.last_turn_bias,
-        ).expect("This suggests a bug in `movement` code.");
-        self.is_real_space_transform_dirty = true;
     }
 
     pub fn turn(&mut self, turn_dir: TurnDir) {
