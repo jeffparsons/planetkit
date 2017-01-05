@@ -85,8 +85,8 @@ pub fn closest_triangle_to_point(
         // Both parts of the apex are expressed in terms of x-dimension.
         let apex = triangle.apex * resolution[0];
         let apex_to_pos = na::Absolute::abs(&(pos2 - apex));
-        let hex_distance_from_apex_to_pos = apex_to_pos.x + apex_to_pos.y;
-        hex_distance_from_apex_to_pos
+        // Hex distance from apex to pos
+        apex_to_pos.x + apex_to_pos.y
     }).expect("There should have been exactly three items; this shouldn't be possible!")
 }
 

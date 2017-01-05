@@ -12,7 +12,6 @@ use super::triangles::*;
 // We are ignoring z-axis completely because this kid of movement
 // is only in (x, y).
 type Pos2 = na::Point2<IntCoord>;
-type PosVec2 = na::Vector2<IntCoord>;
 type PosMat2 = na::Matrix2<IntCoord>;
 
 /// Transform `pos` and `dir` as specified relative to a given triangles apex,
@@ -44,7 +43,7 @@ pub fn local_to_world(
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = tri.apex * resolution[0];
     new_pos2 += apex.to_vector();
-    let mut new_pos = pos.clone();
+    let mut new_pos = pos;
     new_pos.x = new_pos2.x;
     new_pos.y = new_pos2.y;
 
@@ -81,7 +80,7 @@ pub fn world_to_local(
 
     // Apply transform.
     let new_pos2: Pos2 = transform_to_local * pos_from_tri_apex;
-    let mut new_pos = pos.clone();
+    let mut new_pos = pos;
     new_pos.x = new_pos2.x;
     new_pos.y = new_pos2.y;
     let new_dir = Dir::new((dir.index + 12 - x_dir) % 12);

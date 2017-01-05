@@ -11,7 +11,7 @@ pub struct Visual {
 }
 
 impl Visual {
-    pub fn new() -> Visual {
+    pub fn new_empty() -> Visual {
         Visual {
             mesh_handle: None,
         }

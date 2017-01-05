@@ -164,7 +164,7 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
     *dir = new_dir;
 
     let next_pos = adjacent_pos_in_dir(
-        pos.clone(), dir.clone()
+        *pos, *dir
     ).expect("Caller should have assured we're pointing at a hex edge.");
 
     // If the next step would be into the same root, then we can just transform

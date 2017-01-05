@@ -58,7 +58,7 @@ fn add_blob(
     offset: [f32; 3],
 ) {
     let first_vertex_index = vertex_data.len() as u32;
-    for vertex in icosahedron::VERTICES.iter() {
+    for vertex in &icosahedron::VERTICES {
         vertex_data.push(
             Vertex::new([
                 // TODO: this multiplier is only because the globe I'm testing
@@ -70,7 +70,7 @@ fn add_blob(
             ], color)
         );
     }
-    for face in icosahedron::FACES.iter() {
+    for face in &icosahedron::FACES {
         index_vec.push(first_vertex_index + face[0] as u32);
         index_vec.push(first_vertex_index + face[1] as u32);
         index_vec.push(first_vertex_index + face[2] as u32);

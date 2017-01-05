@@ -52,7 +52,7 @@ impl View {
 
                 // TODO: factor out
                 self.make_chunk_geometry(
-                    &chunk,
+                    chunk,
                     &mut vertex_data,
                     &mut index_data,
                 );
@@ -276,9 +276,9 @@ impl View {
                 }
 
                 let mut neighbour_pos = cell_pos;
-                neighbour_pos.x = neighbour_pos.x + d_x;
-                neighbour_pos.y = neighbour_pos.y + d_y;
-                neighbour_pos.z = neighbour_pos.z + d_z;
+                neighbour_pos.x += d_x;
+                neighbour_pos.y += d_y;
+                neighbour_pos.z += *d_z;
 
                 let neighbour = chunk.cell(neighbour_pos);
                 if neighbour.material == Material::Air {

@@ -47,7 +47,7 @@ impl Spec {
             return false;
         }
 
-        return true;
+        true
     }
 
     pub fn chunks_per_root_side(&self) -> [IntCoord; 2] {

@@ -168,7 +168,7 @@ fn maybe_rebase_on_adjacent_root_following_movement(
     *dir = new_dir;
 
     let next_pos = adjacent_pos_in_dir(
-        pos.clone(), dir.clone()
+        *pos, *dir
     ).expect("Caller should have assured we're pointing at a hex edge.");
 
     // Next check if `pos` doesn't need to be re-based on a neighboring root quad

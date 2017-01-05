@@ -28,6 +28,7 @@ pub type IntCoord = i64;
 // Project a position in a given root quad into a unit sphere.
 // Assumes that one corner is represented in `pt_in_root_quad`
 // as (0, 0) and the opposite is (1, 1).
+#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
     // An icosahedron can be flattened into a net comprising 20 triangles:
     //

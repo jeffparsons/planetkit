@@ -82,7 +82,7 @@ impl App {
 
         let log = parent_log.new(o!());
 
-        let projection = Arc::new(Mutex::new(get_projection(&window)));
+        let projection = Arc::new(Mutex::new(get_projection(window)));
         let first_person = FirstPerson::new(
             [0.5, 0.5, 4.0],
             FirstPersonSettings::keyboard_wasd()
@@ -96,13 +96,13 @@ impl App {
             window.output_stencil.clone(),
             first_person_mutex_arc.clone(),
             projection.clone(),
-            &parent_log,
+            &log,
         );
 
         let (input_sender, input_receiver) = mpsc::channel();
         let control_sys = cell_dweller::ControlSystem::new(
             input_receiver,
-            &parent_log,
+            &log,
         );
 
         // Create SPECS world and, system execution planner
@@ -134,7 +134,7 @@ impl App {
                 vertices,
                 vertex_indices,
             );
-            let mut visual = render::Visual::new();
+            let mut visual = render::Visual::new_empty();
             // TODO: defer creating the meshes for all these chunks.
             // Best to offload it to a background thread.
             visual.set_mesh_handle(mesh_handle);
@@ -154,7 +154,7 @@ impl App {
             factory,
             &mut render_sys,
         );
-        let mut cell_dweller_visual = render::Visual::new();
+        let mut cell_dweller_visual = render::Visual::new_empty();
         cell_dweller_visual.set_mesh_handle(axes_mesh);
         let globe_spec = globe.spec();
         // First add the globe to the world so we can get a
@@ -202,9 +202,9 @@ impl App {
                 self.render(&r, &mut window);
             }
 
-            if let Some(_) = e.resize_args() {
+            if e.resize_args().is_some() {
                 let mut projection = self.projection.lock().unwrap();
-                *projection = get_projection(&window);
+                *projection = get_projection(window);
             }
 
             if let Some(u) = e.update_args() {
