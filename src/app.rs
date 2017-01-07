@@ -105,6 +105,11 @@ impl App {
             &log,
         );
 
+        let physics_sys = cell_dweller::PhysicsSystem::new(
+            &log,
+            0.1, // Seconds between falls
+        );
+
         // Create SPECS world and, system execution planner
         // for it with two threads.
         //
@@ -176,6 +181,7 @@ impl App {
         let mut planner = specs::Planner::new(world, 2);
         planner.add_system(render_sys, "render", 50);
         planner.add_system(control_sys, "control", 100);
+        planner.add_system(physics_sys, "control", 90);
 
         App {
             t: 0.0,

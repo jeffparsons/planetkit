@@ -61,13 +61,15 @@ impl ControlSystem {
         forward_or_backward: ForwardOrBackward,
     ) {
         // Only allow movement if you're sitting above solid ground.
+        // (Or, rather, the stuff we consider to be solid for now,
+        // which is anything other than air.)
         if cd.pos.z < 0 {
             // There's nothing below; someone built a silly globe.
             return;
         }
         let under_pos = cd.pos.clone().set_z(cd.pos.z - 1);
         let under_cell = globe.cell(under_pos);
-        if under_cell.material != Material::Dirt {
+        if under_cell.material == Material::Air {
             return;
         }
 
@@ -91,7 +93,8 @@ impl ControlSystem {
         let can_move_to_cell = cell.material == Material::Air;
 
         if can_move_to_cell {
-            cd.set_cell_pos(new_pos, new_dir, new_last_turn_bias);
+            cd.set_cell_transform(new_pos, new_dir, new_last_turn_bias);
+            // REVISIT: += ?
             cd.seconds_until_next_move = cd.seconds_between_moves;
             trace!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
         }

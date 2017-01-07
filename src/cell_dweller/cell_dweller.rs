@@ -19,6 +19,7 @@ pub struct CellDweller {
     pub seconds_until_next_move: TimeDelta,
     pub seconds_between_turns: TimeDelta,
     pub seconds_until_next_turn: TimeDelta,
+    pub seconds_until_next_fall: TimeDelta,
     pub globe_entity: Option<specs::Entity>,
 }
 
@@ -36,6 +37,7 @@ impl CellDweller {
             // TODO: accept as parameter
             seconds_between_turns: 0.2,
             seconds_until_next_turn: 0.0,
+            seconds_until_next_fall: 0.0,
             globe_entity: globe_entity,
         }
     }
@@ -45,6 +47,14 @@ impl CellDweller {
     }
 
     pub fn set_cell_pos(
+        &mut self,
+        new_pos: CellPos,
+    ) {
+        self.pos = new_pos;
+        self.is_real_space_transform_dirty = true;
+    }
+
+    pub fn set_cell_transform(
         &mut self,
         new_pos: CellPos,
         new_dir: Dir,
