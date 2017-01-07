@@ -60,6 +60,18 @@ impl ControlSystem {
         globe: &Globe,
         forward_or_backward: ForwardOrBackward,
     ) {
+        // Only allow movement if you're sitting above solid ground.
+        if cd.pos.z < 0 {
+            // There's nothing below; someone built a silly globe.
+            return;
+        }
+        let under_pos = cd.pos.clone().set_z(cd.pos.z - 1);
+        let under_cell = globe.cell(under_pos);
+        if under_cell.material != Material::Dirt {
+            return;
+        }
+
+
         // Find out whether we're actually allowed to step there.
         let mut new_pos = cd.pos;
         let mut new_dir = cd.dir;
