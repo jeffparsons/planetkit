@@ -73,7 +73,6 @@ impl ControlSystem {
             return;
         }
 
-
         // Find out whether we're actually allowed to step there.
         let mut new_pos = cd.pos;
         let mut new_dir = cd.dir;
@@ -89,8 +88,17 @@ impl ControlSystem {
         }.expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there.
-        let cell = globe.cell(new_pos);
-        let can_move_to_cell = cell.material == Material::Air;
+        let mut cell = globe.cell(new_pos);
+        let mut can_move_to_cell = cell.material == Material::Air;
+
+        // If we can't move there, then try exactly one
+        // cell up as well; we want to allow stepping up
+        // terrain by one cell, but not more.
+        if !can_move_to_cell {
+            new_pos.z += 1;
+            cell = globe.cell(new_pos);
+            can_move_to_cell = cell.material == Material::Air;
+        }
 
         if can_move_to_cell {
             cd.set_cell_transform(new_pos, new_dir, new_last_turn_bias);
