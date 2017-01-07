@@ -36,7 +36,7 @@ impl PhysicsSystem {
         }
         let under_pos = cd.pos.clone().set_z(cd.pos.z - 1);
         let under_cell = globe.cell(under_pos);
-        if under_cell.material != Material::Air {
+        if under_cell.material == Material::Dirt {
             // Reset time until we can fall to the time
             // between falls; we don't want to instantly
             // fall down every step of size 1.

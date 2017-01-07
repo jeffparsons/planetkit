@@ -69,7 +69,7 @@ impl ControlSystem {
         }
         let under_pos = cd.pos.clone().set_z(cd.pos.z - 1);
         let under_cell = globe.cell(under_pos);
-        if under_cell.material == Material::Air {
+        if under_cell.material != Material::Dirt {
             return;
         }
 
@@ -89,7 +89,7 @@ impl ControlSystem {
 
         // Ask the globe if we can go there.
         let mut cell = globe.cell(new_pos);
-        let mut can_move_to_cell = cell.material == Material::Air;
+        let mut can_move_to_cell = cell.material != Material::Dirt;
 
         // If we can't move there, then try exactly one
         // cell up as well; we want to allow stepping up
@@ -97,7 +97,7 @@ impl ControlSystem {
         if !can_move_to_cell {
             new_pos.z += 1;
             cell = globe.cell(new_pos);
-            can_move_to_cell = cell.material == Material::Air;
+            can_move_to_cell = cell.material != Material::Dirt;
         }
 
         if can_move_to_cell {
