@@ -67,7 +67,10 @@ impl ControlSystem {
             // There's nothing below; someone built a silly globe.
             return;
         }
-        let under_pos = cd.pos.clone().set_z(cd.pos.z - 1);
+        // TODO: this reveals that functions like `set_z`
+        // are misleading; this implicitly copies--
+        // not changes the orignal!
+        let under_pos = cd.pos.set_z(cd.pos.z - 1);
         let under_cell = globe.cell(under_pos);
         if under_cell.material != Material::Dirt {
             return;

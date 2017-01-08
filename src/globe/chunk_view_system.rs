@@ -72,7 +72,7 @@ impl ChunkViewSystem {
             let mut vertex_data: Vec<Vertex> = Vec::new();
             let mut index_data: Vec<u32> = Vec::new();
             globe_view.make_chunk_geometry(
-                &chunk,
+                chunk,
                 &mut vertex_data,
                 &mut index_data,
             );
