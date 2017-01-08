@@ -304,7 +304,7 @@ impl Globe {
             if chunk.view_entity.is_some() {
                 continue;
             }
-            debug!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
+            trace!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
             let chunk_view = super::ChunkView::new(
                 globe_entity,
                 chunk.origin,

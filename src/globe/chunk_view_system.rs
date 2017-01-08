@@ -11,12 +11,19 @@ use ::render::{ Visual, ProtoMesh, Vertex };
 // until we have created views for all chunks.
 pub struct ChunkViewSystem {
     log: Logger,
+    seconds_between_geometry_creation: TimeDelta,
+    seconds_since_last_geometry_creation: TimeDelta,
 }
 
 impl ChunkViewSystem {
-    pub fn new(parent_log: &Logger) -> ChunkViewSystem {
+    pub fn new(
+        parent_log: &Logger,
+        seconds_between_geometry_creation: TimeDelta,
+    ) -> ChunkViewSystem {
         ChunkViewSystem {
             log: parent_log.new(o!()),
+            seconds_between_geometry_creation: seconds_between_geometry_creation,
+            seconds_since_last_geometry_creation: 0.0,
         }
     }
 
@@ -26,19 +33,20 @@ impl ChunkViewSystem {
         Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
         Cd: Deref<Target = specs::MaskedStorage<ChunkView>>,
     >(
-        &self,
+        &mut self,
         globes: specs::Storage<Globe, A, Gd>,
         mut visuals: specs::Storage<Visual, A, Vd>,
         chunk_views: specs::Storage<ChunkView, A, Cd>,
     ) {
+        // Throttle rate of geometry creation.
+        // We don't want to spend too much doing this.
+        let ready = self.seconds_since_last_geometry_creation > self.seconds_between_geometry_creation;
+        if !ready {
+            return;
+        }
+
         use specs::Join;
-        // Build geometry for at most `k` chunks in this tick.
-        let mut k = 1;
         for (visual, chunk_view) in (&mut visuals, &chunk_views).iter() {
-            if k == 0 {
-                // We ran out of visuals to make this tick.
-                break;
-            }
             if visual.mesh_handle().is_some() ||
                 visual.proto_mesh.is_some() {
                 // There's already a visual for this mesh.
@@ -46,7 +54,7 @@ impl ChunkViewSystem {
                 continue;
             }
 
-            debug!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
+            trace!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
 
             // Make a proto-mesh for the chunk.
             // Get the associated globe, complaining loudly if we fail.
@@ -78,14 +86,19 @@ impl ChunkViewSystem {
             );
             visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
 
-            k -= 1;
-        }
+            trace!(self.log, "Made chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
 
+            // Do at most 1 per frame; probably far less.
+            self.seconds_since_last_geometry_creation = 0.0;
+            return;
+        }
     }
 }
 
 impl specs::System<TimeDelta> for ChunkViewSystem {
-    fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
+    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
+        self.seconds_since_last_geometry_creation += dt;
+
         use specs::Join;
         let (globes, visuals, chunk_views) = arg.fetch(|w| {
             let mut globes = w.write::<Globe>();
@@ -103,7 +116,8 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
             (globes, w.write::<Visual>(), w.write::<ChunkView>())
         });
 
-        // Build geometry for at most `k` chunks in this tick.
+        // Build geometry for some chunks; throttled
+        // so we don't spend too much time doing this each frame.
         self.build_chunk_geometry(
             globes,
             visuals,

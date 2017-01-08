@@ -26,7 +26,10 @@ pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     log: Logger,
     // TODO: multiple PSOs
     pso: gfx::PipelineState<R, pipe::Meta>,
-    meshes: Vec<Mesh<R>>,
+    // OMG the hacks hurt.
+    // TODO: at very least make a mesh repository
+    // that can be shared.
+    pub meshes: Arc<Mutex<Vec<Mesh<R>>>>,
     encoder_channel: EncoderChannel<R, C>,
     output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
@@ -61,7 +64,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         System {
             pso: pso,
-            meshes: Vec::new(),
+            meshes: Arc::new(Mutex::new(Vec::new())),
             encoder_channel: encoder_channel,
             output_color: output_color,
             output_stencil: output_stencil,
@@ -90,8 +93,9 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
     pub fn add_mesh(&mut self, mesh: Mesh<R>) -> MeshHandle {
         trace!(self.log, "Adding mesh");
-        self.meshes.push(mesh);
-        self.meshes.len() - 1
+        let mut meshes = self.meshes.lock().unwrap();
+        meshes.push(mesh);
+        meshes.len() - 1
     }
 
     // Abstract over `specs` storage types with `A`, and `D`.
@@ -123,6 +127,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         let fp = self.first_person.lock().unwrap();
         let projection = self.projection.lock().unwrap();
+        let mut meshes = self.meshes.lock().unwrap();
 
         // Try to draw all visuals.
         use specs::Join;
@@ -151,7 +156,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
                     *projection
                 );
 
-                let mesh = &mut self.meshes[mesh_handle];
+                let mesh = &mut meshes[mesh_handle];
                 mesh.data_mut().u_model_view_proj = model_view_projection;
                 encoder.draw(
                     mesh.slice(),

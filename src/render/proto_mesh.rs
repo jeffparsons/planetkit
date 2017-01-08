@@ -1,5 +1,6 @@
 use super::Vertex;
 
+#[derive(Clone)]
 pub struct ProtoMesh {
     pub vertexes: Vec<Vertex>,
     pub indexes: Vec<u32>,

@@ -36,7 +36,7 @@ impl<R: gfx::Resources> Mesh<R> {
         vertices: Vec<Vertex>,
         vertex_indices: Vec<u32>,
 
-        // TODO: this stuff belongs on `Draw` at least by default;
+        // TODO: this stuff belongs on `render::System` at least by default;
         // we're unlikely to want to customise it per mesh.
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
         output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,

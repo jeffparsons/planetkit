@@ -2,11 +2,13 @@ use std::sync::{ Arc, Mutex, mpsc };
 use piston_window::PistonWindow;
 use piston::input::{ UpdateArgs, RenderArgs };
 use slog::Logger;
+use gfx;
 use gfx_device_gl;
 use camera_controllers;
 use specs;
 
 use render;
+use render::{ Visual, Mesh };
 use types::*;
 use globe;
 use cell_dweller;
@@ -32,6 +34,10 @@ pub struct App {
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
     first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
+    factory: gfx_device_gl::Factory,
+    output_color: gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)>,
+    output_stencil: gfx::handle::DepthStencilView<gfx_device_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
+    meshes: Arc<Mutex<Vec<Mesh<gfx_device_gl::Resources>>>>,
 }
 
 impl App {
@@ -98,6 +104,7 @@ impl App {
             projection.clone(),
             &log,
         );
+        let meshes = render_sys.meshes.clone();
 
         let (input_sender, input_receiver) = mpsc::channel();
         let control_sys = cell_dweller::ControlSystem::new(
@@ -112,6 +119,7 @@ impl App {
 
         let chunk_view_sys = globe::ChunkViewSystem::new(
             &log,
+            0.05, // Seconds between geometry creation
         );
 
         // Create SPECS world and, system execution planner
@@ -130,29 +138,8 @@ impl App {
 
         // Make globe and create a mesh for each of its chunks.
         //
-        // TODO: move the geometry generation bits somewhere else;
-        // the user shouldn't have to mess with any of this.
-        //
         // TODO: don't bake this into the generic app!
-        let factory = &mut window.factory.clone();
         let globe = globe::Globe::new_example(&log);
-        let globe_view = globe::View::new(&globe, &log);
-        let geometry = globe_view.make_geometry(&globe);
-        for (vertices, vertex_indices) in geometry {
-            let mesh_handle = render_sys.create_mesh(
-                factory,
-                vertices,
-                vertex_indices,
-            );
-            let mut visual = render::Visual::new_empty();
-            // TODO: defer creating the meshes for all these chunks.
-            // Best to offload it to a background thread.
-            visual.set_mesh_handle(mesh_handle);
-            world.create_now()
-                .with(visual)
-                .with(Spatial::root())
-                .build();
-        }
 
         // Find globe surface and put player character on it.
         use globe::{ CellPos, Dir };
@@ -160,6 +147,7 @@ impl App {
         let mut guy_pos = CellPos::default();
         guy_pos = globe.find_lowest_cell_containing(guy_pos, Material::Air)
             .expect("Uh oh, there's something wrong with our globe.");
+        let factory = &mut window.factory.clone();
         let axes_mesh = render::make_axes_mesh(
             factory,
             &mut render_sys,
@@ -197,6 +185,10 @@ impl App {
             input_sender: input_sender,
             projection: projection,
             first_person: first_person_mutex_arc,
+            factory: factory.clone(),
+            output_color: window.output_color.clone(),
+            output_stencil: window.output_stencil.clone(),
+            meshes: meshes,
         }
     }
 
@@ -274,5 +266,49 @@ impl App {
     fn update(&mut self, args: &UpdateArgs) {
         self.t += args.dt;
         self.planner.dispatch(args.dt);
+
+        self.realize_proto_meshes();
+    }
+
+    // This whole thing is a horrible hack around
+    // not being able to create GL resource factories
+    // on other threads. It's acting as a proof that
+    // I can make this work, at which point I should gut
+    // the whole disgusting thing and find a better way
+    // to work around the root problem.
+    fn realize_proto_meshes(&mut self) {
+        // NOTE: it is essential that we lock the world first.
+        // Otherwise we could dead-lock against, e.g., the render
+        // system while it's trying to lock the mesh repository.
+        let world = self.planner.mut_world();
+        let mut meshes = self.meshes.lock().unwrap();
+        let mut visuals = world.write::<Visual>();
+        use specs::Join;
+        for visual in (&mut visuals).iter() {
+            let needs_to_be_realized =
+                visual.mesh_handle().is_none() &&
+                visual.proto_mesh.is_some();
+            // TODO: when it comes time to replacing existing meshes
+            // when the globe is updated, don't leak old meshes!
+            // This should be as simple as removing the old mesh
+            // from the mesh repository, and replacing it with
+            // the new mesh. `needs_to_be_realized` then becomes
+            // just a test for the presence of a proto-mesh.
+            if !needs_to_be_realized {
+                continue;
+            }
+            let proto_mesh = visual.proto_mesh.clone().expect("Just ensured this above...");
+            let mesh = Mesh::new(
+                &mut self.factory,
+                proto_mesh.vertexes.clone(),
+                proto_mesh.indexes.clone(),
+                self.output_color.clone(),
+                self.output_stencil.clone(),
+            );
+            meshes.push(mesh);
+            let mesh_handle = meshes.len() - 1;
+            visual.set_mesh_handle(mesh_handle);
+            visual.proto_mesh = None;
+        }
     }
 }
