@@ -173,6 +173,10 @@ C: 'static + gfx::CommandBuffer<R> + Send,
         let (visuals, spatials) = arg.fetch(|w|
             (w.read::<Visual>(), w.read::<Spatial>()),
         );
+
+        // TODO: turn any proto-meshes into real meshes.
+        // ...but we need access to the resource factory for that.
+
         self.draw(dt, visuals, spatials);
 
         // TODO: implement own "extrapolated time" concept or similar

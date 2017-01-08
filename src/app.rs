@@ -110,6 +110,10 @@ impl App {
             0.1, // Seconds between falls
         );
 
+        let chunk_view_sys = globe::ChunkViewSystem::new(
+            &log,
+        );
+
         // Create SPECS world and, system execution planner
         // for it with two threads.
         //
@@ -120,6 +124,7 @@ impl App {
         world.register::<render::Visual>();
         world.register::<Spatial>();
         world.register::<globe::Globe>();
+        world.register::<globe::ChunkView>();
 
         // Add some things to the world.
 
@@ -179,9 +184,10 @@ impl App {
             .build();
 
         let mut planner = specs::Planner::new(world, 2);
-        planner.add_system(render_sys, "render", 50);
         planner.add_system(control_sys, "control", 100);
-        planner.add_system(physics_sys, "control", 90);
+        planner.add_system(physics_sys, "cd_physics", 90);
+        planner.add_system(chunk_view_sys, "chunk_view", 50);
+        planner.add_system(render_sys, "render", 50);
 
         App {
             t: 0.0,

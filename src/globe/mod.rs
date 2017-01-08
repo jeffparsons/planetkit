@@ -10,6 +10,8 @@ mod view;
 mod gen;
 mod cell_pos;
 mod dir;
+mod chunk_view;
+mod chunk_view_system;
 
 use types::*;
 
@@ -20,6 +22,8 @@ pub use self::spec::*;
 pub use self::view::*;
 pub use self::cell_pos::*;
 pub use self::dir::*;
+pub use self::chunk_view::*;
+pub use self::chunk_view_system::*;
 
 pub type IntCoord = i64;
 

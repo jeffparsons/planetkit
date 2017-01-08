@@ -1,6 +1,7 @@
 use specs;
 
 use super::MeshHandle;
+use super::ProtoMesh;
 
 pub struct Visual {
     // Even if a component has visual nature, its mesh might
@@ -8,12 +9,18 @@ pub struct Visual {
     // and we don't want to have to hold up the show to wait for that.
     // We may also want to change its appearance dynamically.
     mesh_handle: Option<MeshHandle>,
+    // Vertex and index data that hasn't yet been sent to
+    // the video card. Render system uses this to replace the
+    // actual mesh whenever this is present.
+    // TODO: privacy
+    pub proto_mesh: Option<ProtoMesh>,
 }
 
 impl Visual {
     pub fn new_empty() -> Visual {
         Visual {
             mesh_handle: None,
+            proto_mesh: None,
         }
     }
 

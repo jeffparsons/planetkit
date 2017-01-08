@@ -1,3 +1,4 @@
+use specs;
 use globe::{ IntCoord, CellPos };
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -29,6 +30,7 @@ pub struct Chunk {
     pub resolution: [IntCoord; 3],
     // Sorted by (z, y, x).
     pub cells: Vec<Cell>,
+    pub view_entity: Option<specs::Entity>,
 }
 
 impl Chunk {

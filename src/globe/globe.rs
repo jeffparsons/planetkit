@@ -12,6 +12,7 @@ use super::CellPos;
 use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
 use super::gen::Gen;
+use ::Spatial;
 
 const ROOT_QUADS: u8 = 5;
 
@@ -163,6 +164,7 @@ impl Globe {
             origin: origin,
             cells: cells,
             resolution: self.spec.chunk_resolution,
+            view_entity: None,
         });
     }
 
@@ -290,6 +292,32 @@ impl Globe {
                 return pos.into();
             }
             pos.z += 1;
+        }
+    }
+
+    pub fn ensure_chunk_view_entities(
+        &mut self,
+        world: &specs::World,
+        globe_entity: specs::Entity,
+    ) {
+        for chunk in &mut self.chunks {
+            if chunk.view_entity.is_some() {
+                continue;
+            }
+            debug!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
+            let chunk_view = super::ChunkView::new(
+                globe_entity,
+                chunk.origin,
+            );
+            // We'll fill it in later.
+            let empty_visual = ::render::Visual::new_empty();
+            chunk.view_entity = world.create_later_build()
+                .with(chunk_view)
+                .with(empty_visual)
+                // TODO: parent it on the globe when we can do that.
+                .with(Spatial::root())
+                .build()
+                .into();
         }
     }
 }

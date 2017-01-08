@@ -18,7 +18,7 @@ dependencies = [
  "shader_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "slog 1.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "slog-term 1.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "specs 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "specs 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "vecmath 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -928,7 +928,7 @@ dependencies = [
 
 [[package]]
 name = "specs"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "atom 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1212,7 +1212,7 @@ dependencies = [
 "checksum slog-extra 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f571614f815a4dc3aad7b9052d1e3eefd5ab76bb36efa90d4dc9ac134142b445"
 "checksum slog-stream 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e6f0fee00b80a7a44f82c5cf44ba03b6dc2712f9c14469a62ad90ea0911635c5"
 "checksum slog-term 1.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "26f3e8b2e18043b47713bd27a01656077ddd2d903e8653285fd6b25140d73007"
-"checksum specs 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0f7c8568d52ffdf8f125a597853dad823bb8463dd959a0fcf9c3472d896de906"
+"checksum specs 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "c619c7c11d119cf121cc174f50103337367f7770e74b816641c5a8efa56797f9"
 "checksum stb_truetype 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a0955c15cfb412f0c4fdfb3d07d2b1915869e472b35646cc3a3a104a8f79517b"
 "checksum target_build_utils 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7a1be18d4d908e4e5697908de04fdd5099505463fc8eaf1ceb8133ae486936aa"
 "checksum tempfile 2.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "9270837a93bad1b1dac18fe67e786b3c960513af86231f6f4f57fddd594ff0c8"
