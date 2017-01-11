@@ -34,6 +34,8 @@ impl<R: gfx::Resources> Mesh<R> {
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
         vertices: Vec<Vertex>,
+        // TODO: accept usize, not u32.
+        // That kind of optimisation isn't worthwhile until you hit the video card.
         vertex_indices: Vec<u32>,
 
         // TODO: this stuff belongs on `render::System` at least by default;

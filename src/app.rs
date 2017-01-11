@@ -8,7 +8,7 @@ use camera_controllers;
 use specs;
 
 use render;
-use render::{ Visual, Mesh };
+use render::{ Visual, Mesh, MeshRepository };
 use types::*;
 use globe;
 use cell_dweller;
@@ -37,7 +37,7 @@ pub struct App {
     factory: gfx_device_gl::Factory,
     output_color: gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)>,
     output_stencil: gfx::handle::DepthStencilView<gfx_device_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
-    meshes: Arc<Mutex<Vec<Mesh<gfx_device_gl::Resources>>>>,
+    mesh_repo: Arc<Mutex<MeshRepository<gfx_device_gl::Resources>>>,
 }
 
 impl App {
@@ -47,10 +47,6 @@ impl App {
             FirstPerson,
         };
         use ::Spatial;
-
-        // Make OpenGL resource factory.
-        // We'll use this for creating all our vertex buffers, etc.
-        let factory = &mut window.factory.clone();
 
         // Rendering system, with bi-directional channel to pass
         // encoder back and forth between this thread (which owns
@@ -95,16 +91,11 @@ impl App {
         );
         let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
 
-        let mut render_sys = render::System::new(
-            factory,
-            render_sys_encoder_channel,
+        let mut mesh_repo = MeshRepository::new(
             window.output_color.clone(),
             window.output_stencil.clone(),
-            first_person_mutex_arc.clone(),
-            projection.clone(),
             &log,
         );
-        let meshes = render_sys.meshes.clone();
 
         let (input_sender, input_receiver) = mpsc::channel();
         let control_sys = cell_dweller::ControlSystem::new(
@@ -150,7 +141,7 @@ impl App {
         let factory = &mut window.factory.clone();
         let axes_mesh = render::make_axes_mesh(
             factory,
-            &mut render_sys,
+            &mut mesh_repo,
         );
         let mut cell_dweller_visual = render::Visual::new_empty();
         cell_dweller_visual.set_mesh_handle(axes_mesh);
@@ -171,6 +162,18 @@ impl App {
             .with(Spatial::root())
             .build();
 
+        let mesh_repo_ptr = Arc::new(Mutex::new(mesh_repo));
+        let render_sys = render::System::new(
+            factory,
+            render_sys_encoder_channel,
+            window.output_color.clone(),
+            window.output_stencil.clone(),
+            first_person_mutex_arc.clone(),
+            projection.clone(),
+            &log,
+            mesh_repo_ptr.clone(),
+        );
+
         let mut planner = specs::Planner::new(world, 2);
         planner.add_system(control_sys, "control", 100);
         planner.add_system(physics_sys, "cd_physics", 90);
@@ -188,7 +191,7 @@ impl App {
             factory: factory.clone(),
             output_color: window.output_color.clone(),
             output_stencil: window.output_stencil.clone(),
-            meshes: meshes,
+            mesh_repo: mesh_repo_ptr,
         }
     }
 
@@ -281,7 +284,7 @@ impl App {
         // Otherwise we could dead-lock against, e.g., the render
         // system while it's trying to lock the mesh repository.
         let world = self.planner.mut_world();
-        let mut meshes = self.meshes.lock().unwrap();
+        let mut mesh_repo = self.mesh_repo.lock().unwrap();
         let mut visuals = world.write::<Visual>();
         use specs::Join;
         for visual in (&mut visuals).iter() {
@@ -305,8 +308,7 @@ impl App {
                 self.output_color.clone(),
                 self.output_stencil.clone(),
             );
-            meshes.push(mesh);
-            let mesh_handle = meshes.len() - 1;
+            let mesh_handle = mesh_repo.add_mesh(mesh);
             visual.set_mesh_handle(mesh_handle);
             visual.proto_mesh = None;
         }
