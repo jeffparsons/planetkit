@@ -9,15 +9,15 @@ use ::movement::*;
 use globe::Globe;
 use globe::chunk::Material;
 
-pub enum Event {
+pub enum MovementEvent {
     StepForward(bool),
     StepBackward(bool),
     TurnLeft(bool),
     TurnRight(bool),
 }
 
-pub struct ControlSystem {
-    input_receiver: mpsc::Receiver<Event>,
+pub struct MovementSystem {
+    input_receiver: mpsc::Receiver<MovementEvent>,
     log: Logger,
     step_forward: bool,
     step_backward: bool,
@@ -30,9 +30,9 @@ enum ForwardOrBackward {
     Backward,
 }
 
-impl ControlSystem {
-    pub fn new(input_receiver: mpsc::Receiver<Event>, parent_log: &Logger) -> ControlSystem {
-        ControlSystem {
+impl MovementSystem {
+    pub fn new(input_receiver: mpsc::Receiver<MovementEvent>, parent_log: &Logger) -> MovementSystem {
+        MovementSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
             step_forward: false,
@@ -45,10 +45,10 @@ impl ControlSystem {
     fn consume_input(&mut self) {
         loop {
             match self.input_receiver.try_recv() {
-                Ok(Event::StepForward(b)) => self.step_forward = b,
-                Ok(Event::StepBackward(b)) => self.step_backward = b,
-                Ok(Event::TurnLeft(b)) => self.turn_left = b,
-                Ok(Event::TurnRight(b)) => self.turn_right = b,
+                Ok(MovementEvent::StepForward(b)) => self.step_forward = b,
+                Ok(MovementEvent::StepBackward(b)) => self.step_backward = b,
+                Ok(MovementEvent::TurnLeft(b)) => self.turn_left = b,
+                Ok(MovementEvent::TurnRight(b)) => self.turn_right = b,
                 Err(_) => return,
             }
         }
@@ -112,7 +112,7 @@ impl ControlSystem {
     }
 }
 
-impl specs::System<TimeDelta> for ControlSystem {
+impl specs::System<TimeDelta> for MovementSystem {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
         use specs::Join;
         self.consume_input();

@@ -29,7 +29,7 @@ pub struct App {
     log: Logger,
     planner: specs::Planner<TimeDelta>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    input_sender: mpsc::Sender<cell_dweller::ControlEvent>,
+    movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
@@ -97,9 +97,9 @@ impl App {
             &log,
         );
 
-        let (input_sender, input_receiver) = mpsc::channel();
-        let control_sys = cell_dweller::ControlSystem::new(
-            input_receiver,
+        let (movement_input_sender, movement_input_receiver) = mpsc::channel();
+        let control_sys = cell_dweller::MovementSystem::new(
+            movement_input_receiver,
             &log,
         );
 
@@ -185,7 +185,7 @@ impl App {
             log: log,
             planner: planner,
             encoder_channel: device_encoder_channel,
-            input_sender: input_sender,
+            movement_input_sender: movement_input_sender,
             projection: projection,
             first_person: first_person_mutex_arc,
             factory: factory.clone(),
@@ -219,22 +219,22 @@ impl App {
             }
 
             use piston::input::keyboard::Key;
-            use cell_dweller::ControlEvent;
+            use cell_dweller::MovementEvent;
             if let Some(Button::Keyboard(key)) = e.press_args() {
                 match key {
-                    Key::I => self.input_sender.send(ControlEvent::StepForward(true)).unwrap(),
-                    Key::K => self.input_sender.send(ControlEvent::StepBackward(true)).unwrap(),
-                    Key::J => self.input_sender.send(ControlEvent::TurnLeft(true)).unwrap(),
-                    Key::L => self.input_sender.send(ControlEvent::TurnRight(true)).unwrap(),
+                    Key::I => self.movement_input_sender.send(MovementEvent::StepForward(true)).unwrap(),
+                    Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(true)).unwrap(),
+                    Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(true)).unwrap(),
+                    Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(true)).unwrap(),
                     _ => (),
                 }
             }
             if let Some(Button::Keyboard(key)) = e.release_args() {
                 match key {
-                    Key::I => self.input_sender.send(ControlEvent::StepForward(false)).unwrap(),
-                    Key::K => self.input_sender.send(ControlEvent::StepBackward(false)).unwrap(),
-                    Key::J => self.input_sender.send(ControlEvent::TurnLeft(false)).unwrap(),
-                    Key::L => self.input_sender.send(ControlEvent::TurnRight(false)).unwrap(),
+                    Key::I => self.movement_input_sender.send(MovementEvent::StepForward(false)).unwrap(),
+                    Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(false)).unwrap(),
+                    Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(false)).unwrap(),
+                    Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap(),
                     _ => (),
                 }
             }
