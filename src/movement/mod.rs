@@ -26,4 +26,7 @@ pub use self::turn::{
     turn_by_one_hex_edge,
     turn_around_and_face_neighbor,
 };
-pub use self::util::adjacent_pos_in_dir;
+pub use self::util::{
+    adjacent_pos_in_dir,
+    is_pentagon,
+};
