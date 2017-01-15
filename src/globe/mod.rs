@@ -158,3 +158,98 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
     use na::Norm;
     *pos_on_icosahedron.as_vector().normalize().as_point()
 }
+
+// Returns a position equivalent to `pos`,
+// but in whatever root owns the data for `pos`.
+//
+// The output will only ever differ from the input
+// if `pos` is on the edge of a root quad.
+//
+// Will return nonsense (or panics) if `pos` lies beyond the
+// edges of its root.
+pub fn pos_in_owning_root(pos: CellPos, resolution: [IntCoord; 2]) -> CellPos {
+    // Here is the pattern of which root a cell belongs to.
+    //
+    // Note how adacent roots neatly slot into each other's
+    // non-owned cells when wrapped around the globe.
+    //
+    // Also note the special cases for north and south poles;
+    // they don't fit neatly into the general pattern.
+    //
+    // In the diagram below, each circle represents a hexagon
+    // in a voxmap shell. Filled circles belong to the root,
+    // and empty circles belong to an adjacent root.
+    //
+    //   Root 0   Roots 1, 2, 3   Root 4
+    //   ------   -------------   ------
+    //
+    //      ●           ◌           ◌
+    //     ◌ ●         ◌ ●         ◌ ●
+    //    ◌ ● ●       ◌ ● ●       ◌ ● ●
+    //   ◌ ● ● ●     ◌ ● ● ●     ◌ ● ● ●
+    //  ◌ ● ● ● ●   ◌ ● ● ● ●   ◌ ● ● ● ●
+    //   ◌ ● ● ● ●   ◌ ● ● ● ●   ◌ ● ● ● ●
+    //    ◌ ● ● ● ●   ◌ ● ● ● ●   ◌ ● ● ● ●
+    //     ◌ ● ● ● ●   ◌ ● ● ● ●   ◌ ● ● ● ●
+    //      ◌ ● ● ● ●   ◌ ● ● ● ●   ◌ ● ● ● ●
+    //       ◌ ● ● ●     ◌ ● ● ●     ◌ ● ● ●
+    //        ◌ ● ●       ◌ ● ●       ◌ ● ●
+    //         ◌ ●         ◌ ●         ◌ ●
+    //          ◌           ◌           ●
+    //
+    let end_x = resolution[0];
+    let end_y = resolution[1];
+    let half_y = resolution[1] / 2;
+
+    // Special cases for north and south poles
+    if pos.x == 0 && pos.y == 0 {
+        // North pole
+        CellPos {
+            // First root owns north pole.
+            root: 0.into(),
+            x: 0,
+            y: 0,
+            z: pos.z,
+        }
+    } else if pos.x == end_x && pos.y == end_y {
+        // South pole
+        CellPos {
+            // Last root owns south pole.
+            root: 4.into(),
+            x: end_x,
+            y: end_y,
+            z: pos.z,
+        }
+    } else if pos.y == 0 {
+        // Roots don't own their north-west edge;
+        // translate to next root's north-east edge.
+        CellPos {
+            root: pos.root.next_west(),
+            x: 0,
+            y: pos.x,
+            z: pos.z,
+        }
+    } else if pos.x == end_x && pos.y < half_y {
+        // Roots don't own their mid-west edge;
+        // translate to the next root's mid-east edge.
+        CellPos {
+            root: pos.root.next_west(),
+            x: 0,
+            y: half_y + pos.y,
+            z: pos.z,
+        }
+    } else if pos.x == end_x {
+        // Roots don't own their south-west edge;
+        // translate to the next root's south-east edge.
+        CellPos {
+            root: pos.root.next_west(),
+            y: end_y,
+            x: pos.y - half_y,
+            z: pos.z,
+        }
+    } else {
+        // `pos` is either on an edge owned by its root,
+        // or somewhere in the middle of the root.
+        pos
+    }
+}

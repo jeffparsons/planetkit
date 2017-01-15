@@ -7,6 +7,7 @@ use slog::Logger;
 use rand;
 use rand::Rng;
 
+use super::pos_in_owning_root;
 use super::Root;
 use super::CellPos;
 use super::chunk::{ Chunk, Cell, Material };
@@ -191,7 +192,7 @@ impl Globe {
                     };
                     // TODO: Suuuuper inefficient doing this in the hot loop.
                     // Do this in a less brain-dead way. :)
-                    let source_cell_pos = self.spec.pos_in_owning_root(target_cell_pos);
+                    let source_cell_pos = pos_in_owning_root(target_cell_pos, self.spec.root_resolution);
                     let source_chunk_index = self.index_of_chunk_owning(source_cell_pos)
                         .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
                     let source_cell =
@@ -221,7 +222,7 @@ impl Globe {
     // for that position.)
     pub fn index_of_chunk_owning(&self, mut pos: CellPos) -> Option<usize> {
         // Translate into owning root.
-        pos = self.spec.pos_in_owning_root(pos);
+        pos = pos_in_owning_root(pos, self.spec.root_resolution);
 
         // Figure out what chunk this is in.
         let end_x = self.spec.root_resolution[0];
@@ -271,7 +272,7 @@ impl Globe {
         material: Material
     ) -> Option<CellPos> {
         // Translate into owning root, then start at bedrock.
-        let mut pos = self.spec.pos_in_owning_root(column);
+        let mut pos = pos_in_owning_root(column, self.spec.root_resolution);
         pos.z = 0;
 
         loop {
@@ -330,7 +331,7 @@ impl<'a> Globe {
         // Translate into owning root.
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
-        pos = self.spec.pos_in_owning_root(pos);
+        pos = pos_in_owning_root(pos, self.spec.root_resolution);
         let chunk_index = self.index_of_chunk_owning(pos)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         self.chunks[chunk_index].cell(pos)

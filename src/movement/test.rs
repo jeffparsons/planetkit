@@ -1,5 +1,5 @@
 use super::*;
-use ::globe::{ CellPos, Dir };
+use ::globe::{ CellPos, Dir, pos_in_owning_root };
 use super::triangles::TRIANGLES;
 
 const RESOLUTION: [i64; 2] = [32, 64];
