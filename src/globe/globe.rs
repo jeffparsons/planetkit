@@ -336,6 +336,19 @@ impl<'a> Globe {
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         self.chunks[chunk_index].cell(pos)
     }
+
+    pub fn cell_mut(
+        &'a mut self,
+        mut pos: CellPos,
+    ) -> &'a mut Cell {
+        // Translate into owning root.
+        // TODO: wrapper types so we don't have to do
+        // this sort of thing defensively!
+        pos = pos_in_owning_root(pos, self.spec.root_resolution);
+        let chunk_index = self.index_of_chunk_owning(pos)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
+        self.chunks[chunk_index].cell_mut(pos)
+    }
 }
 
 impl specs::Component for Globe {

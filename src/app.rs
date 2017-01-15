@@ -30,6 +30,7 @@ pub struct App {
     planner: specs::Planner<TimeDelta>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
+    mining_input_sender: mpsc::Sender<cell_dweller::MiningEvent>,
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
@@ -98,8 +99,14 @@ impl App {
         );
 
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-        let control_sys = cell_dweller::MovementSystem::new(
+        let movement_sys = cell_dweller::MovementSystem::new(
             movement_input_receiver,
+            &log,
+        );
+
+        let (mining_input_sender, mining_input_receiver) = mpsc::channel();
+        let mining_sys = cell_dweller::MiningSystem::new(
+            mining_input_receiver,
             &log,
         );
 
@@ -175,7 +182,8 @@ impl App {
         );
 
         let mut planner = specs::Planner::new(world, 2);
-        planner.add_system(control_sys, "control", 100);
+        planner.add_system(movement_sys, "cd_movement", 100);
+        planner.add_system(mining_sys, "cd_mining", 100);
         planner.add_system(physics_sys, "cd_physics", 90);
         planner.add_system(chunk_view_sys, "chunk_view", 50);
         planner.add_system(render_sys, "render", 50);
@@ -186,6 +194,7 @@ impl App {
             planner: planner,
             encoder_channel: device_encoder_channel,
             movement_input_sender: movement_input_sender,
+            mining_input_sender: mining_input_sender,
             projection: projection,
             first_person: first_person_mutex_arc,
             factory: factory.clone(),
@@ -219,13 +228,14 @@ impl App {
             }
 
             use piston::input::keyboard::Key;
-            use cell_dweller::MovementEvent;
+            use cell_dweller::{ MovementEvent, MiningEvent };
             if let Some(Button::Keyboard(key)) = e.press_args() {
                 match key {
                     Key::I => self.movement_input_sender.send(MovementEvent::StepForward(true)).unwrap(),
                     Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(true)).unwrap(),
                     Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(true)).unwrap(),
                     Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(true)).unwrap(),
+                    Key::U => self.mining_input_sender.send(MiningEvent::PickUp(true)).unwrap(),
                     _ => (),
                 }
             }
@@ -235,6 +245,7 @@ impl App {
                     Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(false)).unwrap(),
                     Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(false)).unwrap(),
                     Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap(),
+                    Key::U => self.mining_input_sender.send(MiningEvent::PickUp(false)).unwrap(),
                     _ => (),
                 }
             }
