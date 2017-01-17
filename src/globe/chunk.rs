@@ -31,6 +31,7 @@ pub struct Chunk {
     // Sorted by (z, y, x).
     pub cells: Vec<Cell>,
     pub view_entity: Option<specs::Entity>,
+    pub is_view_dirty: bool,
 }
 
 impl Chunk {
@@ -46,6 +47,18 @@ impl Chunk {
             local_y * (self.resolution[0] + 1) +
             local_x
         ) as usize
+    }
+
+    /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
+    /// chunk has been modified since the view was last updated.
+    pub fn mark_view_as_dirty(&mut self) {
+        self.is_view_dirty = true;
+    }
+
+    /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
+    /// view has been updated since the chunk was last modified.
+    pub fn mark_view_as_clean(&mut self) {
+        self.is_view_dirty = false;
     }
 }
 

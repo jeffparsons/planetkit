@@ -29,9 +29,9 @@ pub struct View {
 }
 
 impl View {
-    pub fn new(globe: &Globe, parent_log: &Logger) -> View {
+    pub fn new(globe_spec: Spec, parent_log: &Logger) -> View {
         View {
-            spec: globe.spec(),
+            spec: globe_spec,
             log: parent_log.new(o!()),
         }
     }

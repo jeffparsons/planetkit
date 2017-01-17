@@ -299,15 +299,10 @@ impl App {
         let mut visuals = world.write::<Visual>();
         use specs::Join;
         for visual in (&mut visuals).iter() {
-            let needs_to_be_realized =
-                visual.mesh_handle().is_none() &&
-                visual.proto_mesh.is_some();
-            // TODO: when it comes time to replacing existing meshes
-            // when the globe is updated, don't leak old meshes!
-            // This should be as simple as removing the old mesh
-            // from the mesh repository, and replacing it with
-            // the new mesh. `needs_to_be_realized` then becomes
-            // just a test for the presence of a proto-mesh.
+            // Even if there's a realized mesh already, the presence of
+            // a proto-mesh indicates we need to realize again.
+            // (We clear out the proto-mesh when we realize it.)
+            let needs_to_be_realized = visual.proto_mesh.is_some();
             if !needs_to_be_realized {
                 continue;
             }
@@ -319,8 +314,14 @@ impl App {
                 self.output_color.clone(),
                 self.output_stencil.clone(),
             );
-            let mesh_handle = mesh_repo.add_mesh(mesh);
-            visual.set_mesh_handle(mesh_handle);
+            if let Some(existing_mesh_handle) = visual.mesh_handle() {
+                // We're replacing an existing mesh that got dirty.
+                mesh_repo.replace_mesh(existing_mesh_handle, mesh);
+            } else {
+                // We're realizing this mesh for the first time.
+                let mesh_handle = mesh_repo.add_mesh(mesh);
+                visual.set_mesh_handle(mesh_handle);
+            }
             visual.proto_mesh = None;
         }
     }

@@ -37,11 +37,16 @@ pub struct Globe {
 // of the Globe struct.
 pub trait GlobeGuts<'a> {
     fn chunks(&'a self) -> &'a Vec<Chunk>;
+    fn chunks_mut(&'a mut self) -> &'a mut Vec<Chunk>;
 }
 
 impl<'a> GlobeGuts<'a> for Globe {
     fn chunks(&'a self) -> &'a Vec<Chunk> {
         &self.chunks
+    }
+
+    fn chunks_mut(&'a mut self) -> &'a mut Vec<Chunk> {
+        &mut self.chunks
     }
 }
 
@@ -111,28 +116,7 @@ impl Globe {
 
         debug!(self.log, "Finished making chunks"; "chunks" => self.chunks.len(), "dt" => format!("{}", dt));
 
-        // Copy cells over from chunks that own cells to those that
-        // contain the same cells but don't own them.
-        // TODO: we won't be able to assume that this is always
-        // possible for long, because often most of the chunks
-        // won't be loaded. This needs to be hooked up in a more
-        // subtle way. :)
-        for root_index in 0..ROOT_QUADS {
-            let root = Root { index: root_index };
-            for z in 0..Z_CHUNKS {
-                for y in 0..chunks_per_root[1] {
-                    for x in 0..chunks_per_root[0] {
-                        let origin = CellPos {
-                            root: root,
-                            x: x * self.spec.chunk_resolution[0],
-                            y: y * self.spec.chunk_resolution[1],
-                            z: z * self.spec.chunk_resolution[2],
-                        };
-                        self.copy_authoritative_cells(origin);
-                    }
-                }
-            }
-        }
+        self.copy_all_authoritative_cells();
     }
 
     pub fn build_chunk(&mut self, origin: CellPos) {
@@ -166,7 +150,46 @@ impl Globe {
             cells: cells,
             resolution: self.spec.chunk_resolution,
             view_entity: None,
+            is_view_dirty: true,
         });
+    }
+
+    // TODO: there's no way this should be public.
+    // Replace with a better interface for mutating cell content
+    // that automatically ensures that all neighbouring chunks
+    // get updated, etc.
+    pub fn copy_all_authoritative_cells(&mut self) {
+        // TODO: how many to build high?
+        const Z_CHUNKS: i64 = 5;
+
+        // Calculate how many chunks to a root in each direction in (x, y).
+        let chunks_per_root = [
+            self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
+            self.spec.root_resolution[1] / self.spec.chunk_resolution[1],
+        ];
+
+        // Copy cells over from chunks that own cells to those that
+        // contain the same cells but don't own them.
+        // TODO: we won't be able to assume that this is always
+        // possible for long, because often most of the chunks
+        // won't be loaded. This needs to be hooked up in a more
+        // subtle way. :)
+        for root_index in 0..ROOT_QUADS {
+            let root = Root { index: root_index };
+            for z in 0..Z_CHUNKS {
+                for y in 0..chunks_per_root[1] {
+                    for x in 0..chunks_per_root[0] {
+                        let origin = CellPos {
+                            root: root,
+                            x: x * self.spec.chunk_resolution[0],
+                            y: y * self.spec.chunk_resolution[1],
+                            z: z * self.spec.chunk_resolution[2],
+                        };
+                        self.copy_authoritative_cells(origin);
+                    }
+                }
+            }
+        }
     }
 
     fn copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
@@ -195,12 +218,25 @@ impl Globe {
                     let source_cell_pos = pos_in_owning_root(target_cell_pos, self.spec.root_resolution);
                     let source_chunk_index = self.index_of_chunk_owning(source_cell_pos)
                         .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-                    let source_cell =
-                        *self.chunks[source_chunk_index].cell(source_cell_pos);
-                    let target_cell =
-                        self.chunks[target_chunk_index].cell_mut(target_cell_pos);
-                    // Copy source-target.
-                    *target_cell = source_cell;
+                    {
+                        let source_cell =
+                            *self.chunks[source_chunk_index].cell(source_cell_pos);
+                        let target_cell =
+                            self.chunks[target_chunk_index].cell_mut(target_cell_pos);
+                        // Copy source-target.
+                        *target_cell = source_cell;
+                    }
+
+                    // If source chunk view was dirty, then assume destination chunk is
+                    // now also dirty.
+                    //
+                    // TODO: this lacks subtlety; we only actually need to update the
+                    // destination chunk's view if the dirty cell was on the edge of
+                    // the chunk. This needs some thought on a good interface for mutating
+                    // chunks that doesn't allow oopsing this...
+                    if self.chunks[source_chunk_index].is_view_dirty {
+                        self.chunks[target_chunk_index].mark_view_as_dirty();
+                    }
                 }
             }
         }
@@ -302,6 +338,9 @@ impl Globe {
         globe_entity: specs::Entity,
     ) {
         for chunk in &mut self.chunks {
+            // TODO: when we're dynamically destroying chunk views,
+            // you'll need to check whether it's still alive when trying
+            // to ensure it exists.
             if chunk.view_entity.is_some() {
                 continue;
             }
@@ -320,6 +359,18 @@ impl Globe {
                 .build()
                 .into();
         }
+    }
+
+    /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
+    /// chunk has been modified since the view was last updated.
+    pub fn mark_chunk_view_as_dirty(&mut self, mut pos: CellPos) {
+        // Translate into owning root.
+        // TODO: wrapper types so we don't have to do
+        // this sort of thing defensively!
+        pos = pos_in_owning_root(pos, self.spec.root_resolution);
+        let chunk_index = self.index_of_chunk_owning(pos)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
+        self.chunks[chunk_index].mark_view_as_dirty();
     }
 }
 

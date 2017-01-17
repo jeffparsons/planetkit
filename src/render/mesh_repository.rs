@@ -4,7 +4,7 @@ use slog::Logger;
 use super::Vertex;
 use super::mesh::Mesh;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct MeshHandle {
     index: usize,
 }
@@ -65,6 +65,11 @@ impl<R: gfx::Resources> MeshRepository<R> {
         trace!(self.log, "Adding mesh");
         self.meshes.push(mesh.into());
         MeshHandle::new(self.meshes.len() - 1)
+    }
+
+    pub fn replace_mesh(&mut self, mesh_handle: MeshHandle, mesh: Mesh<R>) {
+        trace!(self.log, "Replacing mesh {}", format!("{:?}", mesh_handle));
+        self.meshes[mesh_handle.index] = mesh.into();
     }
 }
 

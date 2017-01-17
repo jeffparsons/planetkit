@@ -29,12 +29,12 @@ impl ChunkViewSystem {
 
     fn build_chunk_geometry<
         A: Deref<Target = specs::Allocator>,
-        Gd: Deref<Target = specs::MaskedStorage<Globe>>,
+        Gd: DerefMut<Target = specs::MaskedStorage<Globe>>,
         Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
         Cd: Deref<Target = specs::MaskedStorage<ChunkView>>,
     >(
         &mut self,
-        globes: specs::Storage<Globe, A, Gd>,
+        mut globes: specs::Storage<Globe, A, Gd>,
         mut visuals: specs::Storage<Visual, A, Vd>,
         chunk_views: specs::Storage<ChunkView, A, Cd>,
     ) {
@@ -47,36 +47,43 @@ impl ChunkViewSystem {
 
         use specs::Join;
         for (visual, chunk_view) in (&mut visuals, &chunk_views).iter() {
-            if visual.mesh_handle().is_some() ||
-                visual.proto_mesh.is_some() {
-                // There's already a visual for this mesh.
-                // TODO: consider replacing it if it's dirty.
-                continue;
-            }
+            // TODO: find the closest mesh to the player that needs
+            // to be generated (i.e. absent or dirty).
+            //
+            // TODO: eventually, some rules about capping how many you create.
 
-            trace!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
-
-            // Make a proto-mesh for the chunk.
             // Get the associated globe, complaining loudly if we fail.
             let globe_entity = chunk_view.globe_entity;
-            let globe = match globes.get(globe_entity) {
+            let mut globe = match globes.get_mut(globe_entity) {
                 Some(globe) => globe,
                 None => {
                     warn!(self.log, "The globe associated with this ChunkView is not alive! Can't proceed!");
                     continue;
                 },
             };
+
+            // Only re-generate geometry if the chunk is marked as having
+            // been changed since last time the view was updated.
+            //
+            // Note that this will also be true if geometry has never been created for this chunk.
+            let chunk_index = globe.index_of_chunk_at(chunk_view.origin).expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
+            use globe::globe::GlobeGuts;
+            let spec = globe.spec();
+            let mut chunk = &mut globe.chunks_mut()[chunk_index];
+            if !chunk.is_view_dirty {
+                continue;
+            }
+
+            // Make a proto-mesh for the chunk.
+            trace!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
             // TEMP: just use the existing globe `View` struct
             // to get this done. TODO: move into `ChunkView`.
             let globe_view = View::new(
-                globe,
+                spec,
                 &self.log,
             );
             // Build geometry for this chunk into vertex
             // and index buffers.
-            let chunk_index = globe.index_of_chunk_at(chunk_view.origin).expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
-            use globe::globe::GlobeGuts;
-            let chunk = &globe.chunks()[chunk_index];
             let mut vertex_data: Vec<Vertex> = Vec::new();
             let mut index_data: Vec<u32> = Vec::new();
             globe_view.make_chunk_geometry(
@@ -85,6 +92,9 @@ impl ChunkViewSystem {
                 &mut index_data,
             );
             visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
+
+            // Mark the chunk as having a clean view.
+            chunk.mark_view_as_clean();
 
             trace!(self.log, "Made chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
 

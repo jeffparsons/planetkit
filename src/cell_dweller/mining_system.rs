@@ -73,15 +73,34 @@ impl MiningSystem {
         move_forward(&mut new_pos, &mut new_dir, globe.spec().root_resolution)
             .expect("CellDweller should have been in good state.");
         // Ask the globe if there's anything to pick up.
-        let mut cell = globe.cell_mut(new_pos);
-        // TODO: make a special kind of thing you can pick up.
-        // TODO: accept that as a system argument, and have some builders
-        // that make it super-easy to configure.
-        // The goal here should be that the "block dude" game
-        // ends up both concise and legible.
-        let can_pick_up = cell.material == Material::Dirt;
+        //
+        // TODO: also require that there's air above the block;
+        // in my initial use case I don't want to allow mining below
+        // the surface.
+        let can_pick_up = {
+            let cell = globe.cell(new_pos);
+            cell.material == Material::Dirt
+        };
         if can_pick_up {
-            cell.material = Material::Air;
+            // TODO: make a special kind of thing you can pick up.
+            // TODO: accept that as a system argument, and have some builders
+            // that make it super-easy to configure.
+            // The goal here should be that the "block dude" game
+            // ends up both concise and legible.
+            globe.cell_mut(new_pos).material = Material::Air;
+            // Mark the containing chunkas being dirty.
+            // TODO: different API where you commit to changing a cell
+            // in a closure you get back that has a reference to it?
+            // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
+            globe.mark_chunk_view_as_dirty(new_pos);
+            // Propagate change to neighbouring chunks.
+            // TODO: we reaaaally need a better interface for mutating chunk data
+            // to make sure this happens automatically.
+            //
+            // TODO: also this is _stupidly_ slow hacks!
+            // Like... _really_ bad. Fixing the interface to cell data
+            // is now a high priority.
+            globe.copy_all_authoritative_cells();
             // TODO: remember on the cell-dweller that it's carrying something?
             // Or should that be a different kind of component?
             debug!(self.log, "Picked up block"; "pos" => format!("{:?}", new_pos));
@@ -119,8 +138,6 @@ impl specs::System<TimeDelta> for MiningSystem {
                     globe,
                 );
             }
-
-            // TODO: Flag the chunk as dirty so we can re-build its mesh.
         }
     }
 }
