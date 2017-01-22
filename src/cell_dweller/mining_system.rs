@@ -67,20 +67,24 @@ impl MiningSystem {
             }
         }
 
-        // Find out whether there's anything in front of us to "pick up".
+        // Ask the globe if there's anything in front of us to "pick up".
         let mut new_pos = cd.pos;
         let mut new_dir = cd.dir;
         move_forward(&mut new_pos, &mut new_dir, globe.spec().root_resolution)
             .expect("CellDweller should have been in good state.");
-        // Ask the globe if there's anything to pick up.
-        //
-        // TODO: also require that there's air above the block;
-        // in my initial use case I don't want to allow mining below
-        // the surface.
-        let can_pick_up = {
+        let anything_to_pick_up = {
             let cell = globe.cell(new_pos);
             cell.material == Material::Dirt
         };
+        // Also require that there's air above the block;
+        // in my initial use case I don't want to allow mining below
+        // the surface.
+        let air_above_target = {
+            let above_new_pos = new_pos.set_z(new_pos.z + 1);
+            let cell = globe.cell(above_new_pos);
+            cell.material == Material::Air
+        };
+        let can_pick_up = anything_to_pick_up && air_above_target;
         if can_pick_up {
             // TODO: make a special kind of thing you can pick up.
             // TODO: accept that as a system argument, and have some builders
