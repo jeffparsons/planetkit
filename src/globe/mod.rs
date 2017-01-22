@@ -253,3 +253,51 @@ pub fn pos_in_owning_root(pos: CellPos, resolution: [IntCoord; 2]) -> CellPos {
         pos
     }
 }
+
+pub fn origin_of_chunk_owning(
+    mut pos: CellPos,
+    root_resolution: [IntCoord; 2],
+    chunk_resolution: [IntCoord; 3],
+) -> CellPos {
+    // Translate into owning root.
+    // TODO: solve this by taking a pre-vouched position.
+    pos = pos_in_owning_root(pos, root_resolution);
+
+    // Figure out what chunk this is in.
+    let end_x = root_resolution[0];
+    let end_y = root_resolution[1];
+    let last_chunk_x = (end_x / chunk_resolution[0] - 1) * chunk_resolution[0];
+    let last_chunk_y = (end_y / chunk_resolution[1] - 1) * chunk_resolution[1];
+    // Cells aren't shared by chunks in the z-direction, so the z-origin
+    // is the same across all cases. Small mercies.
+    let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
+    if pos.x == 0 && pos.y == 0 {
+        // Chunk at (0, 0) owns north pole.
+        CellPos {
+            root: pos.root,
+            x: 0,
+            y: 0,
+            z: chunk_origin_z,
+        }
+    } else if pos.x == end_x && pos.y == end_y {
+        // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
+        CellPos {
+            root: pos.root,
+            x: last_chunk_x,
+            y: last_chunk_y,
+            z: chunk_origin_z,
+        }
+    } else {
+        // Chunks own cells on their edge at `local_x == 0`, and their edge at `local_y == chunk_resolution`.
+        // The cells on other edges belong to adjacent chunks.
+        let chunk_origin_x = pos.x / chunk_resolution[0] * chunk_resolution[0];
+        // Shift everything down by one in y-direction.
+        let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
+        CellPos {
+            root: pos.root,
+            x: chunk_origin_x,
+            y: chunk_origin_y,
+            z: chunk_origin_z,
+        }
+    }
+}

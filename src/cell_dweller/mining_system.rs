@@ -88,7 +88,13 @@ impl MiningSystem {
             // The goal here should be that the "block dude" game
             // ends up both concise and legible.
             globe.cell_mut(new_pos).material = Material::Air;
-            // Mark the containing chunkas being dirty.
+            // Bump the version of the chunk containing this cell.
+            // TODO: this lacks subtlety. Neighbors only actually
+            // care about edge chunks, so do you need multiple
+            // notions of version? Or _only_ have something like "edge_cells_version"
+            // for now?
+            globe.increment_chunk_version_for_cell(new_pos);
+            // Mark the containing chunk as being dirty.
             // TODO: different API where you commit to changing a cell
             // in a closure you get back that has a reference to it?
             // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.

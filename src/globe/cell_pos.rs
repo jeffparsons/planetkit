@@ -1,6 +1,6 @@
 use globe::{ IntCoord, Root, RootIndex };
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct CellPos {
     pub root: Root,
     pub x: IntCoord,

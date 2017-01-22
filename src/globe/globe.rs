@@ -7,7 +7,7 @@ use slog::Logger;
 use rand;
 use rand::Rng;
 
-use super::pos_in_owning_root;
+use super::{ pos_in_owning_root, origin_of_chunk_owning };
 use super::Root;
 use super::CellPos;
 use super::chunk::{ Chunk, Cell, Material };
@@ -116,6 +116,8 @@ impl Globe {
 
         debug!(self.log, "Finished making chunks"; "chunks" => self.chunks.len(), "dt" => format!("{}", dt));
 
+        // TODO: this is _not_ going to fly once we're trickling the
+        // chunks in over time...
         self.copy_all_authoritative_cells();
     }
 
@@ -145,13 +147,12 @@ impl Globe {
                 }
             }
         }
-        self.chunks.push(Chunk {
-            origin: origin,
-            cells: cells,
-            resolution: self.spec.chunk_resolution,
-            view_entity: None,
-            is_view_dirty: true,
-        });
+        self.chunks.push(Chunk::new(
+            origin,
+            cells,
+            self.spec.root_resolution,
+            self.spec.chunk_resolution,
+        ));
     }
 
     // TODO: there's no way this should be public.
@@ -185,61 +186,84 @@ impl Globe {
                             y: y * self.spec.chunk_resolution[1],
                             z: z * self.spec.chunk_resolution[2],
                         };
-                        self.copy_authoritative_cells(origin);
+                        self.maybe_copy_authoritative_cells(origin);
                     }
                 }
             }
         }
     }
 
-    fn copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
-        let origin = target_chunk_origin;
-        let target_chunk_index = self.index_of_chunk_at(origin)
-            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
-        // Chunks don't share cells in the z-direction,
-        // but do in the x- and y-directions.
-        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
-        // TODO: this would be really easy to do way more efficiently.
-        // Specifically, we could iterate over _exactly_ the cells we know
-        // we'll need to copy, and know _exactly_ what chunks they're from.
-        for cell_z in origin.z..(end_z + 1) {
-            for cell_y in origin.y..(end_y + 1) {
-                for cell_x in origin.x..(end_x + 1) {
-                    let target_cell_pos = CellPos {
-                        root: origin.root,
-                        x: cell_x,
-                        y: cell_y,
-                        z: cell_z,
-                    };
-                    // TODO: Suuuuper inefficient doing this in the hot loop.
-                    // Do this in a less brain-dead way. :)
-                    let source_cell_pos = pos_in_owning_root(target_cell_pos, self.spec.root_resolution);
-                    let source_chunk_index = self.index_of_chunk_owning(source_cell_pos)
-                        .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-                    {
-                        let source_cell =
-                            *self.chunks[source_chunk_index].cell(source_cell_pos);
-                        let target_cell =
-                            self.chunks[target_chunk_index].cell_mut(target_cell_pos);
-                        // Copy source-target.
-                        *target_cell = source_cell;
-                    }
+    fn maybe_copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
+        let target_chunk_index = match self.index_of_chunk_at(target_chunk_origin) {
+            None => {
+                // No worries; the chunk isn't loaded. Do nothing.
+                return;
+            },
+            Some(target_chunk_index) => target_chunk_index,
+        };
 
-                    // If source chunk view was dirty, then assume destination chunk is
-                    // now also dirty.
-                    //
-                    // TODO: this lacks subtlety; we only actually need to update the
-                    // destination chunk's view if the dirty cell was on the edge of
-                    // the chunk. This needs some thought on a good interface for mutating
-                    // chunks that doesn't allow oopsing this...
-                    if self.chunks[source_chunk_index].is_view_dirty {
-                        self.chunks[target_chunk_index].mark_view_as_dirty();
-                    }
-                }
+        // BEWARE: MULTIPLE HACKS BELOW to get around borrowck. There has to be
+        // a better way around this!
+
+        // Temporarily remove the target chunk from the globe,
+        // so that we can simultaneously write to it and read from
+        // a bunch of other chunks.
+        let mut target_chunk = self.chunks.swap_remove(target_chunk_index);
+
+        // Temporarily remove list of neighbours from target chunk
+        // so that we can simultaneously read from it and update
+        // the chunk's data.
+        let mut neighbors = Vec::<super::chunk::Neighbor>::new();
+        use std::mem::swap;
+        swap(&mut neighbors, &mut target_chunk.authoritative_neighbors);
+
+        // For each of this chunk's neighbors, see if we have up-to-date
+        // copies of the data we share with that neighbor. Otherwise,
+        // copy it over.
+        for neighbor in &mut neighbors {
+            let source_chunk_index = match self.index_of_chunk_at(neighbor.origin) {
+                None => {
+                    // No worries; the chunk isn't loaded. Do nothing.
+                    continue;
+                },
+                Some(source_chunk_index) => source_chunk_index,
+            };
+
+            let source_chunk = &self.chunks[source_chunk_index];
+            if neighbor.last_known_version == source_chunk.version {
+                // We're already up-to-date with this neighbor's data; skip.
+                continue;
             }
+
+            // Copy over each cell, one by one.
+            for target_cell_pos in &neighbor.shared_cells {
+                let source_cell_pos = pos_in_owning_root(*target_cell_pos, self.spec.root_resolution);
+                let source_cell =
+                    *source_chunk.cell(source_cell_pos);
+                let target_cell =
+                    target_chunk.cell_mut(*target_cell_pos);
+                // Copy source -> target.
+                *target_cell = source_cell;
+            }
+
+            // We're now up-to-date with the neighbor.
+            neighbor.last_known_version = source_chunk.version;
+
+            // If we got this far, then it means we needed to update something.
+            // So mark this chunk as having its view out-of-date.
+            //
+            // TODO: this all lacks subtlety; we only actually need to update the
+            // destination chunk's data if the dirty cell was on the edge of
+            // the chunk. This needs some thought on a good interface for mutating
+            // chunks that doesn't allow oopsing this...
+            target_chunk.mark_view_as_dirty();
         }
+
+        // Put the list of neighbors back into the chunk.
+        swap(&mut neighbors, &mut target_chunk.authoritative_neighbors);
+
+        // Put the target chunk back into the world!
+        self.chunks.push(target_chunk);
     }
 
     // Returns None if given coordinates of a cell in a chunk we don't have loaded,
@@ -261,43 +285,7 @@ impl Globe {
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
 
         // Figure out what chunk this is in.
-        let end_x = self.spec.root_resolution[0];
-        let end_y = self.spec.root_resolution[1];
-        let chunk_res = self.spec.chunk_resolution;
-        let last_chunk_x = (end_x / chunk_res[0] - 1) * chunk_res[0];
-        let last_chunk_y = (end_y / chunk_res[1] - 1) * chunk_res[1];
-        // Cells aren't shared by chunks in the z-direction, so the z-origin
-        // is the same across all cases. Small mercies.
-        let chunk_origin_z = pos.z / chunk_res[2] * chunk_res[2];
-        let chunk_origin = if pos.x == 0 && pos.y == 0 {
-            // Chunk at (0, 0) owns north pole.
-            CellPos {
-                root: pos.root,
-                x: 0,
-                y: 0,
-                z: chunk_origin_z,
-            }
-        } else if pos.x == end_x && pos.y == end_y {
-            // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
-            CellPos {
-                root: pos.root,
-                x: last_chunk_x,
-                y: last_chunk_y,
-                z: chunk_origin_z,
-            }
-        } else {
-            // Chunks own cells on their edge at `x == 0`, and their edge at `y == chunk_res`.
-            // The cells on other edges belong to adjacent chunks.
-            let chunk_origin_x = pos.x / chunk_res[0] * chunk_res[0];
-            // Shift everything down by on in y-direction.
-            let chunk_origin_y = (pos.y - 1) / chunk_res[1] * chunk_res[1];
-            CellPos {
-                root: pos.root,
-                x: chunk_origin_x,
-                y: chunk_origin_y,
-                z: chunk_origin_z,
-            }
-        };
+        let chunk_origin = origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution);
 
         self.index_of_chunk_at(chunk_origin)
     }
@@ -371,6 +359,20 @@ impl Globe {
         let chunk_index = self.index_of_chunk_owning(pos)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         self.chunks[chunk_index].mark_view_as_dirty();
+    }
+
+    // TODO: this all lacks subtlety; we only actually need to update the
+    // destination chunk's data if the dirty cell was on the edge of
+    // the chunk. This needs some thought on a good interface for mutating
+    // chunks that doesn't allow oopsing this...
+    pub fn increment_chunk_version_for_cell(&mut self, mut pos: CellPos) {
+        // Translate into owning root.
+        // TODO: wrapper types so we don't have to do
+        // this sort of thing defensively!
+        pos = pos_in_owning_root(pos, self.spec.root_resolution);
+        let chunk_index = self.index_of_chunk_owning(pos)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
+        self.chunks[chunk_index].version += 1;
     }
 }
 
