@@ -208,6 +208,9 @@ impl Globe {
         // Temporarily remove the target chunk from the globe,
         // so that we can simultaneously write to it and read from
         // a bunch of other chunks.
+        //
+        // TODO: at very least avoid this most of the time by doing a read-only pass over
+        // all neighbours and bailing out if we're completely up-to-date.
         let mut target_chunk = self.chunks.swap_remove(target_chunk_index);
 
         // Temporarily remove list of neighbours from target chunk
