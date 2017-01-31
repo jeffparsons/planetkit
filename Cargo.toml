@@ -6,6 +6,10 @@ authors = ["Jeff Parsons <jeff@parsons.io>"]
 [lib]
 path = "src/lib.rs"
 
+[[bin]]
+name = "demo"
+path = "src/bin/main.rs"
+
 [dependencies]
 noise = "0.2.0"
 piston = "0.25.1"

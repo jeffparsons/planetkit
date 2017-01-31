@@ -12,5 +12,5 @@ echo
 tput sgr0
 
 # Run the actual build.
-rustup run nightly cargo build --target wasm32-unknown-emscripten "$@"
+cargo +nightly rustc --target wasm32-unknown-emscripten --bin demo -- -C link-arg="-s" -C link-arg="BINARYEN_METHOD='interpret-binary'"
 
