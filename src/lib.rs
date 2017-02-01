@@ -24,6 +24,7 @@ extern crate slog_term;
 extern crate specs;
 extern crate num_traits;
 
+pub mod game;
 pub mod globe;
 pub mod types;
 pub mod app;

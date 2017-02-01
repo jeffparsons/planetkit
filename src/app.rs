@@ -7,6 +7,7 @@ use gfx_device_gl;
 use camera_controllers;
 use specs;
 
+use game::Game;
 use render;
 use render::{ Visual, Mesh, MeshRepository };
 use types::*;
@@ -42,7 +43,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(parent_log: &Logger, window: &PistonWindow) -> App {
+    pub fn new<G: Game>(game: G, parent_log: &Logger, window: &PistonWindow) -> App {
         use camera_controllers::{
             FirstPersonSettings,
             FirstPerson,
@@ -110,16 +111,6 @@ impl App {
             &log,
         );
 
-        let physics_sys = cell_dweller::PhysicsSystem::new(
-            &log,
-            0.1, // Seconds between falls
-        );
-
-        let chunk_view_sys = globe::ChunkViewSystem::new(
-            &log,
-            0.05, // Seconds between geometry creation
-        );
-
         // Create SPECS world and, system execution planner
         // for it with two threads.
         //
@@ -184,9 +175,9 @@ impl App {
         let mut planner = specs::Planner::new(world, 2);
         planner.add_system(movement_sys, "cd_movement", 100);
         planner.add_system(mining_sys, "cd_mining", 100);
-        planner.add_system(physics_sys, "cd_physics", 90);
-        planner.add_system(chunk_view_sys, "chunk_view", 50);
         planner.add_system(render_sys, "render", 50);
+
+        game.init_systems(&mut planner, &log);
 
         App {
             t: 0.0,
