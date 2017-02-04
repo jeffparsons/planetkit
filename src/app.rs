@@ -7,7 +7,6 @@ use gfx_device_gl;
 use camera_controllers;
 use specs;
 
-use game::Game;
 use render;
 use render::{ Visual, Mesh, MeshRepository };
 use types::*;
@@ -43,7 +42,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new<G: Game>(game: G, parent_log: &Logger, window: &PistonWindow) -> App {
+    pub fn new(parent_log: &Logger, window: &PistonWindow) -> App {
         use camera_controllers::{
             FirstPersonSettings,
             FirstPerson,
@@ -176,8 +175,6 @@ impl App {
         planner.add_system(movement_sys, "cd_movement", 100);
         planner.add_system(mining_sys, "cd_mining", 100);
         planner.add_system(render_sys, "render", 50);
-
-        game.init_systems(&mut planner, &log);
 
         App {
             t: 0.0,
@@ -315,5 +312,11 @@ impl App {
             }
             visual.proto_mesh = None;
         }
+    }
+}
+
+impl<'a> App {
+    pub fn planner(&'a mut self) -> &'a mut specs::Planner<TimeDelta> {
+        &mut self.planner
     }
 }
