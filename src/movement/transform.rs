@@ -91,7 +91,6 @@ pub fn world_to_local(
 #[cfg(test)]
 mod test {
     use super::*;
-    use super::super::triangles::*;
     use ::globe::{ CellPos, Dir };
 
     const RESOLUTION: [i64; 2] = [32, 64];
