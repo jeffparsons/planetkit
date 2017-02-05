@@ -29,19 +29,21 @@ pub fn new() -> (app::App, PistonWindow) {
         // initially it'll just have to be hard-coded in every
         // example.
 
+        use super::system_priority as prio;
+
         use cell_dweller;
         let physics_sys = cell_dweller::PhysicsSystem::new(
             &log,
             0.1, // Seconds between falls
         );
-        planner.add_system(physics_sys, "cd_physics", 90);
+        planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
         use globe;
         let chunk_view_sys = globe::ChunkViewSystem::new(
             &log,
             0.05, // Seconds between geometry creation
         );
-        planner.add_system(chunk_view_sys, "chunk_view", 50);
+        planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
     }
 
     (app, window)

@@ -32,6 +32,7 @@ pub mod render;
 pub mod simple;
 pub mod cell_dweller;
 pub mod movement;
+pub mod system_priority;
 
 mod spatial;
 pub use spatial::Spatial;
