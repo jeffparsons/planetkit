@@ -116,11 +116,6 @@ impl App {
         // This manages execution of all game systems,
         // i.e. the interaction between sets of components.
         let mut world = specs::World::new();
-        world.register::<cell_dweller::CellDweller>();
-        world.register::<render::Visual>();
-        world.register::<Spatial>();
-        world.register::<globe::Globe>();
-        world.register::<globe::ChunkView>();
 
         // Add some things to the world.
 

@@ -22,6 +22,16 @@ pub fn new() -> (app::App, PistonWindow) {
     {
         let planner = app.planner();
 
+        {
+            // Register all component types.
+            let world = planner.mut_world();
+            world.register::<::cell_dweller::CellDweller>();
+            world.register::<::render::Visual>();
+            world.register::<::Spatial>();
+            world.register::<::globe::Globe>();
+            world.register::<::globe::ChunkView>();
+        }
+
         // TODO: move _all_ other system initialization from `app.rs`
         // into here, and then back out into helper functions.
 
