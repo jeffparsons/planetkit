@@ -1,12 +1,47 @@
 use std::sync::mpsc;
 use specs;
 use slog::Logger;
+use piston_window::Event;
 
 use types::*;
 use super::CellDweller;
 use ::movement::*;
 use globe::Globe;
 use globe::chunk::Material;
+use ::input_adapter;
+
+// TODO: own file?
+pub struct MiningInputAdapter {
+    sender: mpsc::Sender<MiningEvent>,
+}
+
+impl MiningInputAdapter {
+    pub fn new(sender: mpsc::Sender<MiningEvent>) -> MiningInputAdapter {
+        MiningInputAdapter {
+            sender: sender,
+        }
+    }
+}
+
+impl input_adapter::InputAdapter for MiningInputAdapter {
+    fn handle(&self, event: &Event) {
+        use piston::input::{ Button, PressEvent, ReleaseEvent };
+        use piston::input::keyboard::Key;
+
+        if let Some(Button::Keyboard(key)) = event.press_args() {
+            match key {
+                Key::U => self.sender.send(MiningEvent::PickUp(true)).unwrap(),
+                _ => (),
+            }
+        }
+        if let Some(Button::Keyboard(key)) = event.release_args() {
+            match key {
+                Key::U => self.sender.send(MiningEvent::PickUp(false)).unwrap(),
+                _ => (),
+            }
+        }
+    }
+}
 
 pub enum MiningEvent {
     PickUp(bool),

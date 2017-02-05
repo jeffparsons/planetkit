@@ -12,6 +12,7 @@ use render::{ Visual, Mesh, MeshRepository };
 use types::*;
 use globe;
 use cell_dweller;
+use input_adapter::InputAdapter;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use piston::window::Window;
@@ -29,8 +30,7 @@ pub struct App {
     log: Logger,
     planner: specs::Planner<TimeDelta>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
-    mining_input_sender: mpsc::Sender<cell_dweller::MiningEvent>,
+    input_adapters: Vec<Box<InputAdapter>>,
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
@@ -47,7 +47,6 @@ impl App {
             FirstPersonSettings,
             FirstPerson,
         };
-        use ::Spatial;
 
         // Rendering system, with bi-directional channel to pass
         // encoder back and forth between this thread (which owns
@@ -92,22 +91,23 @@ impl App {
         );
         let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
 
-        let mut mesh_repo = MeshRepository::new(
+        let mesh_repo = MeshRepository::new(
             window.output_color.clone(),
             window.output_stencil.clone(),
             &log,
         );
 
-        let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-        let movement_sys = cell_dweller::MovementSystem::new(
-            movement_input_receiver,
+        let factory = &mut window.factory.clone();
+        let mesh_repo_ptr = Arc::new(Mutex::new(mesh_repo));
+        let render_sys = render::System::new(
+            factory,
+            render_sys_encoder_channel,
+            window.output_color.clone(),
+            window.output_stencil.clone(),
+            first_person_mutex_arc.clone(),
+            projection.clone(),
             &log,
-        );
-
-        let (mining_input_sender, mining_input_receiver) = mpsc::channel();
-        let mining_sys = cell_dweller::MiningSystem::new(
-            mining_input_receiver,
-            &log,
+            mesh_repo_ptr.clone(),
         );
 
         // Create SPECS world and, system execution planner
@@ -115,14 +115,36 @@ impl App {
         //
         // This manages execution of all game systems,
         // i.e. the interaction between sets of components.
-        let mut world = specs::World::new();
+        let world = specs::World::new();
+
+        let mut planner = specs::Planner::new(world, 2);
+        planner.add_system(render_sys, "render", 50);
+
+        App {
+            t: 0.0,
+            log: log,
+            planner: planner,
+            encoder_channel: device_encoder_channel,
+            input_adapters: Vec::new(),
+            projection: projection,
+            first_person: first_person_mutex_arc,
+            factory: factory.clone(),
+            output_color: window.output_color.clone(),
+            output_stencil: window.output_stencil.clone(),
+            mesh_repo: mesh_repo_ptr,
+        }
+    }
+
+    // TODO: none of this should be baked into App.
+    pub fn temp_remove_me_init(&mut self) {
+        use ::Spatial;
 
         // Add some things to the world.
 
         // Make globe and create a mesh for each of its chunks.
         //
         // TODO: don't bake this into the generic app!
-        let globe = globe::Globe::new_example(&log);
+        let globe = globe::Globe::new_example(&self.log);
 
         // Find globe surface and put player character on it.
         use globe::{ CellPos, Dir };
@@ -130,7 +152,8 @@ impl App {
         let mut guy_pos = CellPos::default();
         guy_pos = globe.find_lowest_cell_containing(guy_pos, Material::Air)
             .expect("Uh oh, there's something wrong with our globe.");
-        let factory = &mut window.factory.clone();
+        let factory = &mut self.factory.clone();
+        let mut mesh_repo = self.mesh_repo.lock().unwrap();
         let axes_mesh = render::make_axes_mesh(
             factory,
             &mut mesh_repo,
@@ -140,6 +163,7 @@ impl App {
         let globe_spec = globe.spec();
         // First add the globe to the world so we can get a
         // handle on its entity.
+        let world = self.planner.mut_world();
         let globe_entity = world.create_now()
             .with(globe)
             .build();
@@ -153,38 +177,6 @@ impl App {
             .with(cell_dweller_visual)
             .with(Spatial::root())
             .build();
-
-        let mesh_repo_ptr = Arc::new(Mutex::new(mesh_repo));
-        let render_sys = render::System::new(
-            factory,
-            render_sys_encoder_channel,
-            window.output_color.clone(),
-            window.output_stencil.clone(),
-            first_person_mutex_arc.clone(),
-            projection.clone(),
-            &log,
-            mesh_repo_ptr.clone(),
-        );
-
-        let mut planner = specs::Planner::new(world, 2);
-        planner.add_system(movement_sys, "cd_movement", 100);
-        planner.add_system(mining_sys, "cd_mining", 100);
-        planner.add_system(render_sys, "render", 50);
-
-        App {
-            t: 0.0,
-            log: log,
-            planner: planner,
-            encoder_channel: device_encoder_channel,
-            movement_input_sender: movement_input_sender,
-            mining_input_sender: mining_input_sender,
-            projection: projection,
-            first_person: first_person_mutex_arc,
-            factory: factory.clone(),
-            output_color: window.output_color.clone(),
-            output_stencil: window.output_stencil.clone(),
-            mesh_repo: mesh_repo_ptr,
-        }
     }
 
     pub fn run(&mut self, mut window: &mut PistonWindow) {
@@ -210,27 +202,9 @@ impl App {
                 self.update(&u);
             }
 
-            use piston::input::keyboard::Key;
-            use cell_dweller::{ MovementEvent, MiningEvent };
-            if let Some(Button::Keyboard(key)) = e.press_args() {
-                match key {
-                    Key::I => self.movement_input_sender.send(MovementEvent::StepForward(true)).unwrap(),
-                    Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(true)).unwrap(),
-                    Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(true)).unwrap(),
-                    Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(true)).unwrap(),
-                    Key::U => self.mining_input_sender.send(MiningEvent::PickUp(true)).unwrap(),
-                    _ => (),
-                }
-            }
-            if let Some(Button::Keyboard(key)) = e.release_args() {
-                match key {
-                    Key::I => self.movement_input_sender.send(MovementEvent::StepForward(false)).unwrap(),
-                    Key::K => self.movement_input_sender.send(MovementEvent::StepBackward(false)).unwrap(),
-                    Key::J => self.movement_input_sender.send(MovementEvent::TurnLeft(false)).unwrap(),
-                    Key::L => self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap(),
-                    Key::U => self.mining_input_sender.send(MiningEvent::PickUp(false)).unwrap(),
-                    _ => (),
-                }
+            // Dispatch input events to any systems that care.
+            for adapter in &self.input_adapters {
+                adapter.handle(&e);
             }
         }
 
@@ -307,6 +281,10 @@ impl App {
             }
             visual.proto_mesh = None;
         }
+    }
+
+    pub fn add_input_adapter(&mut self, adapter: Box<InputAdapter>) {
+        self.input_adapters.push(adapter);
     }
 }
 

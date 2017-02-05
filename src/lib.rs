@@ -24,6 +24,7 @@ extern crate slog_term;
 extern crate specs;
 extern crate num_traits;
 
+pub mod input_adapter;
 pub mod globe;
 pub mod types;
 pub mod app;

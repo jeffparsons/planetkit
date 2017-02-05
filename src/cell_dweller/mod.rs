@@ -4,6 +4,6 @@ mod mining_system;
 mod physics_system;
 
 pub use self::cell_dweller::{ CellDweller };
-pub use self::movement_system::{ MovementSystem, MovementEvent };
-pub use self::mining_system::{ MiningSystem, MiningEvent };
+pub use self::movement_system::{ MovementSystem, MovementEvent, MovementInputAdapter };
+pub use self::mining_system::{ MiningSystem, MiningEvent, MiningInputAdapter };
 pub use self::physics_system::PhysicsSystem;

@@ -1,3 +1,5 @@
+use std::sync::mpsc;
+
 use piston_window::PistonWindow;
 
 use slog;
@@ -19,6 +21,16 @@ pub fn new() -> (app::App, PistonWindow) {
     let window = window::make_window(&log);
     let mut app = app::App::new(&log, &window);
 
+    // Set up input adapters.
+    use cell_dweller;
+    let (movement_input_sender, movement_input_receiver) = mpsc::channel();
+    let movement_input_adapter = cell_dweller::MovementInputAdapter::new(movement_input_sender);
+    app.add_input_adapter(Box::new(movement_input_adapter));
+
+    let (mining_input_sender, mining_input_receiver) = mpsc::channel();
+    let mining_input_adapter = cell_dweller::MiningInputAdapter::new(mining_input_sender);
+    app.add_input_adapter(Box::new(mining_input_adapter));
+
     {
         let planner = app.planner();
 
@@ -35,13 +47,20 @@ pub fn new() -> (app::App, PistonWindow) {
         // TODO: move _all_ other system initialization from `app.rs`
         // into here, and then back out into helper functions.
 
-        // TODO: figure out how to deal with system priorities;
-        // initially it'll just have to be hard-coded in every
-        // example.
-
         use super::system_priority as prio;
 
-        use cell_dweller;
+        let movement_sys = cell_dweller::MovementSystem::new(
+            movement_input_receiver,
+            &log,
+        );
+        planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
+
+        let mining_sys = cell_dweller::MiningSystem::new(
+            mining_input_receiver,
+            &log,
+        );
+        planner.add_system(mining_sys, "cd_mining", prio::CD_MINING);
+
         let physics_sys = cell_dweller::PhysicsSystem::new(
             &log,
             0.1, // Seconds between falls
@@ -55,6 +74,8 @@ pub fn new() -> (app::App, PistonWindow) {
         );
         planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
     }
+
+    app.temp_remove_me_init();
 
     (app, window)
 }

@@ -1,6 +1,7 @@
 use std::sync::mpsc;
 use specs;
 use slog::Logger;
+use piston_window::Event;
 
 use types::*;
 use super::CellDweller;
@@ -8,6 +9,46 @@ use ::Spatial;
 use ::movement::*;
 use globe::Globe;
 use globe::chunk::Material;
+use ::input_adapter;
+
+// TODO: own file?
+pub struct MovementInputAdapter {
+    sender: mpsc::Sender<MovementEvent>,
+}
+
+impl MovementInputAdapter {
+    pub fn new(sender: mpsc::Sender<MovementEvent>) -> MovementInputAdapter {
+        MovementInputAdapter {
+            sender: sender,
+        }
+    }
+}
+
+impl input_adapter::InputAdapter for MovementInputAdapter {
+    fn handle(&self, event: &Event) {
+        use piston::input::{ Button, PressEvent, ReleaseEvent };
+        use piston::input::keyboard::Key;
+
+        if let Some(Button::Keyboard(key)) = event.press_args() {
+            match key {
+                Key::I => self.sender.send(MovementEvent::StepForward(true)).unwrap(),
+                Key::K => self.sender.send(MovementEvent::StepBackward(true)).unwrap(),
+                Key::J => self.sender.send(MovementEvent::TurnLeft(true)).unwrap(),
+                Key::L => self.sender.send(MovementEvent::TurnRight(true)).unwrap(),
+                _ => (),
+            }
+        }
+        if let Some(Button::Keyboard(key)) = event.release_args() {
+            match key {
+                Key::I => self.sender.send(MovementEvent::StepForward(false)).unwrap(),
+                Key::K => self.sender.send(MovementEvent::StepBackward(false)).unwrap(),
+                Key::J => self.sender.send(MovementEvent::TurnLeft(false)).unwrap(),
+                Key::L => self.sender.send(MovementEvent::TurnRight(false)).unwrap(),
+                _ => (),
+            }
+        }
+    }
+}
 
 pub enum MovementEvent {
     StepForward(bool),
