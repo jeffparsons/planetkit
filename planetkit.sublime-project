@@ -1,0 +1,18 @@
+{
+    "folders":
+    [
+        {
+            "file_exclude_patterns":
+            [
+                "*.sublime-workspace",
+                "*.DS_Store",
+                ".apdisk"
+            ],
+            "folder_exclude_patterns":
+            [
+                "target"
+            ],
+            "path": "."
+        },
+    ]
+}
