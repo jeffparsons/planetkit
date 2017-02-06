@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use specs;
 use slog::Logger;
-use piston_window::Event;
+use piston::input::Input;
 
 use types::*;
 use super::CellDweller;
@@ -24,17 +24,17 @@ impl MiningInputAdapter {
 }
 
 impl input_adapter::InputAdapter for MiningInputAdapter {
-    fn handle(&self, event: &Event) {
+    fn handle(&self, input_event: &Input) {
         use piston::input::{ Button, PressEvent, ReleaseEvent };
         use piston::input::keyboard::Key;
 
-        if let Some(Button::Keyboard(key)) = event.press_args() {
+        if let Some(Button::Keyboard(key)) = input_event.press_args() {
             match key {
                 Key::U => self.sender.send(MiningEvent::PickUp(true)).unwrap(),
                 _ => (),
             }
         }
-        if let Some(Button::Keyboard(key)) = event.release_args() {
+        if let Some(Button::Keyboard(key)) = input_event.release_args() {
             match key {
                 Key::U => self.sender.send(MiningEvent::PickUp(false)).unwrap(),
                 _ => (),

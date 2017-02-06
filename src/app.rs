@@ -42,7 +42,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(parent_log: &Logger, window: &PistonWindow) -> App {
+    pub fn new(parent_log: &Logger, window: &mut PistonWindow) -> App {
         use camera_controllers::{
             FirstPersonSettings,
             FirstPerson,
@@ -72,8 +72,8 @@ impl App {
         // output buffers -- this is the command buffer that we can fill
         // up with drawing commands _before_ flushing the whole thing to
         // the video card in one go.)
-        let enc1 = window.encoder.clone_empty();
-        let enc2 = window.encoder.clone_empty();
+        let enc1 = window.factory.create_command_buffer().into();
+        let enc2 = window.factory.create_command_buffer().into();
         // TODO: this carefully sending one encoder to each
         // channel is only because I'm temporarily calling
         // the rendering system synchronously until I get
@@ -181,11 +181,10 @@ impl App {
 
     pub fn run(&mut self, mut window: &mut PistonWindow) {
         use piston::input::*;
-        use piston::event_loop::Events;
 
         info!(self.log, "Starting event loop");
 
-        let mut events = window.events();
+        let mut events = window.events;
         while let Some(e) = events.next(window) {
             self.first_person.lock().unwrap().event(&e);
 

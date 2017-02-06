@@ -91,10 +91,26 @@ impl ChunkViewSystem {
                 &mut vertex_data,
                 &mut index_data,
             );
-            visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
 
             // Mark the chunk as having a clean view.
+            // NOTE: we need to do this before maybe skipping
+            // actually building the view.
             chunk.mark_view_as_clean();
+
+            // Don't attempt to create an empty mesh.
+            // Back-end doesn't seem to like this, and there's no point
+            // in wasting the VBOs etc. for nothing.
+            if vertex_data.len() == 0 || index_data.len() == 0 {
+                debug!(self.log, "Skipping chunk proto-mesh that would be empty"; "origin" => format!("{:?}", chunk_view.origin));
+
+                // TODO: is there anything that will assume we need to make the
+                // mesh again just because there's no mesh for the view?
+                // Maybe we need to make the case of an empty `Visual` explicit
+                // in that type to avoid mistakes.
+                continue;
+            }
+
+            visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
 
             trace!(self.log, "Made chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
 

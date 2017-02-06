@@ -31,6 +31,7 @@ impl<'a, R: gfx::Resources> MeshGuts<'a, R> for Mesh<R> {
 }
 
 impl<R: gfx::Resources> Mesh<R> {
+    /// Panicks if given an empty vertex or index vector.
     pub fn new<F: gfx::Factory<R>>(
         factory: &mut F,
         vertices: Vec<Vertex>,
@@ -43,18 +44,24 @@ impl<R: gfx::Resources> Mesh<R> {
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
         output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
     ) -> Mesh<R> {
+        // Don't allow creating empty mesh.
+        // Back-end doesn't seem to like this, and it probably represents
+        // a mistake if we attempt this anyway.
+        assert!(vertices.len() > 0);
+        assert!(vertex_indices.len() > 0);
+
         // Create sampler.
         // TODO: surely there are some sane defaults for this stuff
         // I can just fall back to...
         // TODO: What are these magic numbers? o_0
         use gfx::traits::FactoryExt;
         let texels = [[0x20, 0xA0, 0xC0, 0x00]];
-        let (_, texture_view) = factory.create_texture_const::<gfx::format::Rgba8>(
-            gfx::tex::Kind::D2(1, 1, gfx::tex::AaMode::Single),
+        let (_, texture_view) = factory.create_texture_immutable::<gfx::format::Rgba8>(
+            gfx::texture::Kind::D2(1, 1, gfx::texture::AaMode::Single),
             &[&texels]).unwrap();
-        let sinfo = gfx::tex::SamplerInfo::new(
-            gfx::tex::FilterMethod::Bilinear,
-            gfx::tex::WrapMode::Clamp
+        let sinfo = gfx::texture::SamplerInfo::new(
+            gfx::texture::FilterMethod::Bilinear,
+            gfx::texture::WrapMode::Clamp
         );
 
         let index_data: &[u32] = vertex_indices.as_slice();

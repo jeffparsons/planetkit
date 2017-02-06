@@ -18,8 +18,8 @@ pub fn new() -> (app::App, PistonWindow) {
     let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
     let log = root_log;
 
-    let window = window::make_window(&log);
-    let mut app = app::App::new(&log, &window);
+    let mut window = window::make_window(&log);
+    let mut app = app::App::new(&log, &mut window);
 
     // Set up input adapters.
     use cell_dweller;

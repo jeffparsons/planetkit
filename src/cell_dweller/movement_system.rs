@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use specs;
 use slog::Logger;
-use piston_window::Event;
+use piston::input::Input;
 
 use types::*;
 use super::CellDweller;
@@ -25,11 +25,11 @@ impl MovementInputAdapter {
 }
 
 impl input_adapter::InputAdapter for MovementInputAdapter {
-    fn handle(&self, event: &Event) {
+    fn handle(&self, input_event: &Input) {
         use piston::input::{ Button, PressEvent, ReleaseEvent };
         use piston::input::keyboard::Key;
 
-        if let Some(Button::Keyboard(key)) = event.press_args() {
+        if let Some(Button::Keyboard(key)) = input_event.press_args() {
             match key {
                 Key::I => self.sender.send(MovementEvent::StepForward(true)).unwrap(),
                 Key::K => self.sender.send(MovementEvent::StepBackward(true)).unwrap(),
@@ -38,7 +38,7 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
                 _ => (),
             }
         }
-        if let Some(Button::Keyboard(key)) = event.release_args() {
+        if let Some(Button::Keyboard(key)) = input_event.release_args() {
             match key {
                 Key::I => self.sender.send(MovementEvent::StepForward(false)).unwrap(),
                 Key::K => self.sender.send(MovementEvent::StepBackward(false)).unwrap(),
