@@ -9,6 +9,7 @@ pub mod cell_shape;
 mod view;
 mod gen;
 mod cell_pos;
+mod neighbors;
 mod dir;
 mod chunk_view;
 mod chunk_view_system;
@@ -21,6 +22,7 @@ pub use self::globe::Globe;
 pub use self::spec::*;
 pub use self::view::*;
 pub use self::cell_pos::*;
+pub use self::neighbors::*;
 pub use self::dir::*;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
@@ -168,6 +170,8 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
 // Will return nonsense (or panics) if `pos` lies beyond the
 // edges of its root.
 pub fn pos_in_owning_root(pos: CellPos, resolution: [IntCoord; 2]) -> CellPos {
+    debug_assert!(pos.z >= 0);
+
     // Here is the pattern of which root a cell belongs to.
     //
     // Note how adacent roots neatly slot into each other's

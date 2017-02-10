@@ -69,9 +69,12 @@ impl ChunkViewSystem {
             let chunk_index = globe.index_of_chunk_at(chunk_view.origin).expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
             use globe::globe::GlobeGuts;
             let spec = globe.spec();
-            let mut chunk = &mut globe.chunks_mut()[chunk_index];
-            if !chunk.is_view_dirty {
-                continue;
+            {
+                // Ew, can I please have non-lexical borrow scopes?
+                let chunk = &mut globe.chunks_mut()[chunk_index];
+                if !chunk.is_view_dirty {
+                    continue;
+                }
             }
 
             // Make a proto-mesh for the chunk.
@@ -86,16 +89,25 @@ impl ChunkViewSystem {
             // and index buffers.
             let mut vertex_data: Vec<Vertex> = Vec::new();
             let mut index_data: Vec<u32> = Vec::new();
-            globe_view.make_chunk_geometry(
-                chunk,
-                &mut vertex_data,
-                &mut index_data,
-            );
+            {
+                // Ew, can I please have non-lexical borrow scopes?
+                let chunk = &globe.chunks()[chunk_index];
+                globe_view.make_chunk_geometry(
+                    globe,
+                    chunk,
+                    &mut vertex_data,
+                    &mut index_data,
+                );
+            }
 
             // Mark the chunk as having a clean view.
             // NOTE: we need to do this before maybe skipping
             // actually building the view.
-            chunk.mark_view_as_clean();
+            {
+                // Ew, can I please have non-lexical borrow scopes?
+                let mut chunk = &mut globe.chunks_mut()[chunk_index];
+                chunk.mark_view_as_clean();
+            }
 
             // Don't attempt to create an empty mesh.
             // Back-end doesn't seem to like this, and there's no point
