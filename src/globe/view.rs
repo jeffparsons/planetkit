@@ -1,8 +1,8 @@
 use slog::Logger;
 
 use super::spec::Spec;
-use super::{Globe, CellPos};
-use super::chunk::{ Chunk, Material };
+use super::{Globe, CellPos, Cursor};
+use super::chunk::{ Material };
 use super::cell_shape;
 use ::render;
 
@@ -52,13 +52,14 @@ impl View {
     pub fn make_chunk_geometry(
         &self,
         globe: &Globe,
-        chunk: &Chunk,
+        origin: CellPos,
         vertex_data: &mut Vec<render::Vertex>,
         index_data: &mut Vec<u32>
     ) {
-        trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", chunk.origin));
+        trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
 
-        let origin = chunk.origin;
+        let mut cursor = Cursor::new(globe, origin);
+
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
         let end_x = origin.x + self.spec.chunk_resolution[0];
@@ -81,23 +82,30 @@ impl View {
                        continue;
                     }
 
-                    let cell = chunk.cell(cell_pos);
+                    cursor.set_pos(cell_pos);
 
-                    // TEMP color dirt as green, ocean as blue.
-                    // TEMP: Randomly mutate cell color to make it easier to see edges.
-                    let mut cell_color = if cell.material == Material::Dirt {
-                        // Grassy green
-                        [ 0.0, 0.4, 0.0 ]
-                    } else if cell.material == Material::Water {
-                        // Ocean blue
-                        [ 0.0, 0.1, 0.7 ]
-                    } else {
-                        // Don't draw air or anything else we don't understand.
-                        continue;
+                    let mut cell_color = {
+                        // Eww... can I please have non-lexical borrow scopes? :)
+                        let cell = cursor.cell();
+
+                        // TEMP color dirt as green, ocean as blue.
+                        // TEMP: Randomly mutate cell color to make it easier to see edges.
+                        let mut inner_cell_color = if cell.material == Material::Dirt {
+                            // Grassy green
+                            [ 0.0, 0.4, 0.0 ]
+                        } else if cell.material == Material::Water {
+                            // Ocean blue
+                            [ 0.0, 0.1, 0.7 ]
+                        } else {
+                            // Don't draw air or anything else we don't understand.
+                            continue;
+                        };
+                        for mut color_channel in &mut inner_cell_color {
+                            *color_channel *= 1.0 - 0.5 * cell.shade;
+                        }
+
+                        inner_cell_color
                     };
-                    for mut color_channel in &mut cell_color {
-                        *color_channel *= 1.0 - 0.5 * cell.shade;
-                    }
 
                     // TODO: use functions that return just the bit they care
                     // about and... maths. This is silly.

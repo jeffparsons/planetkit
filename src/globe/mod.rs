@@ -13,6 +13,7 @@ mod neighbors;
 mod dir;
 mod chunk_view;
 mod chunk_view_system;
+mod cursor;
 
 #[cfg(test)]
 mod test;
@@ -29,6 +30,7 @@ pub use self::neighbors::*;
 pub use self::dir::*;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
+pub use self::cursor::Cursor;
 
 pub type IntCoord = i64;
 
@@ -258,6 +260,49 @@ pub fn pos_in_owning_root(pos: CellPos, resolution: [IntCoord; 2]) -> CellPos {
         // `pos` is either on an edge owned by its root,
         // or somewhere in the middle of the root.
         pos
+    }
+}
+
+// NOTE: origin returned probably won't be for the
+// chunk that _owns_ `pos`.
+pub fn origin_of_chunk_in_same_root_containing(
+    pos: CellPos,
+    root_resolution: [IntCoord; 2],
+    chunk_resolution: [IntCoord; 3],
+) -> CellPos {
+    // Figure out what chunk this is in.
+    let end_x = root_resolution[0];
+    let end_y = root_resolution[1];
+    let last_chunk_x = (end_x / chunk_resolution[0] - 1) * chunk_resolution[0];
+    let last_chunk_y = (end_y / chunk_resolution[1] - 1) * chunk_resolution[1];
+    let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
+    if pos.x == 0 && pos.y == 0 {
+        // Chunk at (0, 0) contains north pole.
+        CellPos {
+            root: pos.root,
+            x: 0,
+            y: 0,
+            z: chunk_origin_z,
+        }
+    } else if pos.x == end_x && pos.y == end_y {
+        // Chunk at (last_chunk_x, last_chunk_y) contains south pole.
+        CellPos {
+            root: pos.root,
+            x: last_chunk_x,
+            y: last_chunk_y,
+            z: chunk_origin_z,
+        }
+    } else {
+        // Don't bother with which chunk _owns_ the cell;
+        // just round down the position in each axis.
+        let chunk_origin_x = pos.x / chunk_resolution[0] * chunk_resolution[0];
+        let chunk_origin_y = pos.y / chunk_resolution[1] * chunk_resolution[1];
+        CellPos {
+            root: pos.root,
+            x: chunk_origin_x,
+            y: chunk_origin_y,
+            z: chunk_origin_z,
+        }
     }
 }
 

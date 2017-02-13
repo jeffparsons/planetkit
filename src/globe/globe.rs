@@ -7,7 +7,7 @@ use slog::Logger;
 use rand;
 use rand::Rng;
 
-use super::{ pos_in_owning_root, origin_of_chunk_owning };
+use super::{ pos_in_owning_root, origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
 use super::CellPos;
 use super::chunk::{ Chunk, Cell, Material };
@@ -289,6 +289,16 @@ impl Globe {
 
         // Figure out what chunk this is in.
         let chunk_origin = origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution);
+
+        self.index_of_chunk_at(chunk_origin)
+    }
+
+    // Returns None if given coordinates of a cell in a chunk we don't have loaded.
+    //
+    // NOTE: chunk returned probably won't _own_ `pos`.
+    pub fn index_of_chunk_in_same_root_containing(&self, pos: CellPos) -> Option<usize> {
+        // Figure out what chunk this is in.
+        let chunk_origin = origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution);
 
         self.index_of_chunk_at(chunk_origin)
     }

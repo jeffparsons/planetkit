@@ -13,6 +13,12 @@ pub mod benches {
     //
     // - Original `cull_more_faces_impractically_slow` culling implementation:
     //     - 3,727,934 ns/iter (+/- 391,582
+    // - After introducing `Cursor`:
+    //     - 3,618,305 ns/iter (+/- 539,063)
+    //     - No noticeable change; build_chunk_geometry already only operates
+    //       directly on a single chunk. It's the implementation of `cull_cell`,
+    //       and the underlying implementation of `Neighbors` that make it so
+    //       horrendously slow at the moment.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
         use super::super::globe::GlobeGuts;
@@ -37,7 +43,7 @@ pub mod benches {
             index_data.clear();
             globe_view.make_chunk_geometry(
                 &globe,
-                &globe.chunks()[&globe.chunks().len() / 2],
+                globe.chunks()[&globe.chunks().len() / 2].origin,
                 &mut vertex_data,
                 &mut index_data,
             );

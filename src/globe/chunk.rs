@@ -138,6 +138,22 @@ impl Chunk {
         ) as usize
     }
 
+    /// Returns `true` if the given `pos` lies within the bounds of this chunk,
+    /// or `false` otherwise.
+    ///
+    /// Note that this does not consider whether or not this chunk _owns_ the
+    /// cell at `pos`.
+    pub fn contains_pos(&self, pos: CellPos) -> bool {
+        // Chunks don't share cells in the z-direction,
+        // but do in the x- and y-directions.
+        let end_x = self.origin.x + self.chunk_resolution[0];
+        let end_y = self.origin.y + self.chunk_resolution[1];
+        let end_z = self.origin.z + self.chunk_resolution[2] - 1;
+        pos.x >= self.origin.x && pos.x <= end_x &&
+        pos.y >= self.origin.y && pos.y <= end_y &&
+        pos.z >= self.origin.z && pos.z <= end_z
+    }
+
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk has been modified since the view was last updated.
     pub fn mark_view_as_dirty(&mut self) {
