@@ -14,6 +14,9 @@ mod dir;
 mod chunk_view;
 mod chunk_view_system;
 
+#[cfg(test)]
+mod test;
+
 use types::*;
 
 // TODO: be selective in what you export; no wildcards!
