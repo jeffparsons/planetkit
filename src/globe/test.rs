@@ -19,6 +19,9 @@ pub mod benches {
     //       directly on a single chunk. It's the implementation of `cull_cell`,
     //       and the underlying implementation of `Neighbors` that make it so
     //       horrendously slow at the moment.
+    // - After using `Cursor` in `cull_cell`:
+    //     - 861,702 ns/iter (+/- 170,677)
+    //     - Substantially better, but there are many more gains to be had.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
         use super::super::globe::GlobeGuts;

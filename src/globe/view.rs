@@ -70,7 +70,7 @@ impl View {
         for cell_z in origin.z..(end_z + 1) {
             for cell_y in origin.y..(end_y + 1) {
                 for cell_x in origin.x..(end_x + 1) {
-                    // Use cell centre as first vertex of each triangle.
+                    // Use cell center as first vertex of each triangle.
                     let cell_pos = CellPos {
                         x: cell_x,
                         y: cell_y,
@@ -78,15 +78,15 @@ impl View {
                         root: origin.root,
                     };
 
-                    if self.cull_cell(globe, cell_pos) {
+                    cursor.set_pos(cell_pos);
+
+                    if self.cull_cell(&cursor) {
                        continue;
                     }
 
-                    cursor.set_pos(cell_pos);
-
                     let mut cell_color = {
                         // Eww... can I please have non-lexical borrow scopes? :)
-                        let cell = cursor.cell();
+                        let cell = cursor.cell().expect("We shouldn't be trying to build geometry for a chunk that isn't loaded.");
 
                         // TEMP color dirt as green, ocean as blue.
                         // TEMP: Randomly mutate cell color to make it easier to see edges.
@@ -206,10 +206,13 @@ impl View {
         }
     }
 
-    fn cull_cell(&self, globe: &Globe, cell_pos: CellPos) -> bool {
+    fn cull_cell(&self, cursor: &Cursor) -> bool {
         use super::Neighbors;
 
-        let resolution = globe.spec().root_resolution;
+        let resolution = cursor.globe().spec().root_resolution;
+
+        let cell_pos = cursor.pos();
+        let mut neighbor_cursor = cursor.clone();
 
         // If none of the neighboring cells contain air,
         // then we won't render the cell at all.
@@ -219,36 +222,34 @@ impl View {
         for d_z in &[-1i64, 1] {
             let mut neighbor_pos = cell_pos;
             neighbor_pos.z += *d_z;
+            // TODO: neighbors should do this for you, too!
             if neighbor_pos.z < 0 {
                 continue;
             }
-            if globe.index_of_chunk_owning(neighbor_pos).is_none() {
-                // The chunk containing this neighbor isn't loaded.
-                continue;
-            }
-            let neighbor = globe.cell(neighbor_pos);
-            if neighbor.material == Material::Air {
-                // This cell can be seen; we can't cull it.
-                return false;
+            neighbor_cursor.set_pos(neighbor_pos);
+            if let Some(neighbor) = neighbor_cursor.cell() {
+                if neighbor.material == Material::Air {
+                    // This cell can be seen; we can't cull it.
+                    return false;
+                }
             }
         }
 
         for d_z in &[-1i64, 0, 1] {
             let mut middle = cell_pos;
             middle.z += *d_z;
+            // TODO: neighbors should do this for you, too!
             if middle.z < 0 {
                 continue;
             }
             let neighbors = Neighbors::new(cell_pos, resolution);
             for neighbor_pos in neighbors {
-                if globe.index_of_chunk_owning(neighbor_pos).is_none() {
-                    // The chunk containing this neighbor isn't loaded.
-                    continue;
-                }
-                let neighbor = globe.cell(neighbor_pos);
-                if neighbor.material == Material::Air {
-                    // This cell can be seen; we can't cull it.
-                    return false;
+                neighbor_cursor.set_pos(neighbor_pos);
+                if let Some(neighbor) = neighbor_cursor.cell() {
+                    if neighbor.material == Material::Air {
+                        // This cell can be seen; we can't cull it.
+                        return false;
+                    }
                 }
             }
         }

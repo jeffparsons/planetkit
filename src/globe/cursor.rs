@@ -9,11 +9,14 @@ use super::chunk::{ Chunk, Cell };
 ///
 /// `Cursor` exists to help with algorithms that perform a lot of local
 /// navigation between cells, by avoiding the high cost of random access.
+#[derive(Clone)]
 pub struct Cursor<'a> {
     globe: &'a Globe,
     pos: CellPos,
     // Avoid needing to find current chunk again when moving to another
     // pos if we're moving into another pos in the same chunk.
+    //
+    // May be `None` if the chunk pointed at is not loaded.
     current_chunk: Option<&'a Chunk>,
     current_chunk_might_be_dirty: bool,
 }
@@ -28,9 +31,17 @@ impl<'a> Cursor<'a> {
         }
     }
 
+    pub fn pos(&self) -> CellPos {
+        self.pos
+    }
+
     pub fn set_pos(&mut self, new_pos: CellPos) {
         self.pos = new_pos;
         self.current_chunk_might_be_dirty = true;
+    }
+
+    pub fn globe(&self) -> &'a Globe {
+        self.globe
     }
 
     /// Get a reference to the cell the cursor is currently pointing at.
@@ -38,14 +49,17 @@ impl<'a> Cursor<'a> {
     /// Note that this cell might come from a chunk that doesn't own it,
     /// unless you've deliberately ensured you pointed at the cell in its
     /// owning root.
-    pub fn cell(&mut self) -> &'a Cell {
+    ///
+    /// Returns `None` if the requested cell is in a chunk that isn't loaded.
+    pub fn cell(&mut self) -> Option<&'a Cell> {
         // Find the owning chunk if necessary.
         self.update_current_chunk();
         self.current_chunk
-            .expect("We just ensured the current chunk is up-to-date!")
-            .cell(self.pos)
+            .map(|chunk| chunk.cell(self.pos))
     }
 
+    // Sets `self.current_chunk` to `None` if the cell pointed
+    // at is in a chunk that isn't loaded.
     fn update_current_chunk(&mut self) {
         if !self.current_chunk_might_be_dirty {
             // Nothing interesting has happened since we last
@@ -67,9 +81,8 @@ impl<'a> Cursor<'a> {
         // Find a chunk that contains pos. Note that it probably won't be
         // the chunk that _owns_ pos.
         use super::globe::GlobeGuts;
-        let chunk_index = self.globe.index_of_chunk_in_same_root_containing(self.pos)
-            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        self.current_chunk = Some(&self.globe.chunks()[chunk_index]);
+        self.current_chunk = self.globe.index_of_chunk_in_same_root_containing(self.pos)
+            .map(|chunk_index| &self.globe.chunks()[chunk_index]);
         self.current_chunk_might_be_dirty = false;
     }
 }
