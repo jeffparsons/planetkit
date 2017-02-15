@@ -1,3 +1,4 @@
+use std::iter::Chain;
 use super::{
     IntCoord,
     CellPos,
@@ -9,21 +10,47 @@ use movement::{
     turn_left_by_one_hex_edge,
 };
 
+pub struct Neighbors {
+    // Hide the iterator used to implement this.
+    iter: Chain<AboveAndBelow, SlowGeneralEdgeNeighbors>,
+}
+
+/// Iterator over the cells sharing an interface with a given `pos`.
+/// Doesn't include diagonal neighbors, e.g., one across and one down.
+impl Neighbors {
+    pub fn new(pos: CellPos, resolution: [IntCoord; 2]) -> Neighbors {
+        let above_and_below = AboveAndBelow::new(pos);
+        let slow_general_edge_neighbors = SlowGeneralEdgeNeighbors::new(pos, resolution);
+        Neighbors {
+            iter: above_and_below.chain(slow_general_edge_neighbors),
+        }
+    }
+}
+
+impl Iterator for Neighbors {
+    type Item = CellPos;
+
+    fn next(&mut self) -> Option<CellPos> {
+        self.iter.next()
+    }
+}
+
 // TODO: this whole implementation is horribly inefficient,
 // but it was the easiest one I could think of to get up and
 // running quickly without having to handle a bunch of special
 // cases. Replace me!
 
-/// Iterator over the neighbors of a `Pos` at a given resolution.
-pub struct Neighbors {
+/// Iterator over the cells sharing an interface with a given `pos`.
+/// Doesn't include diagonal neighbors, e.g., one across and one down.
+pub struct SlowGeneralEdgeNeighbors {
     resolution: [IntCoord; 2],
     origin: CellPos,
     first_neighbor: Option<CellPos>,
     current_dir: Dir,
 }
 
-impl Neighbors {
-    pub fn new(mut pos: CellPos, resolution: [IntCoord; 2]) -> Neighbors {
+impl SlowGeneralEdgeNeighbors {
+    pub fn new(mut pos: CellPos, resolution: [IntCoord; 2]) -> SlowGeneralEdgeNeighbors {
         // Pick a direction that's valid for `pos`.
         // To do this, first express the position in its owning root...
         pos = pos_in_owning_root(pos, resolution);
@@ -35,7 +62,7 @@ impl Neighbors {
         } else {
             Dir::new(0)
         };
-        Neighbors {
+        SlowGeneralEdgeNeighbors {
             resolution: resolution,
             origin: pos,
             first_neighbor: None,
@@ -44,7 +71,7 @@ impl Neighbors {
     }
 }
 
-impl Iterator for Neighbors {
+impl Iterator for SlowGeneralEdgeNeighbors {
     type Item = CellPos;
 
     fn next(&mut self) -> Option<CellPos> {
@@ -71,5 +98,50 @@ impl Iterator for Neighbors {
 
         // Yield the neighbor we found above.
         Some(pos)
+    }
+}
+
+// Iterator over cell positions immediately above and below
+// a given cell.
+//
+// Does not yield the (invalid) position below if the center cell is at `z == 0`.
+struct AboveAndBelow {
+    origin: CellPos,
+    yielded_above: bool,
+    yielded_below: bool,
+}
+
+impl AboveAndBelow {
+    pub fn new(pos: CellPos) -> AboveAndBelow {
+        AboveAndBelow {
+            origin: pos,
+            yielded_above: false,
+            yielded_below: false,
+        }
+    }
+}
+
+impl Iterator for AboveAndBelow {
+    type Item = CellPos;
+
+    fn next(&mut self) -> Option<CellPos> {
+        if !self.yielded_above {
+            // Yield position above.
+            self.yielded_above = true;
+            return Some(self.origin.set_z(self.origin.z + 1));
+        }
+
+        if !self.yielded_below {
+            if self.origin.z == 0 {
+                // There's no valid position below.
+                return None;
+            }
+
+            // Yield position below.
+            self.yielded_below = true;
+            return Some(self.origin.set_z(self.origin.z - 1));
+        }
+
+        None
     }
 }

@@ -22,6 +22,11 @@ pub mod benches {
     // - After using `Cursor` in `cull_cell`:
     //     - 861,702 ns/iter (+/- 170,677)
     //     - Substantially better, but there are many more gains to be had.
+    // - After cleaning up implementation and use of `Neighbors`:
+    //     - 565,896 ns/iter (+/- 237,193
+    //     - A little bit better, but mostly by eliminating completely useless
+    //       checks for diagonal neighbors. The next wins will come from implementing
+    //       an "easy case" version of `Neighbors` that avoids most of the math.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
         use super::super::globe::GlobeGuts;

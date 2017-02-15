@@ -216,40 +216,13 @@ impl View {
 
         // If none of the neighboring cells contain air,
         // then we won't render the cell at all.
-
-        // Check cells immediately above and immediately below.
-        // TODO: just fix the Neighbors iterator to do this for you.
-        for d_z in &[-1i64, 1] {
-            let mut neighbor_pos = cell_pos;
-            neighbor_pos.z += *d_z;
-            // TODO: neighbors should do this for you, too!
-            if neighbor_pos.z < 0 {
-                continue;
-            }
+        let neighbors = Neighbors::new(cell_pos, resolution);
+        for neighbor_pos in neighbors {
             neighbor_cursor.set_pos(neighbor_pos);
             if let Some(neighbor) = neighbor_cursor.cell() {
                 if neighbor.material == Material::Air {
                     // This cell can be seen; we can't cull it.
                     return false;
-                }
-            }
-        }
-
-        for d_z in &[-1i64, 0, 1] {
-            let mut middle = cell_pos;
-            middle.z += *d_z;
-            // TODO: neighbors should do this for you, too!
-            if middle.z < 0 {
-                continue;
-            }
-            let neighbors = Neighbors::new(cell_pos, resolution);
-            for neighbor_pos in neighbors {
-                neighbor_cursor.set_pos(neighbor_pos);
-                if let Some(neighbor) = neighbor_cursor.cell() {
-                    if neighbor.material == Material::Air {
-                        // This cell can be seen; we can't cull it.
-                        return false;
-                    }
                 }
             }
         }
