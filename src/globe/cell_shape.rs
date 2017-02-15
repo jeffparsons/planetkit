@@ -244,7 +244,7 @@ pub const SOUTH_EAST_PORTION: CellShape = CellShape {
 //
 //              x
 //              ↓
-pub const NEIGHBOR_OFFSETS: [(IntCoord, IntCoord); 6] = [
+pub static NEIGHBOR_OFFSETS: [(IntCoord, IntCoord); 6] = [
     (  1,  0 ),
     (  0,  1 ),
     ( -1,  1 ),

@@ -27,6 +27,11 @@ pub mod benches {
     //     - A little bit better, but mostly by eliminating completely useless
     //       checks for diagonal neighbors. The next wins will come from implementing
     //       an "easy case" version of `Neighbors` that avoids most of the math.
+    // - After implementing fast `Neighbors`:
+    //     - 486,945 ns/iter (+/- 112,408)
+    //     - Only a tiny speed-up. There's lots more room for improvement on this front,
+    //       but given that my chunks at the moment are very small, I'm just going to
+    //       leave it as is and move on to bigger fish.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
         use super::super::globe::GlobeGuts;

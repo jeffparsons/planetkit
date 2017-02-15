@@ -1,4 +1,5 @@
 use std::iter::Chain;
+use std::slice;
 use super::{
     IntCoord,
     CellPos,
@@ -11,8 +12,8 @@ use movement::{
 };
 
 pub struct Neighbors {
-    // Hide the iterator used to implement this.
-    iter: Chain<AboveAndBelow, SlowGeneralEdgeNeighbors>,
+    // Hide the iterators used to implement this.
+    iter: NeighborsImpl,
 }
 
 /// Iterator over the cells sharing an interface with a given `pos`.
@@ -20,9 +21,21 @@ pub struct Neighbors {
 impl Neighbors {
     pub fn new(pos: CellPos, resolution: [IntCoord; 2]) -> Neighbors {
         let above_and_below = AboveAndBelow::new(pos);
-        let slow_general_edge_neighbors = SlowGeneralEdgeNeighbors::new(pos, resolution);
-        Neighbors {
-            iter: above_and_below.chain(slow_general_edge_neighbors),
+        let is_away_from_root_edges =
+            pos.x > 0 &&
+            pos.x < resolution[0] - 1 &&
+            pos.y > 0 &&
+            pos.y < resolution[1] - 1;
+        if is_away_from_root_edges {
+            let fast_intra_root_neighbors = FastIntraRootNeighbors::new(pos);
+            Neighbors {
+                iter: NeighborsImpl::FastIntra(above_and_below.chain(fast_intra_root_neighbors)),
+            }
+        } else {
+            let slow_general_edge_neighbors = SlowGeneralEdgeNeighbors::new(pos, resolution);
+            Neighbors {
+                iter: NeighborsImpl::SlowGeneral(above_and_below.chain(slow_general_edge_neighbors)),
+            }
         }
     }
 }
@@ -31,8 +44,18 @@ impl Iterator for Neighbors {
     type Item = CellPos;
 
     fn next(&mut self) -> Option<CellPos> {
-        self.iter.next()
+        match self.iter {
+            NeighborsImpl::SlowGeneral(ref mut iter) => iter.next(),
+            NeighborsImpl::FastIntra(ref mut iter) => iter.next(),
+        }
     }
+}
+
+// There are a couple of different implementations; we pick the fast
+// one if we can, or otherwise fall back to the general one.
+enum NeighborsImpl {
+    SlowGeneral(Chain<AboveAndBelow, SlowGeneralEdgeNeighbors>),
+    FastIntra(Chain<AboveAndBelow, FastIntraRootNeighbors>),
 }
 
 // TODO: this whole implementation is horribly inefficient,
@@ -42,7 +65,7 @@ impl Iterator for Neighbors {
 
 /// Iterator over the cells sharing an interface with a given `pos`.
 /// Doesn't include diagonal neighbors, e.g., one across and one down.
-pub struct SlowGeneralEdgeNeighbors {
+struct SlowGeneralEdgeNeighbors {
     resolution: [IntCoord; 2],
     origin: CellPos,
     first_neighbor: Option<CellPos>,
@@ -101,6 +124,39 @@ impl Iterator for SlowGeneralEdgeNeighbors {
     }
 }
 
+/// Iterator over the cells sharing an interface with a given `pos`.
+/// Doesn't include diagonal neighbors, e.g., one across and one down.
+///
+/// Assumes that all neighbors are within the same chunk as the center cell.
+/// Behaviour is undefined if this is not true.
+struct FastIntraRootNeighbors {
+    origin: CellPos,
+    offsets: slice::Iter<'static, (IntCoord, IntCoord)>,
+}
+
+impl FastIntraRootNeighbors {
+    pub fn new(pos: CellPos) -> FastIntraRootNeighbors {
+        use super::cell_shape::NEIGHBOR_OFFSETS;
+        FastIntraRootNeighbors {
+            origin: pos,
+            offsets: NEIGHBOR_OFFSETS.iter(),
+        }
+    }
+}
+
+impl Iterator for FastIntraRootNeighbors {
+    type Item = CellPos;
+
+    fn next(&mut self) -> Option<CellPos> {
+        self.offsets.next().map(|offset| {
+            self.origin
+                .clone()
+                .set_x(self.origin.x + offset.0)
+                .set_y(self.origin.y + offset.1)
+        })
+    }
+}
+
 // Iterator over cell positions immediately above and below
 // a given cell.
 //
@@ -128,7 +184,7 @@ impl Iterator for AboveAndBelow {
         if !self.yielded_above {
             // Yield position above.
             self.yielded_above = true;
-            return Some(self.origin.set_z(self.origin.z + 1));
+            return Some(self.origin.clone().set_z(self.origin.z + 1));
         }
 
         if !self.yielded_below {
@@ -139,7 +195,7 @@ impl Iterator for AboveAndBelow {
 
             // Yield position below.
             self.yielded_below = true;
-            return Some(self.origin.set_z(self.origin.z - 1));
+            return Some(self.origin.clone().set_z(self.origin.z - 1));
         }
 
         None
