@@ -66,6 +66,10 @@ impl ChunkViewSystem {
             // been changed since last time the view was updated.
             //
             // Note that this will also be true if geometry has never been created for this chunk.
+            //
+            // TODO: this might also need to be done any time any of its neighboring
+            // chunks changes, because we cull invisible cells, and what cells are
+            // visible partly depends on what's in neighboring chunks.
             let chunk_index = globe.index_of_chunk_at(chunk_view.origin).expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
             use globe::globe::GlobeGuts;
             let spec = globe.spec();
@@ -109,7 +113,7 @@ impl ChunkViewSystem {
             // Back-end doesn't seem to like this, and there's no point
             // in wasting the VBOs etc. for nothing.
             if vertex_data.len() == 0 || index_data.len() == 0 {
-                debug!(self.log, "Skipping chunk proto-mesh that would be empty"; "origin" => format!("{:?}", chunk_view.origin));
+                trace!(self.log, "Skipping chunk proto-mesh that would be empty"; "origin" => format!("{:?}", chunk_view.origin));
 
                 // TODO: is there anything that will assume we need to make the
                 // mesh again just because there's no mesh for the view?

@@ -137,6 +137,11 @@ impl MiningSystem {
             // TODO: different API where you commit to changing a cell
             // in a closure you get back that has a reference to it?
             // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
+            //
+            // TODO: fix this API; it need to mark neighboring chunks
+            // as dirty if anything was changed on a border cell.
+            // But we don't currently keep track of _all_ neighboring chunks;
+            // only those that we might need to copy authoritative data from.
             globe.mark_chunk_view_as_dirty(new_pos);
             // Propagate change to neighbouring chunks.
             // TODO: we reaaaally need a better interface for mutating chunk data
