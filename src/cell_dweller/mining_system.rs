@@ -133,11 +133,6 @@ impl MiningSystem {
             // notions of version? Or _only_ have something like "edge_cells_version"
             // for now?
             globe.increment_chunk_version_for_cell(new_pos);
-            // Mark the containing chunk as being dirty.
-            // TODO: different API where you commit to changing a cell
-            // in a closure you get back that has a reference to it?
-            // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
-            globe.mark_chunk_view_as_dirty(new_pos);
             // Propagate change to neighbouring chunks.
             // TODO: we reaaaally need a better interface for mutating chunk data
             // to make sure this happens automatically.
@@ -146,6 +141,12 @@ impl MiningSystem {
             // Like... _really_ bad. Fixing the interface to cell data
             // is now a high priority.
             globe.copy_all_authoritative_cells();
+            // Mark the view for the containing chunk and those containing each cell surrounding
+            // it as being dirty. (This cell might affect the visibility of cells in those chunks.)
+            // TODO: different API where you commit to changing a cell
+            // in a closure you get back that has a reference to it?
+            // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
+            globe.mark_chunk_views_affected_by_cell_as_dirty(new_pos);
             // TODO: remember on the cell-dweller that it's carrying something?
             // Or should that be a different kind of component?
             debug!(self.log, "Picked up block"; "pos" => format!("{:?}", new_pos));

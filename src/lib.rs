@@ -3,6 +3,8 @@
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
+#![cfg_attr(all(feature = "nightly", test), feature(test))]
+
 extern crate chrono;
 extern crate rand;
 extern crate noise;
@@ -23,6 +25,9 @@ extern crate slog;
 extern crate slog_term;
 extern crate specs;
 extern crate num_traits;
+
+#[cfg(all(feature = "nightly", test))]
+extern crate test;
 
 pub mod input_adapter;
 pub mod globe;

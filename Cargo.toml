@@ -2,6 +2,10 @@
 name = "planetkit"
 version = "0.0.1"
 authors = ["Jeff Parsons <jeff@parsons.io>"]
+build = "build.rs"
+
+[features]
+nightly = []
 
 [lib]
 path = "src/lib.rs"
@@ -29,3 +33,6 @@ slog-term = "1.3.3"
 chrono = "0.2"
 specs = "0.7.0"
 num-traits = "0.1.36"
+
+[build-dependencies]
+rustc_version = "0.1.*"

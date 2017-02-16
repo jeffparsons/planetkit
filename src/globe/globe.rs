@@ -7,9 +7,10 @@ use slog::Logger;
 use rand;
 use rand::Rng;
 
-use super::{ pos_in_owning_root, origin_of_chunk_owning };
+use super::{ pos_in_owning_root, origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
 use super::CellPos;
+use super::Neighbors;
 use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
 use super::gen::Gen;
@@ -293,6 +294,16 @@ impl Globe {
         self.index_of_chunk_at(chunk_origin)
     }
 
+    // Returns None if given coordinates of a cell in a chunk we don't have loaded.
+    //
+    // NOTE: chunk returned probably won't _own_ `pos`.
+    pub fn index_of_chunk_in_same_root_containing(&self, pos: CellPos) -> Option<usize> {
+        // Figure out what chunk this is in.
+        let chunk_origin = origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution);
+
+        self.index_of_chunk_at(chunk_origin)
+    }
+
     pub fn find_lowest_cell_containing(
         &self,
         column: CellPos,
@@ -353,15 +364,35 @@ impl Globe {
     }
 
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
-    /// chunk has been modified since the view was last updated.
-    pub fn mark_chunk_view_as_dirty(&mut self, mut pos: CellPos) {
+    /// chunk (or something else affecting its visibility) has been modified
+    /// since the view was last updated.
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, mut pos: CellPos) {
         // Translate into owning root.
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
+        // TODO: is it even necessary at all here? All we really care about
+        // is consistency in which chunk we look at for the centre cell,
+        // and the one.....
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
-        let chunk_index = self.index_of_chunk_owning(pos)
-            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        self.chunks[chunk_index].mark_view_as_dirty();
+
+        // TODO: this (Vec) is super slow! Replace with a less brain-dead solution.
+        // Just committing this one now to patch over a kinda-regression in that
+        // the existing bug of not doing this at all just become a lot more
+        // obvious now that I'm doing a better job of culling cells.
+        let mut dirty_cells: Vec<CellPos> = Vec::new();
+        dirty_cells.push(pos);
+        dirty_cells.extend(Neighbors::new(pos, self.spec.root_resolution));
+        // Gah, filthy hacks. This is to get around not having a way to query for
+        // "all chunks containing this cell".
+        let mut cells_in_dirty_chunks: Vec<CellPos> = Vec::new();
+        for dirty_cell in dirty_cells {
+            cells_in_dirty_chunks.extend(Neighbors::new(dirty_cell, self.spec.root_resolution));
+        }
+        for dirty_pos in cells_in_dirty_chunks {
+            let chunk_index = self.index_of_chunk_owning(dirty_pos)
+                .expect("There's no good reason for this to explode; TODO just ignore.");
+            self.chunks[chunk_index].mark_view_as_dirty();
+        }
     }
 
     // TODO: this all lacks subtlety; we only actually need to update the

@@ -1,11 +1,8 @@
-use chrono::Duration;
-
 use slog::Logger;
 
 use super::spec::Spec;
-use super::{Globe, CellPos};
-use super::globe::GlobeGuts;
-use super::chunk::{ Chunk, Material };
+use super::{Globe, CellPos, Cursor};
+use super::chunk::{ Material };
 use super::cell_shape;
 use ::render;
 
@@ -36,35 +33,6 @@ impl View {
         }
     }
 
-    // Make vertices and list of indices into that array for triangle faces.
-    pub fn make_geometry(&self, globe: &Globe)
-        -> Vec<(Vec<render::Vertex>, Vec<u32>)>
-    {
-        debug!(self.log, "Making chunk geometry for globe"; "chunks" => globe.chunks().len());
-
-        let mut all_geometry = Vec::new();
-        let dt = Duration::span(|| {
-            for chunk in globe.chunks() {
-                // Build geometry for this chunk into vertex
-                // and index buffers.
-                let mut vertex_data: Vec<render::Vertex> = Vec::new();
-                let mut index_data: Vec<u32> = Vec::new();
-
-                // TODO: factor out
-                self.make_chunk_geometry(
-                    chunk,
-                    &mut vertex_data,
-                    &mut index_data,
-                );
-                all_geometry.push((vertex_data, index_data));
-            }
-        });
-
-        debug!(self.log, "Finished making geometry for chunks"; "chunks" => globe.chunks().len(), "dt" => format!("{}", dt));
-
-        all_geometry
-    }
-
     // TODO: don't take a reference to a chunk
     // in this method; to make geometry for this
     // chunk we'll eventually need to have data for adjacent chunks
@@ -83,11 +51,15 @@ impl View {
     // might ever need, or some combination.
     pub fn make_chunk_geometry(
         &self,
-        chunk: &Chunk,
+        globe: &Globe,
+        origin: CellPos,
         vertex_data: &mut Vec<render::Vertex>,
         index_data: &mut Vec<u32>
     ) {
-        let origin = chunk.origin;
+        trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
+
+        let mut cursor = Cursor::new(globe, origin);
+
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
         let end_x = origin.x + self.spec.chunk_resolution[0];
@@ -98,7 +70,7 @@ impl View {
         for cell_z in origin.z..(end_z + 1) {
             for cell_y in origin.y..(end_y + 1) {
                 for cell_x in origin.x..(end_x + 1) {
-                    // Use cell centre as first vertex of each triangle.
+                    // Use cell center as first vertex of each triangle.
                     let cell_pos = CellPos {
                         x: cell_x,
                         y: cell_y,
@@ -106,27 +78,34 @@ impl View {
                         root: origin.root,
                     };
 
-                    if self.cull_cell(chunk, cell_pos) {
+                    cursor.set_pos(cell_pos);
+
+                    if self.cull_cell(&cursor) {
                        continue;
                     }
 
-                    let cell = chunk.cell(cell_pos);
+                    let mut cell_color = {
+                        // Eww... can I please have non-lexical borrow scopes? :)
+                        let cell = cursor.cell().expect("We shouldn't be trying to build geometry for a chunk that isn't loaded.");
 
-                    // TEMP color dirt as green, ocean as blue.
-                    // TEMP: Randomly mutate cell color to make it easier to see edges.
-                    let mut cell_color = if cell.material == Material::Dirt {
-                        // Grassy green
-                        [ 0.0, 0.4, 0.0 ]
-                    } else if cell.material == Material::Water {
-                        // Ocean blue
-                        [ 0.0, 0.1, 0.7 ]
-                    } else {
-                        // Don't draw air or anything else we don't understand.
-                        continue;
+                        // TEMP color dirt as green, ocean as blue.
+                        // TEMP: Randomly mutate cell color to make it easier to see edges.
+                        let mut inner_cell_color = if cell.material == Material::Dirt {
+                            // Grassy green
+                            [ 0.0, 0.4, 0.0 ]
+                        } else if cell.material == Material::Water {
+                            // Ocean blue
+                            [ 0.0, 0.1, 0.7 ]
+                        } else {
+                            // Don't draw air or anything else we don't understand.
+                            continue;
+                        };
+                        for mut color_channel in &mut inner_cell_color {
+                            *color_channel *= 1.0 - 0.5 * cell.shade;
+                        }
+
+                        inner_cell_color
                     };
-                    for mut color_channel in &mut cell_color {
-                        *color_channel *= 1.0 - 0.5 * cell.shade;
-                    }
 
                     // TODO: use functions that return just the bit they care
                     // about and... maths. This is silly.
@@ -227,61 +206,21 @@ impl View {
         }
     }
 
-    fn cull_cell(&self, chunk: &Chunk, cell_pos: CellPos) -> bool {
-        // For now, be super-lazy and don't look at
-        // the values that belong to neighbouring chunks.
-        // (At the time of writing, we're not even storing
-        // enough to do this consistently.)
-        //
-        // Instead, if we have enough data (i.e. this cell
-        // is not on the edge of the chunk) to know that there
-        // are _no_ non-air neighbouring cells, then we won't
-        // render the cell at all.
-        let origin = chunk.origin;
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
-        // Chunks don't share cells in the z-direction,
-        // but do in the x- and y-directions.
-        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
-        let on_edge =
-            cell_pos.x <= origin.x ||
-            cell_pos.y <= origin.y ||
-            cell_pos.z <= origin.z ||
-            cell_pos.x >= end_x ||
-            cell_pos.y >= end_y ||
-            cell_pos.z >= end_z;
-        if on_edge {
-            return false;
-        }
+    fn cull_cell(&self, cursor: &Cursor) -> bool {
+        use super::Neighbors;
 
-        // All neighbouring cells, assuming we're not
-        // on the edge of the chunk.
-        //
-        // TODO: this is evil hacks; we should be
-        // checking what directions this cell has
-        // neighbours in, and then using functions
-        // that walk in those directions to find the
-        // cells.
-        //
-        // TODO: this might actually not be evil anymore.
-        // We're very deliberately only considering the hexagonal
-        // part of each cell in the way we generate geometry here.
-        use super::cell_shape::NEIGHBOR_OFFSETS;
-        for d_z in &[-1, 0, 1] {
-            for &(d_x, d_y) in &NEIGHBOR_OFFSETS {
+        let resolution = cursor.globe().spec().root_resolution;
 
-                // Don't compare against this block.
-                if d_x == 0 && d_y == 0 && *d_z == 0 {
-                    continue;
-                }
+        let cell_pos = cursor.pos();
+        let mut neighbor_cursor = cursor.clone();
 
-                let mut neighbour_pos = cell_pos;
-                neighbour_pos.x += d_x;
-                neighbour_pos.y += d_y;
-                neighbour_pos.z += *d_z;
-
-                let neighbour = chunk.cell(neighbour_pos);
-                if neighbour.material == Material::Air {
+        // If none of the neighboring cells contain air,
+        // then we won't render the cell at all.
+        let neighbors = Neighbors::new(cell_pos, resolution);
+        for neighbor_pos in neighbors {
+            neighbor_cursor.set_pos(neighbor_pos);
+            if let Some(neighbor) = neighbor_cursor.cell() {
+                if neighbor.material == Material::Air {
                     // This cell can be seen; we can't cull it.
                     return false;
                 }
