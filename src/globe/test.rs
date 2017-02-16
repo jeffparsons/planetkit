@@ -8,6 +8,8 @@ pub mod benches {
 
     use super::super::*;
 
+    use ::globe::{ CellPos, Root };
+
     #[bench]
     // # History for picking the "middle of the vector" chunk.
     //
@@ -32,9 +34,15 @@ pub mod benches {
     //     - Only a tiny speed-up. There's lots more room for improvement on this front,
     //       but given that my chunks at the moment are very small, I'm just going to
     //       leave it as is and move on to bigger fish.
+    // - After replacing chunk vector with hash map:
+    //     - 426,929 ns/iter (+/- 56,074)
+    //     - Again, only a very small improvement. This change wasn't made to speed
+    //       up generating chunk geometry; I'm just updating this history for completeness.
+    //     - I believe this change would have been a lot more noticeable if I hadn't
+    //       already implemented `Cursor`, because it speeds up looking up a chunk
+    //       by its origin, which `Cursor` helps you avoid most of the time.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
-        use super::super::globe::GlobeGuts;
 
         let drain = slog_term::streamer().compact().build().fuse();
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
@@ -51,12 +59,15 @@ pub mod benches {
         let globe_view = View::new(spec, &log);
         let mut vertex_data: Vec<Vertex> = Vec::new();
         let mut index_data: Vec<u32> = Vec::new();
+        // Copied from output of old version of test to make sure
+        // we're actually benchmarking the same thing.
+        let middle_chunk_origin = CellPos { root: Root { index: 2 }, x: 16, y: 16, z: 8 };
         b.iter(|| {
             vertex_data.clear();
             index_data.clear();
             globe_view.make_chunk_geometry(
                 &globe,
-                globe.chunks()[&globe.chunks().len() / 2].origin,
+                middle_chunk_origin,
                 &mut vertex_data,
                 &mut index_data,
             );

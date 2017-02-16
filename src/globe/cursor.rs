@@ -81,8 +81,8 @@ impl<'a> Cursor<'a> {
         // Find a chunk that contains pos. Note that it probably won't be
         // the chunk that _owns_ pos.
         use super::globe::GlobeGuts;
-        self.current_chunk = self.globe.index_of_chunk_in_same_root_containing(self.pos)
-            .map(|chunk_index| &self.globe.chunks()[chunk_index]);
+        let chunk_origin = self.globe.origin_of_chunk_in_same_root_containing(self.pos);
+        self.current_chunk = self.globe.chunks().get(&chunk_origin);
         self.current_chunk_might_be_dirty = false;
     }
 }

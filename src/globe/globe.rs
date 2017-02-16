@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use specs;
 
 use chrono::Duration;
@@ -24,29 +26,31 @@ const ROOT_QUADS: u8 = 5;
 pub struct Globe {
     spec: Spec,
     gen: Gen,
+    // Map chunk origins to chunks.
+    //
     // TODO: figure out what structure to store these in.
     // You'll never have all chunks loaded in the real world.
     //
     // TODO: you'll probably also want to store some lower-res
     // pseudo-chunks for rendering planets at a distance.
     // But maybe you can put that off?
-    chunks: Vec<Chunk>,
+    chunks: HashMap<CellPos, Chunk>,
     log: Logger,
 }
 
 // Allowing sibling modules to reach into semi-private parts
 // of the Globe struct.
 pub trait GlobeGuts<'a> {
-    fn chunks(&'a self) -> &'a Vec<Chunk>;
-    fn chunks_mut(&'a mut self) -> &'a mut Vec<Chunk>;
+    fn chunks(&'a self) -> &'a HashMap<CellPos, Chunk>;
+    fn chunks_mut(&'a mut self) -> &'a mut HashMap<CellPos, Chunk>;
 }
 
 impl<'a> GlobeGuts<'a> for Globe {
-    fn chunks(&'a self) -> &'a Vec<Chunk> {
+    fn chunks(&'a self) -> &'a HashMap<CellPos, Chunk> {
         &self.chunks
     }
 
-    fn chunks_mut(&'a mut self) -> &'a mut Vec<Chunk> {
+    fn chunks_mut(&'a mut self) -> &'a mut HashMap<CellPos, Chunk> {
         &mut self.chunks
     }
 }
@@ -56,7 +60,7 @@ impl Globe {
         let mut globe = Globe {
             spec: spec,
             gen: Gen::new(spec),
-            chunks: Vec::new(),
+            chunks: HashMap::new(),
             log: parent_log.new(o!()),
         };
         globe.build_all_chunks();
@@ -148,12 +152,15 @@ impl Globe {
                 }
             }
         }
-        self.chunks.push(Chunk::new(
+        let old_chunk = self.chunks.insert(origin, Chunk::new(
             origin,
             cells,
             self.spec.root_resolution,
             self.spec.chunk_resolution,
         ));
+        if old_chunk.is_some() {
+            panic!("We shouldn't have attempted to build a chunk that already existed.")
+        }
     }
 
     // TODO: there's no way this should be public.
@@ -195,14 +202,6 @@ impl Globe {
     }
 
     fn maybe_copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
-        let target_chunk_index = match self.index_of_chunk_at(target_chunk_origin) {
-            None => {
-                // No worries; the chunk isn't loaded. Do nothing.
-                return;
-            },
-            Some(target_chunk_index) => target_chunk_index,
-        };
-
         // BEWARE: MULTIPLE HACKS BELOW to get around borrowck. There has to be
         // a better way around this!
 
@@ -212,7 +211,13 @@ impl Globe {
         //
         // TODO: at very least avoid this most of the time by doing a read-only pass over
         // all neighbours and bailing out if we're completely up-to-date.
-        let mut target_chunk = self.chunks.swap_remove(target_chunk_index);
+        let mut target_chunk = match self.chunks.remove(&target_chunk_origin) {
+            None => {
+                // No worries; the chunk isn't loaded. Do nothing.
+                return;
+            },
+            Some(target_chunk) => target_chunk,
+        };
 
         // Temporarily remove list of neighbours from target chunk
         // so that we can simultaneously read from it and update
@@ -225,15 +230,14 @@ impl Globe {
         // copies of the data we share with that neighbor. Otherwise,
         // copy it over.
         for neighbor in &mut neighbors {
-            let source_chunk_index = match self.index_of_chunk_at(neighbor.origin) {
+            let source_chunk = match self.chunks.get(&neighbor.origin) {
                 None => {
                     // No worries; the chunk isn't loaded. Do nothing.
                     continue;
                 },
-                Some(source_chunk_index) => source_chunk_index,
+                Some(chunk) => chunk,
             };
 
-            let source_chunk = &self.chunks[source_chunk_index];
             if neighbor.last_known_version == source_chunk.version {
                 // We're already up-to-date with this neighbor's data; skip.
                 continue;
@@ -267,13 +271,7 @@ impl Globe {
         swap(&mut neighbors, &mut target_chunk.authoritative_neighbors);
 
         // Put the target chunk back into the world!
-        self.chunks.push(target_chunk);
-    }
-
-    // Returns None if given coordinates of a cell in a chunk we don't have loaded,
-    // or could never load because `origin` is not a valid chunk origin.
-    pub fn index_of_chunk_at(&self, origin: CellPos) -> Option<usize> {
-        self.chunks.iter().position(|chunk| chunk.origin == origin)
+        self.chunks.insert(target_chunk_origin, target_chunk);
     }
 
     // Returns None if given coordinates of a cell in a chunk we don't have loaded.
@@ -284,24 +282,18 @@ impl Globe {
     // Maybe represent this with types. We also probably want to sometimes
     // get a reference to cells that aren't the authoritative source
     // for that position.)
-    pub fn index_of_chunk_owning(&self, mut pos: CellPos) -> Option<usize> {
+    pub fn origin_of_chunk_owning(&self, mut pos: CellPos) -> CellPos {
         // Translate into owning root.
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
-
-        // Figure out what chunk this is in.
-        let chunk_origin = origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution);
-
-        self.index_of_chunk_at(chunk_origin)
+        origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
     // Returns None if given coordinates of a cell in a chunk we don't have loaded.
     //
     // NOTE: chunk returned probably won't _own_ `pos`.
-    pub fn index_of_chunk_in_same_root_containing(&self, pos: CellPos) -> Option<usize> {
+    pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> CellPos {
         // Figure out what chunk this is in.
-        let chunk_origin = origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution);
-
-        self.index_of_chunk_at(chunk_origin)
+        origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
     pub fn find_lowest_cell_containing(
@@ -314,7 +306,8 @@ impl Globe {
         pos.z = 0;
 
         loop {
-            let chunk_index = match self.index_of_chunk_owning(pos) {
+            let chunk_origin = self.origin_of_chunk_owning(pos);
+            let chunk = match self.chunks.get(&chunk_origin) {
                 // We may have run out of chunks to inspect.
                 // TODO: this may become a problem if we allow infinite
                 // or very loose height for planets. Have a limit?
@@ -322,10 +315,9 @@ impl Globe {
                 // legitimately have terrain that high, you probably just
                 // want to wait to find it!
                 None => return None,
-                Some(chunk_index) => chunk_index,
+                Some(chunk) => chunk,
             };
-
-            let cell = self.chunks[chunk_index].cell(pos);
+            let cell = chunk.cell(pos);
             if cell.material == material {
                 // Yay, we found it!
                 return pos.into();
@@ -339,7 +331,7 @@ impl Globe {
         world: &specs::World,
         globe_entity: specs::Entity,
     ) {
-        for chunk in &mut self.chunks {
+        for chunk in self.chunks.values_mut() {
             // TODO: when we're dynamically destroying chunk views,
             // you'll need to check whether it's still alive when trying
             // to ensure it exists.
@@ -389,9 +381,11 @@ impl Globe {
             cells_in_dirty_chunks.extend(Neighbors::new(dirty_cell, self.spec.root_resolution));
         }
         for dirty_pos in cells_in_dirty_chunks {
-            let chunk_index = self.index_of_chunk_owning(dirty_pos)
-                .expect("There's no good reason for this to explode; TODO just ignore.");
-            self.chunks[chunk_index].mark_view_as_dirty();
+            let chunk_origin = self.origin_of_chunk_owning(dirty_pos);
+            // It's fine for the chunk to not be loaded.
+            if let Some(chunk) = self.chunks.get_mut(&chunk_origin) {
+                chunk.mark_view_as_dirty();
+            }
         }
     }
 
@@ -404,9 +398,10 @@ impl Globe {
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
-        let chunk_index = self.index_of_chunk_owning(pos)
+        let chunk_origin = self.origin_of_chunk_owning(pos);
+        let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        self.chunks[chunk_index].version += 1;
+        chunk.version += 1;
     }
 }
 
@@ -419,9 +414,10 @@ impl<'a> Globe {
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
-        let chunk_index = self.index_of_chunk_owning(pos)
+        let chunk_origin = self.origin_of_chunk_owning(pos);
+        let chunk = self.chunks.get(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        self.chunks[chunk_index].cell(pos)
+        chunk.cell(pos)
     }
 
     pub fn cell_mut(
@@ -432,9 +428,10 @@ impl<'a> Globe {
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
         pos = pos_in_owning_root(pos, self.spec.root_resolution);
-        let chunk_index = self.index_of_chunk_owning(pos)
+        let chunk_origin = self.origin_of_chunk_owning(pos);
+        let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        self.chunks[chunk_index].cell_mut(pos)
+        chunk.cell_mut(pos)
     }
 }
 

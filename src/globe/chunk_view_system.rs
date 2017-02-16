@@ -70,12 +70,12 @@ impl ChunkViewSystem {
             // TODO: this might also need to be done any time any of its neighboring
             // chunks changes, because we cull invisible cells, and what cells are
             // visible partly depends on what's in neighboring chunks.
-            let chunk_index = globe.index_of_chunk_at(chunk_view.origin).expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
             use globe::globe::GlobeGuts;
             let spec = globe.spec();
             {
                 // Ew, can I please have non-lexical borrow scopes?
-                let chunk = &mut globe.chunks_mut()[chunk_index];
+                let chunk = &mut globe.chunks_mut().get(&chunk_view.origin)
+                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
                 if !chunk.is_view_dirty {
                     continue;
                 }
@@ -105,7 +105,8 @@ impl ChunkViewSystem {
             // actually building the view.
             {
                 // Ew, can I please have non-lexical borrow scopes?
-                let mut chunk = &mut globe.chunks_mut()[chunk_index];
+                let chunk = &mut globe.chunks_mut().get_mut(&chunk_view.origin)
+                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
                 chunk.mark_view_as_clean();
             }
 
