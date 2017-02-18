@@ -6,7 +6,7 @@ use piston::input::Input;
 use types::*;
 use super::CellDweller;
 use ::movement::*;
-use globe::Globe;
+use globe::{ Globe, PosInOwningRoot };
 use globe::chunk::Material;
 use ::input_adapter;
 
@@ -96,7 +96,7 @@ impl MiningSystem {
         let under_pos = cd.pos.set_z(cd.pos.z - 1);
         {
             // Inner scope to fight borrowck.
-            let under_cell = globe.cell(under_pos);
+            let under_cell = globe.maybe_non_authoritative_cell(under_pos);
             if under_cell.material != Material::Dirt {
                 return;
             }
@@ -108,7 +108,7 @@ impl MiningSystem {
         move_forward(&mut new_pos, &mut new_dir, globe.spec().root_resolution)
             .expect("CellDweller should have been in good state.");
         let anything_to_pick_up = {
-            let cell = globe.cell(new_pos);
+            let cell = globe.maybe_non_authoritative_cell(new_pos);
             cell.material == Material::Dirt
         };
         // Also require that there's air above the block;
@@ -116,7 +116,7 @@ impl MiningSystem {
         // the surface.
         let air_above_target = {
             let above_new_pos = new_pos.set_z(new_pos.z + 1);
-            let cell = globe.cell(above_new_pos);
+            let cell = globe.maybe_non_authoritative_cell(above_new_pos);
             cell.material == Material::Air
         };
         let can_pick_up = anything_to_pick_up && air_above_target;
@@ -126,13 +126,19 @@ impl MiningSystem {
             // that make it super-easy to configure.
             // The goal here should be that the "block dude" game
             // ends up both concise and legible.
-            globe.cell_mut(new_pos).material = Material::Air;
+            let new_pos_in_owning_root = PosInOwningRoot::new(
+                new_pos,
+                globe.spec().root_resolution
+            );
+            globe.authoritative_cell_mut(
+                new_pos_in_owning_root
+            ).material = Material::Air;
             // Bump the version of the chunk containing this cell.
             // TODO: this lacks subtlety. Neighbors only actually
             // care about edge chunks, so do you need multiple
             // notions of version? Or _only_ have something like "edge_cells_version"
             // for now?
-            globe.increment_chunk_version_for_cell(new_pos);
+            globe.increment_chunk_version_for_cell(new_pos_in_owning_root);
             // Propagate change to neighbouring chunks.
             // TODO: we reaaaally need a better interface for mutating chunk data
             // to make sure this happens automatically.

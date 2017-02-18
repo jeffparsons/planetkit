@@ -3,8 +3,8 @@ use std::slice;
 use super::{
     IntCoord,
     CellPos,
+    PosInOwningRoot,
     Dir,
-    pos_in_owning_root,
 };
 use movement::{
     move_forward,
@@ -76,9 +76,9 @@ impl SlowGeneralEdgeNeighbors {
     pub fn new(mut pos: CellPos, resolution: [IntCoord; 2]) -> SlowGeneralEdgeNeighbors {
         // Pick a direction that's valid for `pos`.
         // To do this, first express the position in its owning root...
-        pos = pos_in_owning_root(pos, resolution);
+        pos = PosInOwningRoot::new(pos, resolution).into();
         // ...after which we know that direction 0 is valid, except for
-        // the south pole. Refer to the diagram in `pos_in_owning_root`
+        // the south pole. Refer to the diagram in `PosInOwningRoot`
         // to see how this falls out.
         let start_dir = if pos.x == resolution[0] && pos.y == resolution[1] {
             Dir::new(6)
@@ -105,7 +105,7 @@ impl Iterator for SlowGeneralEdgeNeighbors {
 
         // Express neighbor in its owning root so we know
         // whether we've seen it twice.
-        pos = pos_in_owning_root(pos, self.resolution);
+        pos = PosInOwningRoot::new(pos, self.resolution).into();
 
         if let Some(first_neighbor) = self.first_neighbor {
             if first_neighbor == pos {

@@ -9,9 +9,9 @@ use slog::Logger;
 use rand;
 use rand::Rng;
 
-use super::{ pos_in_owning_root, origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
+use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
-use super::CellPos;
+use super::{ CellPos, PosInOwningRoot };
 use super::Neighbors;
 use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
@@ -245,7 +245,7 @@ impl Globe {
 
             // Copy over each cell, one by one.
             for target_cell_pos in &neighbor.shared_cells {
-                let source_cell_pos = pos_in_owning_root(*target_cell_pos, self.spec.root_resolution);
+                let source_cell_pos: CellPos = PosInOwningRoot::new(*target_cell_pos, self.spec.root_resolution).into();
                 let source_cell =
                     *source_chunk.cell(source_cell_pos);
                 let target_cell =
@@ -274,22 +274,10 @@ impl Globe {
         self.chunks.insert(target_chunk_origin, target_chunk);
     }
 
-    // Returns None if given coordinates of a cell in a chunk we don't have loaded.
-    //
-    // Translates given `pos` into its owning root if necessary.
-    // (TODO: make a version that trusts it's already in its owning root,
-    // because this will be quite wasteful if we can already trust it.
-    // Maybe represent this with types. We also probably want to sometimes
-    // get a reference to cells that aren't the authoritative source
-    // for that position.)
-    pub fn origin_of_chunk_owning(&self, mut pos: CellPos) -> CellPos {
-        // Translate into owning root.
-        pos = pos_in_owning_root(pos, self.spec.root_resolution);
+    pub fn origin_of_chunk_owning(&self, pos: PosInOwningRoot) -> CellPos {
         origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
-    // Returns None if given coordinates of a cell in a chunk we don't have loaded.
-    //
     // NOTE: chunk returned probably won't _own_ `pos`.
     pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> CellPos {
         // Figure out what chunk this is in.
@@ -302,8 +290,8 @@ impl Globe {
         material: Material
     ) -> Option<CellPos> {
         // Translate into owning root, then start at bedrock.
-        let mut pos = pos_in_owning_root(column, self.spec.root_resolution);
-        pos.z = 0;
+        let mut pos = PosInOwningRoot::new(column, self.spec.root_resolution);
+        pos.set_z(0);
 
         loop {
             let chunk_origin = self.origin_of_chunk_owning(pos);
@@ -317,12 +305,13 @@ impl Globe {
                 None => return None,
                 Some(chunk) => chunk,
             };
-            let cell = chunk.cell(pos);
+            let cell = chunk.cell(pos.into());
             if cell.material == material {
                 // Yay, we found it!
-                return pos.into();
+                return Some(pos.into());
             }
-            pos.z += 1;
+            let new_z = pos.pos().z + 1;
+            pos.set_z(new_z);
         }
     }
 
@@ -358,27 +347,34 @@ impl Globe {
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk (or something else affecting its visibility) has been modified
     /// since the view was last updated.
-    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, mut pos: CellPos) {
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos: CellPos) {
         // Translate into owning root.
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
         // TODO: is it even necessary at all here? All we really care about
         // is consistency in which chunk we look at for the centre cell,
         // and the one.....
-        pos = pos_in_owning_root(pos, self.spec.root_resolution);
+        // TODO: really, just rewrite this whole function. It doesn't really work.
+        let pos_in_owning_root = PosInOwningRoot::new(pos, self.spec.root_resolution);
 
         // TODO: this (Vec) is super slow! Replace with a less brain-dead solution.
         // Just committing this one now to patch over a kinda-regression in that
         // the existing bug of not doing this at all just become a lot more
         // obvious now that I'm doing a better job of culling cells.
-        let mut dirty_cells: Vec<CellPos> = Vec::new();
-        dirty_cells.push(pos);
-        dirty_cells.extend(Neighbors::new(pos, self.spec.root_resolution));
+        let mut dirty_cells: Vec<PosInOwningRoot> = Vec::new();
+        dirty_cells.push(pos_in_owning_root);
+        dirty_cells.extend(
+            Neighbors::new(pos_in_owning_root.into(), self.spec.root_resolution)
+                .map(|neighbor_pos| PosInOwningRoot::new(neighbor_pos, self.spec.root_resolution))
+        );
         // Gah, filthy hacks. This is to get around not having a way to query for
         // "all chunks containing this cell".
-        let mut cells_in_dirty_chunks: Vec<CellPos> = Vec::new();
+        let mut cells_in_dirty_chunks: Vec<PosInOwningRoot> = Vec::new();
         for dirty_cell in dirty_cells {
-            cells_in_dirty_chunks.extend(Neighbors::new(dirty_cell, self.spec.root_resolution));
+            cells_in_dirty_chunks.extend(
+                Neighbors::new(dirty_cell.into(), self.spec.root_resolution)
+                    .map(|neighbor_pos| PosInOwningRoot::new(neighbor_pos, self.spec.root_resolution))
+            );
         }
         for dirty_pos in cells_in_dirty_chunks {
             let chunk_origin = self.origin_of_chunk_owning(dirty_pos);
@@ -393,12 +389,8 @@ impl Globe {
     // destination chunk's data if the dirty cell was on the edge of
     // the chunk. This needs some thought on a good interface for mutating
     // chunks that doesn't allow oopsing this...
-    pub fn increment_chunk_version_for_cell(&mut self, mut pos: CellPos) {
-        // Translate into owning root.
-        // TODO: wrapper types so we don't have to do
-        // this sort of thing defensively!
-        pos = pos_in_owning_root(pos, self.spec.root_resolution);
-        let chunk_origin = self.origin_of_chunk_owning(pos);
+    pub fn increment_chunk_version_for_cell(&mut self, pos: PosInOwningRoot) {
+        let chunk_origin = self.origin_of_chunk_owning(pos.into());
         let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         chunk.version += 1;
@@ -406,32 +398,36 @@ impl Globe {
 }
 
 impl<'a> Globe {
-    pub fn cell(
+    // TODO: this naming is horrible. :)
+
+    pub fn authoritative_cell(
         &'a self,
-        mut pos: CellPos,
+        pos: PosInOwningRoot,
     ) -> &'a Cell {
-        // Translate into owning root.
-        // TODO: wrapper types so we don't have to do
-        // this sort of thing defensively!
-        pos = pos_in_owning_root(pos, self.spec.root_resolution);
         let chunk_origin = self.origin_of_chunk_owning(pos);
         let chunk = self.chunks.get(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        chunk.cell(pos)
+        chunk.cell(pos.into())
     }
 
-    pub fn cell_mut(
+    pub fn authoritative_cell_mut(
         &'a mut self,
-        mut pos: CellPos,
+        pos: PosInOwningRoot,
     ) -> &'a mut Cell {
-        // Translate into owning root.
-        // TODO: wrapper types so we don't have to do
-        // this sort of thing defensively!
-        pos = pos_in_owning_root(pos, self.spec.root_resolution);
         let chunk_origin = self.origin_of_chunk_owning(pos);
         let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        chunk.cell_mut(pos)
+        chunk.cell_mut(pos.into())
+    }
+
+    pub fn maybe_non_authoritative_cell(
+        &'a self,
+        pos: CellPos,
+    ) -> &'a Cell {
+        let chunk_origin = self.origin_of_chunk_in_same_root_containing(pos);
+        let chunk = self.chunks.get(&chunk_origin)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
+        chunk.cell(pos)
     }
 }
 

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use specs;
-use globe::{ IntCoord, CellPos };
+use globe::{ IntCoord, CellPos, PosInOwningRoot };
 use globe::origin_of_chunk_owning;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -98,7 +98,10 @@ impl Chunk {
                     };
 
                     // Find what chunk this belongs to.
-                    let other_pos_chunk_origin = origin_of_chunk_owning(other_pos, root_resolution, chunk_resolution);
+                    let other_pos_in_owning_root = PosInOwningRoot::new(
+                        other_pos, root_resolution
+                    );
+                    let other_pos_chunk_origin = origin_of_chunk_owning(other_pos_in_owning_root, root_resolution, chunk_resolution);
                     if other_pos_chunk_origin == origin {
                         // We own this cell; nothing to do.
                         continue;
@@ -168,6 +171,11 @@ impl Chunk {
 }
 
 impl<'a> Chunk {
+    // TODO: replace these with two variants:
+    // - one that clearly is asking for authoritative data,
+    //   and requires a PosInOwningChunk (does not yet exist)
+    // - one that is happy to get any old version of the cell.
+
     // Panics if given coordinates of a cell we don't have data for.
     pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
         let cell_i = self.cell_index(pos);

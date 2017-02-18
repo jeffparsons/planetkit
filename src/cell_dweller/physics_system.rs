@@ -38,7 +38,7 @@ impl PhysicsSystem {
         // are misleading; this implicitly copies--
         // not changes the orignal!
         let under_pos = cd.pos.set_z(cd.pos.z - 1);
-        let under_cell = globe.cell(under_pos);
+        let under_cell = globe.maybe_non_authoritative_cell(under_pos);
         if under_cell.material == Material::Dirt {
             // Reset time until we can fall to the time
             // between falls; we don't want to instantly

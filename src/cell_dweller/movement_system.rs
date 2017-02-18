@@ -112,7 +112,7 @@ impl MovementSystem {
         // are misleading; this implicitly copies--
         // not changes the orignal!
         let under_pos = cd.pos.set_z(cd.pos.z - 1);
-        let under_cell = globe.cell(under_pos);
+        let under_cell = globe.maybe_non_authoritative_cell(under_pos);
         if under_cell.material != Material::Dirt {
             return;
         }
@@ -132,7 +132,7 @@ impl MovementSystem {
         }.expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there.
-        let mut cell = globe.cell(new_pos);
+        let mut cell = globe.maybe_non_authoritative_cell(new_pos);
         let mut can_move_to_cell = cell.material != Material::Dirt;
 
         // If we can't move there, then try exactly one
@@ -140,7 +140,7 @@ impl MovementSystem {
         // terrain by one cell, but not more.
         if !can_move_to_cell {
             new_pos.z += 1;
-            cell = globe.cell(new_pos);
+            cell = globe.maybe_non_authoritative_cell(new_pos);
             can_move_to_cell = cell.material != Material::Dirt;
         }
 
