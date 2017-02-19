@@ -16,7 +16,7 @@ mod chunk_view_system;
 mod cursor;
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 use types::*;
 

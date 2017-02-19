@@ -8,7 +8,7 @@ mod turn;
 mod util;
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 // TODO: figure out how to encourage use of the "good" functions,
 // while still exposing the "raw" ones for people who really want them.
