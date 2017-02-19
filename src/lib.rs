@@ -42,3 +42,6 @@ pub mod system_priority;
 
 mod spatial;
 pub use spatial::Spatial;
+
+#[cfg(test)]
+mod integration_tests;

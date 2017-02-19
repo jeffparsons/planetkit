@@ -45,11 +45,15 @@ impl Gen {
         let land_pt3 = self.spec.cell_center_on_unit_sphere(cell_pos);
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
 
+        // More temp; TODO: make a different Gen for flat earth.
         // Vary a little bit around 1.0.
-        let delta =
+        let delta = if self.spec.flat {
+            self.spec.ocean_radius * 0.1
+        } else {
             terrain_noise.apply(&self.pt, land_pt3.as_ref())
             * self.spec.ocean_radius
-            * 0.3;
+            * 0.3
+        };
         let land_height = self.spec.ocean_radius + delta;
         // TEMP: ...
         use na::Norm;

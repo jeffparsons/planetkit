@@ -3,8 +3,6 @@ pub mod benches {
     use test::Bencher;
 
     use slog;
-    use slog_term;
-    use slog::DrainExt;
 
     use super::super::*;
 
@@ -44,7 +42,7 @@ pub mod benches {
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
 
-        let drain = slog_term::streamer().compact().build().fuse();
+        let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
         let spec = Spec {
             seed: 13,
@@ -53,6 +51,7 @@ pub mod benches {
             block_height: 0.02,
             root_resolution: [32, 64],
             chunk_resolution: [16, 16, 4],
+            flat: false,
         };
         let globe = Globe::new(spec, &log);
         let spec = globe.spec();

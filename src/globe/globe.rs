@@ -20,6 +20,9 @@ use ::Spatial;
 
 const ROOT_QUADS: u8 = 5;
 
+// TODO: how many to build high?
+const Z_CHUNKS: i64 = 5;
+
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
 // with the realised Globe.
@@ -79,6 +82,22 @@ impl Globe {
                 block_height: 0.02,
                 root_resolution: [32, 64],
                 chunk_resolution: [16, 16, 4],
+                flat: false,
+            },
+            parent_log,
+        )
+    }
+
+    pub fn new_small_flat(parent_log: &Logger) -> Globe {
+        Globe::new(
+            Spec {
+                seed: 13,
+                floor_radius: 0.91,
+                ocean_radius: 1.13,
+                block_height: 0.02,
+                root_resolution: [8, 16],
+                chunk_resolution: [4, 4, 4],
+                flat: true,
             },
             parent_log,
         )
@@ -89,9 +108,6 @@ impl Globe {
     }
 
     pub fn build_all_chunks(&mut self) {
-        // TODO: how many to build high?
-        const Z_CHUNKS: i64 = 5;
-
         // Calculate how many chunks to a root in each direction in (x, y).
         let chunks_per_root = [
             self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
@@ -168,9 +184,6 @@ impl Globe {
     // that automatically ensures that all neighbouring chunks
     // get updated, etc.
     pub fn copy_all_authoritative_cells(&mut self) {
-        // TODO: how many to build high?
-        const Z_CHUNKS: i64 = 5;
-
         // Calculate how many chunks to a root in each direction in (x, y).
         let chunks_per_root = [
             self.spec.root_resolution[0] / self.spec.chunk_resolution[0],

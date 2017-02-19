@@ -25,6 +25,7 @@ pub struct Spec {
     // world can have unbounded total depth.
     pub root_resolution: [IntCoord; 2],
     pub chunk_resolution: [IntCoord; 3],
+    pub flat: bool,
 }
 
 impl Spec {
