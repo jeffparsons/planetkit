@@ -1,16 +1,16 @@
 use specs;
 
-use globe::CellPos;
+use globe::ChunkOrigin;
 
 pub struct ChunkView {
     pub globe_entity: specs::Entity,
-    pub origin: CellPos,
+    pub origin: ChunkOrigin,
 }
 
 impl ChunkView {
     pub fn new(
         globe_entity: specs::Entity,
-        origin: CellPos
+        origin: ChunkOrigin
     ) -> ChunkView {
         ChunkView {
             origin: origin,

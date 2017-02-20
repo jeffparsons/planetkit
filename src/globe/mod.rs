@@ -177,7 +177,7 @@ pub fn origin_of_chunk_in_same_root_containing(
     pos: CellPos,
     root_resolution: [IntCoord; 2],
     chunk_resolution: [IntCoord; 3],
-) -> CellPos {
+) -> ChunkOrigin {
     // Calculate x-position of a containing chunk.
     let end_x = root_resolution[0];
     let chunk_origin_x = if pos.x == end_x {
@@ -201,19 +201,23 @@ pub fn origin_of_chunk_in_same_root_containing(
     // Z-position is easy; there's no sharing of cells on the z-axis.
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
 
-    CellPos {
-        root: pos.root,
-        x: chunk_origin_x,
-        y: chunk_origin_y,
-        z: chunk_origin_z,
-    }
+    ChunkOrigin::new(
+        CellPos {
+            root: pos.root,
+            x: chunk_origin_x,
+            y: chunk_origin_y,
+            z: chunk_origin_z,
+        },
+        root_resolution,
+        chunk_resolution,
+    )
 }
 
 pub fn origin_of_chunk_owning(
     pos_in_owning_root: PosInOwningRoot,
     root_resolution: [IntCoord; 2],
     chunk_resolution: [IntCoord; 3],
-) -> CellPos {
+) -> ChunkOrigin {
     let pos: CellPos = pos_in_owning_root.into();
 
     // Figure out what chunk this is in.
@@ -226,31 +230,43 @@ pub fn origin_of_chunk_owning(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
     if pos.x == 0 && pos.y == 0 {
         // Chunk at (0, 0) owns north pole.
-        CellPos {
-            root: pos.root,
-            x: 0,
-            y: 0,
-            z: chunk_origin_z,
-        }
+        ChunkOrigin::new(
+            CellPos {
+                root: pos.root,
+                x: 0,
+                y: 0,
+                z: chunk_origin_z,
+            },
+            root_resolution,
+            chunk_resolution,
+        )
     } else if pos.x == end_x && pos.y == end_y {
         // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
-        CellPos {
-            root: pos.root,
-            x: last_chunk_x,
-            y: last_chunk_y,
-            z: chunk_origin_z,
-        }
+        ChunkOrigin::new(
+            CellPos {
+                root: pos.root,
+                x: last_chunk_x,
+                y: last_chunk_y,
+                z: chunk_origin_z,
+            },
+            root_resolution,
+            chunk_resolution,
+        )
     } else {
         // Chunks own cells on their edge at `local_x == 0`, and their edge at `local_y == chunk_resolution`.
         // The cells on other edges belong to adjacent chunks.
         let chunk_origin_x = pos.x / chunk_resolution[0] * chunk_resolution[0];
         // Shift everything down by one in y-direction.
         let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
-        CellPos {
-            root: pos.root,
-            x: chunk_origin_x,
-            y: chunk_origin_y,
-            z: chunk_origin_z,
-        }
+        ChunkOrigin::new(
+            CellPos {
+                root: pos.root,
+                x: chunk_origin_x,
+                y: chunk_origin_y,
+                z: chunk_origin_z,
+            },
+            root_resolution,
+            chunk_resolution,
+        )
     }
 }

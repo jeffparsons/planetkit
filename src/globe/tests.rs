@@ -42,6 +42,9 @@ pub mod benches {
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
 
+        const ROOT_RESOLUTION: [IntCoord; 2] = [32, 64];
+        const CHUNK_RESOLUTION: [IntCoord; 3] = [16, 16, 4];
+
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
         let spec = Spec {
@@ -49,8 +52,8 @@ pub mod benches {
             floor_radius: 0.91,
             ocean_radius: 1.13,
             block_height: 0.02,
-            root_resolution: [32, 64],
-            chunk_resolution: [16, 16, 4],
+            root_resolution: ROOT_RESOLUTION,
+            chunk_resolution: CHUNK_RESOLUTION,
             flat: false,
         };
         let globe = Globe::new(spec, &log);
@@ -60,7 +63,11 @@ pub mod benches {
         let mut index_data: Vec<u32> = Vec::new();
         // Copied from output of old version of test to make sure
         // we're actually benchmarking the same thing.
-        let middle_chunk_origin = CellPos { root: Root { index: 2 }, x: 16, y: 16, z: 8 };
+        let middle_chunk_origin = ChunkOrigin::new(
+            CellPos { root: Root { index: 2 }, x: 16, y: 16, z: 8 },
+            ROOT_RESOLUTION,
+            CHUNK_RESOLUTION,
+        );
         b.iter(|| {
             vertex_data.clear();
             index_data.clear();

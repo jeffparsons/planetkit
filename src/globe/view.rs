@@ -1,7 +1,7 @@
 use slog::Logger;
 
 use super::spec::Spec;
-use super::{Globe, CellPos, Cursor};
+use super::{Globe, CellPos, Cursor, ChunkOrigin};
 use super::chunk::{ Material };
 use super::cell_shape;
 use ::render;
@@ -52,30 +52,30 @@ impl View {
     pub fn make_chunk_geometry(
         &self,
         globe: &Globe,
-        origin: CellPos,
+        origin: ChunkOrigin,
         vertex_data: &mut Vec<render::Vertex>,
         index_data: &mut Vec<u32>
     ) {
         trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
 
-        let mut cursor = Cursor::new(globe, origin);
+        let mut cursor = Cursor::new(globe, *origin.pos());
 
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_x = origin.pos().x + self.spec.chunk_resolution[0];
+        let end_y = origin.pos().y + self.spec.chunk_resolution[1];
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
-        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
-        for cell_z in origin.z..(end_z + 1) {
-            for cell_y in origin.y..(end_y + 1) {
-                for cell_x in origin.x..(end_x + 1) {
+        let end_z = origin.pos().z + self.spec.chunk_resolution[2] - 1;
+        for cell_z in origin.pos().z..(end_z + 1) {
+            for cell_y in origin.pos().y..(end_y + 1) {
+                for cell_x in origin.pos().x..(end_x + 1) {
                     // Use cell center as first vertex of each triangle.
                     let cell_pos = CellPos {
                         x: cell_x,
                         y: cell_y,
                         z: cell_z,
-                        root: origin.root,
+                        root: origin.pos().root,
                     };
 
                     cursor.set_pos(cell_pos);

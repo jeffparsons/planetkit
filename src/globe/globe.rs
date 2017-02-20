@@ -11,7 +11,7 @@ use rand::Rng;
 
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
-use super::{ CellPos, PosInOwningRoot };
+use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
 use super::Neighbors;
 use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
@@ -37,23 +37,23 @@ pub struct Globe {
     // TODO: you'll probably also want to store some lower-res
     // pseudo-chunks for rendering planets at a distance.
     // But maybe you can put that off?
-    chunks: HashMap<CellPos, Chunk>,
+    chunks: HashMap<ChunkOrigin, Chunk>,
     log: Logger,
 }
 
 // Allowing sibling modules to reach into semi-private parts
 // of the Globe struct.
 pub trait GlobeGuts<'a> {
-    fn chunks(&'a self) -> &'a HashMap<CellPos, Chunk>;
-    fn chunks_mut(&'a mut self) -> &'a mut HashMap<CellPos, Chunk>;
+    fn chunks(&'a self) -> &'a HashMap<ChunkOrigin, Chunk>;
+    fn chunks_mut(&'a mut self) -> &'a mut HashMap<ChunkOrigin, Chunk>;
 }
 
 impl<'a> GlobeGuts<'a> for Globe {
-    fn chunks(&'a self) -> &'a HashMap<CellPos, Chunk> {
+    fn chunks(&'a self) -> &'a HashMap<ChunkOrigin, Chunk> {
         &self.chunks
     }
 
-    fn chunks_mut(&'a mut self) -> &'a mut HashMap<CellPos, Chunk> {
+    fn chunks_mut(&'a mut self) -> &'a mut HashMap<ChunkOrigin, Chunk> {
         &mut self.chunks
     }
 }
@@ -122,12 +122,16 @@ impl Globe {
                 for z in 0..Z_CHUNKS {
                     for y in 0..chunks_per_root[1] {
                         for x in 0..chunks_per_root[0] {
-                            let origin = CellPos {
-                                root: root,
-                                x: x * self.spec.chunk_resolution[0],
-                                y: y * self.spec.chunk_resolution[1],
-                                z: z * self.spec.chunk_resolution[2],
-                            };
+                            let origin = ChunkOrigin::new(
+                                CellPos {
+                                    root: root,
+                                    x: x * self.spec.chunk_resolution[0],
+                                    y: y * self.spec.chunk_resolution[1],
+                                    z: z * self.spec.chunk_resolution[2],
+                                },
+                                self.spec.root_resolution,
+                                self.spec.chunk_resolution,
+                            );
                             self.build_chunk(origin);
                         }
                     }
@@ -142,20 +146,20 @@ impl Globe {
         self.copy_all_authoritative_cells();
     }
 
-    pub fn build_chunk(&mut self, origin: CellPos) {
+    pub fn build_chunk(&mut self, origin: ChunkOrigin) {
         let mut cells: Vec<Cell> = Vec::new();
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
-        let end_x = origin.x + self.spec.chunk_resolution[0];
-        let end_y = origin.y + self.spec.chunk_resolution[1];
+        let end_x = origin.pos().x + self.spec.chunk_resolution[0];
+        let end_y = origin.pos().y + self.spec.chunk_resolution[1];
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
-        let end_z = origin.z + self.spec.chunk_resolution[2] - 1;
-        for cell_z in origin.z..(end_z + 1) {
-            for cell_y in origin.y..(end_y + 1) {
-                for cell_x in origin.x..(end_x + 1) {
+        let end_z = origin.pos().z + self.spec.chunk_resolution[2] - 1;
+        for cell_z in origin.pos().z..(end_z + 1) {
+            for cell_y in origin.pos().y..(end_y + 1) {
+                for cell_x in origin.pos().x..(end_x + 1) {
                     let cell_pos = CellPos {
-                        root: origin.root,
+                        root: origin.pos().root,
                         x: cell_x,
                         y: cell_y,
                         z: cell_z,
@@ -201,12 +205,16 @@ impl Globe {
             for z in 0..Z_CHUNKS {
                 for y in 0..chunks_per_root[1] {
                     for x in 0..chunks_per_root[0] {
-                        let origin = CellPos {
-                            root: root,
-                            x: x * self.spec.chunk_resolution[0],
-                            y: y * self.spec.chunk_resolution[1],
-                            z: z * self.spec.chunk_resolution[2],
-                        };
+                        let origin = ChunkOrigin::new(
+                            CellPos {
+                                root: root,
+                                x: x * self.spec.chunk_resolution[0],
+                                y: y * self.spec.chunk_resolution[1],
+                                z: z * self.spec.chunk_resolution[2],
+                            },
+                            self.spec.root_resolution,
+                            self.spec.chunk_resolution,
+                        );
                         self.maybe_copy_authoritative_cells(origin);
                     }
                 }
@@ -214,7 +222,7 @@ impl Globe {
         }
     }
 
-    fn maybe_copy_authoritative_cells(&mut self, target_chunk_origin: CellPos) {
+    fn maybe_copy_authoritative_cells(&mut self, target_chunk_origin: ChunkOrigin) {
         // BEWARE: MULTIPLE HACKS BELOW to get around borrowck. There has to be
         // a better way around this!
 
@@ -287,12 +295,12 @@ impl Globe {
         self.chunks.insert(target_chunk_origin, target_chunk);
     }
 
-    pub fn origin_of_chunk_owning(&self, pos: PosInOwningRoot) -> CellPos {
+    pub fn origin_of_chunk_owning(&self, pos: PosInOwningRoot) -> ChunkOrigin {
         origin_of_chunk_owning(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
     // NOTE: chunk returned probably won't _own_ `pos`.
-    pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> CellPos {
+    pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> ChunkOrigin {
         // Figure out what chunk this is in.
         origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
