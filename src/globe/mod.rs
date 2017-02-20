@@ -13,6 +13,7 @@ mod neighbors;
 mod dir;
 mod chunk_view;
 mod chunk_view_system;
+mod chunk_system;
 mod cursor;
 
 #[cfg(test)]
@@ -30,6 +31,7 @@ pub use self::neighbors::*;
 pub use self::dir::*;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
+pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::Cursor;
 
 pub type IntCoord = i64;

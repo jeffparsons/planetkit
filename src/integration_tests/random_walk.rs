@@ -22,23 +22,61 @@ fn random_walk() {
     world.register::<::Spatial>();
     world.register::<::globe::Globe>();
 
+    // Create systems.
+    use ::system_priority as prio;
+
+    let chunk_sys = globe::ChunkSystem::new(
+        &root_log,
+    );
+
+    let (movement_input_sender, movement_input_receiver) = mpsc::channel();
+    let movement_sys = cell_dweller::MovementSystem::new(
+        movement_input_receiver,
+        &root_log,
+    );
+
+    // This isn't actually used yet.
+    let physics_sys = cell_dweller::PhysicsSystem::new(
+        &root_log,
+        0.1, // Seconds between falls
+    );
+
+    // Hand the world off to a Specs `Planner`.
+    let mut planner = specs::Planner::new(world, 2);
+    planner.add_system(chunk_sys, "chunk", prio::CHUNK);
+    planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
+    planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
+
     // Make a flat globe to prevent the CellDweller from ever getting stuck.
     // TODO: actually do this.
     // REVISIT: make the heigh vary by 1, to test gravity / climbing.
     let globe = globe::Globe::new_example(&root_log);
+    // First add the globe to the world so we can get a handle on its entity.
+    let globe_spec = globe.spec();
+    let globe_entity = planner.mut_world().create_now()
+        .with(globe)
+        .build();
+
+    // Step the world once before adding our character;
+    // otherwise there won't be any chunks so we won't know where to put him!
+    planner.dispatch(0.02);
+    planner.wait();
 
     // Find globe surface and put player character on it.
     use globe::{ CellPos, Dir };
     use globe::chunk::Material;
     let mut guy_pos = CellPos::default();
-    guy_pos = globe.find_lowest_cell_containing(guy_pos, Material::Air)
-        .expect("Uh oh, there's something wrong with our globe.");
-    // First add the globe to the world so we can get a handle on its entity.
-    let globe_spec = globe.spec();
-    let globe_entity = world.create_now()
-        .with(globe)
-        .build();
-    world.create_now()
+    guy_pos = {
+        let globes = planner
+            .mut_world()
+            .read::<globe::Globe>();
+        let globe = globes
+            .get(globe_entity)
+            .expect("Uh oh, where did our Globe go?");
+        globe.find_lowest_cell_containing(guy_pos, Material::Air)
+            .expect("Uh oh, there's something wrong with our globe.")
+    };
+    planner.mut_world().create_now()
         .with(cell_dweller::CellDweller::new(
             guy_pos,
             Dir::default(),
@@ -47,25 +85,6 @@ fn random_walk() {
         ))
         .with(::Spatial::root())
         .build();
-
-    // Create systems.
-    use ::system_priority as prio;
-
-    let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-    let movement_sys = cell_dweller::MovementSystem::new(
-        movement_input_receiver,
-        &root_log,
-    );
-
-    let physics_sys = cell_dweller::PhysicsSystem::new(
-        &root_log,
-        0.1, // Seconds between falls
-    );
-
-    // Hand the world off to a Specs `Planner`.
-    let mut planner = specs::Planner::new(world, 2);
-    planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
-    planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
     // Start our CellDweller moving forward indefinitely.
     use cell_dweller::MovementEvent;

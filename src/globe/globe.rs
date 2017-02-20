@@ -2,12 +2,7 @@ use std::collections::HashMap;
 
 use specs;
 
-use chrono::Duration;
-
 use slog::Logger;
-
-use rand;
-use rand::Rng;
 
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
@@ -18,9 +13,11 @@ use super::spec::Spec;
 use super::gen::Gen;
 use ::Spatial;
 
+// TODO: lift to module level.
 const ROOT_QUADS: u8 = 5;
 
 // TODO: how many to build high?
+// TODO: remove me
 const Z_CHUNKS: i64 = 5;
 
 // TODO: split out a WorldGen type that handles all the procedural
@@ -28,7 +25,9 @@ const Z_CHUNKS: i64 = 5;
 // with the realised Globe.
 pub struct Globe {
     spec: Spec,
-    gen: Gen,
+    // TODO: temporarily making this public because I'm planning to
+    // rip it out of `Globe` anyway.
+    pub gen: Gen,
     // Map chunk origins to chunks.
     //
     // TODO: figure out what structure to store these in.
@@ -60,13 +59,12 @@ impl<'a> GlobeGuts<'a> for Globe {
 
 impl Globe {
     pub fn new(spec: Spec, parent_log: &Logger) -> Globe {
-        let mut globe = Globe {
+        let globe = Globe {
             spec: spec,
             gen: Gen::new(spec),
             chunks: HashMap::new(),
             log: parent_log.new(o!()),
         };
-        globe.build_all_chunks();
         globe
     }
 
@@ -105,82 +103,6 @@ impl Globe {
 
     pub fn spec(&self) -> Spec {
         self.spec
-    }
-
-    pub fn build_all_chunks(&mut self) {
-        // Calculate how many chunks to a root in each direction in (x, y).
-        let chunks_per_root = [
-            self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
-            self.spec.root_resolution[1] / self.spec.chunk_resolution[1],
-        ];
-
-        debug!(self.log, "Making chunks...");
-
-        let dt = Duration::span(|| {
-            for root_index in 0..ROOT_QUADS {
-                let root = Root { index: root_index };
-                for z in 0..Z_CHUNKS {
-                    for y in 0..chunks_per_root[1] {
-                        for x in 0..chunks_per_root[0] {
-                            let origin = ChunkOrigin::new(
-                                CellPos {
-                                    root: root,
-                                    x: x * self.spec.chunk_resolution[0],
-                                    y: y * self.spec.chunk_resolution[1],
-                                    z: z * self.spec.chunk_resolution[2],
-                                },
-                                self.spec.root_resolution,
-                                self.spec.chunk_resolution,
-                            );
-                            self.build_chunk(origin);
-                        }
-                    }
-                }
-            }
-        });
-
-        debug!(self.log, "Finished making chunks"; "chunks" => self.chunks.len(), "dt" => format!("{}", dt));
-
-        // TODO: this is _not_ going to fly once we're trickling the
-        // chunks in over time...
-        self.copy_all_authoritative_cells();
-    }
-
-    pub fn build_chunk(&mut self, origin: ChunkOrigin) {
-        let mut cells: Vec<Cell> = Vec::new();
-        // Include cells _on_ the far edge of the chunk;
-        // even though we don't own them we'll need to draw part of them.
-        let end_x = origin.pos().x + self.spec.chunk_resolution[0];
-        let end_y = origin.pos().y + self.spec.chunk_resolution[1];
-        // Chunks don't share cells in the z-direction,
-        // but do in the x- and y-directions.
-        let end_z = origin.pos().z + self.spec.chunk_resolution[2] - 1;
-        for cell_z in origin.pos().z..(end_z + 1) {
-            for cell_y in origin.pos().y..(end_y + 1) {
-                for cell_x in origin.pos().x..(end_x + 1) {
-                    let cell_pos = CellPos {
-                        root: origin.pos().root,
-                        x: cell_x,
-                        y: cell_y,
-                        z: cell_z,
-                    };
-                    let mut cell = self.gen.cell_at(cell_pos);
-                    // Temp hax?
-                    let mut rng = rand::thread_rng();
-                    cell.shade = 1.0 - 0.5 * rng.next_f32();
-                    cells.push(cell);
-                }
-            }
-        }
-        let old_chunk = self.chunks.insert(origin, Chunk::new(
-            origin,
-            cells,
-            self.spec.root_resolution,
-            self.spec.chunk_resolution,
-        ));
-        if old_chunk.is_some() {
-            panic!("We shouldn't have attempted to build a chunk that already existed.")
-        }
     }
 
     // TODO: there's no way this should be public.
@@ -415,6 +337,35 @@ impl Globe {
         let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         chunk.version += 1;
+    }
+
+    /// Add the given chunk to the globe.
+    ///
+    /// This may have been freshly generated, or loaded from disk.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there was already a chunk loaded for the same chunk origin.
+    pub fn add_chunk(&mut self, chunk: Chunk) {
+        // TODO: You could assert that the chunk actually belongs to _this globe_.
+        // It could store a UUID associated with its generator and complain
+        // if you try to load a chunk for the wrong globe even if they have
+        // the same resolution.
+
+        let chunk_origin = chunk.origin;
+        if self.chunks.insert(chunk_origin, chunk).is_some() {
+            panic!("There was already a chunk loaded at the same origin!");
+        }
+    }
+
+    /// Remove the chunk at the given chunk origin. Returns the removed chunk.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there was no chunk loaded at the given chunk origin.
+    pub fn remove_chunk(&mut self, chunk_origin: ChunkOrigin) -> Chunk {
+        self.chunks.remove(&chunk_origin)
+            .expect("Attempted to remove a chunk that was not loaded")
     }
 }
 

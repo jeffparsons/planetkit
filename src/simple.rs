@@ -68,6 +68,10 @@ pub fn new() -> (app::App, PistonWindow) {
         planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
         use globe;
+        let chunk_sys = globe::ChunkSystem::new(
+            &log,
+        );
+        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
         let chunk_view_sys = globe::ChunkViewSystem::new(
             &log,
             0.05, // Seconds between geometry creation

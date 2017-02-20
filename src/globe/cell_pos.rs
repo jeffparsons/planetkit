@@ -219,6 +219,7 @@ impl ChunkOrigin {
     }
 }
 
+// TODO: Should this actually be an implementation of Deref? Try it...
 impl<'a> ChunkOrigin {
     pub fn pos(&'a self) -> &'a CellPos {
         &self.pos
