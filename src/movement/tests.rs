@@ -1,6 +1,7 @@
 use super::*;
 use ::globe::{ CellPos, Dir };
 use super::triangles::TRIANGLES;
+use na;
 
 const RESOLUTION: [i64; 2] = [32, 64];
 
@@ -60,7 +61,7 @@ fn turn_left_at_northern_tropic() {
     let triangle = &TRIANGLES[2];
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
-    let apex = triangle.apex * RESOLUTION[0];
+    let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
     let mut pos = CellPos::default()
         .set_root(0)
         .set_x(apex.x)
@@ -118,7 +119,7 @@ fn turn_right_at_northern_tropic() {
     let triangle = &TRIANGLES[2];
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
-    let apex = triangle.apex * RESOLUTION[0];
+    let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
     let mut pos = CellPos::default()
         .set_root(0)
         .set_x(apex.x)
@@ -237,7 +238,7 @@ fn walk_anticlockwise_around_all_pentagons() {
 
             // Start at triangle apex.
             // Both parts of the apex are expressed in terms of x-dimension.
-            let apex = triangle.apex * RESOLUTION[0];
+            let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
             let mut pos = CellPos::default()
                 .set_root(root_index)
                 .set_x(apex.x)
@@ -285,7 +286,7 @@ fn walk_clockwise_around_all_pentagons() {
 
             // Start at triangle apex.
             // Both parts of the apex are expressed in terms of x-dimension.
-            let apex = triangle.apex * RESOLUTION[0];
+            let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
             let mut pos = CellPos::default()
                 .set_root(root_index)
                 .set_x(apex.x)

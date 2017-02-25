@@ -122,12 +122,36 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
         FACES[triangle_indices[2]],
         FACES[triangle_indices[3]],
     ];
-    let a: Pt3 = (&VERTICES[faces[0][0]]).into();
-    let b: Pt3 = (&VERTICES[faces[0][1]]).into();
-    let c: Pt3 = (&VERTICES[faces[1][1]]).into();
-    let d: Pt3 = (&VERTICES[faces[1][0]]).into();
-    let e: Pt3 = (&VERTICES[faces[3][1]]).into();
-    let f: Pt3 = (&VERTICES[faces[3][0]]).into();
+    let a: Pt3 = Pt3::new(
+        VERTICES[faces[0][0]][0],
+        VERTICES[faces[0][0]][1],
+        VERTICES[faces[0][0]][2],
+    );
+    let b: Pt3 = Pt3::new(
+        VERTICES[faces[0][1]][0],
+        VERTICES[faces[0][1]][1],
+        VERTICES[faces[0][1]][2],
+    );
+    let c: Pt3 = Pt3::new(
+        VERTICES[faces[1][1]][0],
+        VERTICES[faces[1][1]][1],
+        VERTICES[faces[1][1]][2],
+    );
+    let d: Pt3 = Pt3::new(
+        VERTICES[faces[1][0]][0],
+        VERTICES[faces[1][0]][1],
+        VERTICES[faces[1][0]][2],
+    );
+    let e: Pt3 = Pt3::new(
+        VERTICES[faces[3][1]][0],
+        VERTICES[faces[3][1]][1],
+        VERTICES[faces[3][1]][2],
+    );
+    let f: Pt3 = Pt3::new(
+        VERTICES[faces[3][0]][0],
+        VERTICES[faces[3][0]][1],
+        VERTICES[faces[3][0]][2],
+    );
 
     // Triangle 0
     let ab = b - a;
@@ -164,8 +188,7 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
         pt_in_root_quad[1] -= 1.0;
         f + fe * (1.0 - pt_in_root_quad[0]) + fd * (1.0 - pt_in_root_quad[1])
     };
-    use na::Norm;
-    *pos_on_icosahedron.as_vector().normalize().as_point()
+    Pt3::from_coordinates(pos_on_icosahedron.coords.normalize())
 }
 
 /// Calculate the origin of a chunk that contains the given `pos`,

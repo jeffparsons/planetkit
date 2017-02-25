@@ -45,15 +45,11 @@
 // This may all look pretty hairy (and it is) but it's also fairly
 // easy to thoroughly test; see `test.rs`.
 
-use na;
-
 use ::globe::{ IntCoord, DirIndex, RootIndex };
-
-type Pos2 = na::Point2<IntCoord>;
 
 pub struct Triangle {
     // Position in root in terms of x-resolutions.
-    pub apex: Pos2,
+    pub apex: [IntCoord; 2],
     // Direction of x-axis.
     // TODO: also redundantly store x and y vectors
     // to avoid excessive computation at run time?
@@ -71,7 +67,7 @@ pub struct Exit {
 pub static TRIANGLES: [Triangle; 12] = [
     // 0
     Triangle {
-        apex: Pos2 { x: 0, y: 0 },
+        apex: [0, 0],
         x_dir: 0,
         exits: [
             Exit { triangle_index: 0, root_offset: 0 },
@@ -84,7 +80,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 1
     Triangle {
-        apex: Pos2 { x: 1, y: 0 },
+        apex: [1, 0],
         x_dir: 4,
         exits: [
             Exit { triangle_index: 1, root_offset: 0 },
@@ -97,7 +93,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 2
     Triangle {
-        apex: Pos2 { x: 0, y: 1 },
+        apex: [0, 1],
         x_dir: 8,
         exits: [
             Exit { triangle_index: 2, root_offset: 0 },
@@ -110,7 +106,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 3
     Triangle {
-        apex: Pos2 { x: 1, y: 1 },
+        apex: [1, 1],
         x_dir: 6,
         exits: [
             Exit { triangle_index: 3, root_offset: 0 },
@@ -123,7 +119,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 4
     Triangle {
-        apex: Pos2 { x: 0, y: 1 },
+        apex: [0, 1],
         x_dir: 10,
         exits: [
             Exit { triangle_index: 4, root_offset: 0 },
@@ -136,7 +132,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 5
     Triangle {
-        apex: Pos2 { x: 1, y: 0 },
+        apex: [1, 0],
         x_dir: 2,
         exits: [
             Exit { triangle_index: 5, root_offset: 0 },
@@ -149,7 +145,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 6
     Triangle {
-        apex: Pos2 { x: 0, y: 1 },
+        apex: [0, 1],
         x_dir: 0,
         exits: [
             Exit { triangle_index: 6, root_offset: 0 },
@@ -162,7 +158,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 7
     Triangle {
-        apex: Pos2 { x: 1, y: 1 },
+        apex: [1, 1],
         x_dir: 4,
         exits: [
             Exit { triangle_index: 7, root_offset: 0 },
@@ -175,7 +171,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 8
     Triangle {
-        apex: Pos2 { x: 0, y: 2 },
+        apex: [0, 2],
         x_dir: 8,
         exits: [
             Exit { triangle_index: 8, root_offset: 0 },
@@ -188,7 +184,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 9
     Triangle {
-        apex: Pos2 { x: 1, y: 2 },
+        apex: [1, 2],
         x_dir: 6,
         exits: [
             Exit { triangle_index: 9, root_offset: 0 },
@@ -201,7 +197,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 10
     Triangle {
-        apex: Pos2 { x: 0, y: 2 },
+        apex: [0, 2],
         x_dir: 10,
         exits: [
             Exit { triangle_index: 10, root_offset: 0 },
@@ -214,7 +210,7 @@ pub static TRIANGLES: [Triangle; 12] = [
 
     // 11
     Triangle {
-        apex: Pos2 { x: 1, y: 1 },
+        apex: [1, 1],
         x_dir: 2,
         exits: [
             Exit { triangle_index: 11, root_offset: 0 },

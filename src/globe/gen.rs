@@ -57,14 +57,13 @@ impl Gen {
         let delta = if self.spec.flat {
             self.spec.ocean_radius * 0.1
         } else {
-            terrain_noise.apply(&self.pt, land_pt3.as_ref())
+            terrain_noise.apply(&self.pt, &[land_pt3.x, land_pt3.y, land_pt3.z])
             * self.spec.ocean_radius
             * 0.3
         };
         let land_height = self.spec.ocean_radius + delta;
         // TEMP: ...
-        use na::Norm;
-        let cell_height = cell_pt3.as_vector().norm();
+        let cell_height = cell_pt3.coords.norm();
         let material = if cell_height < land_height {
             Material::Dirt
         } else if cell_height < self.spec.ocean_radius {

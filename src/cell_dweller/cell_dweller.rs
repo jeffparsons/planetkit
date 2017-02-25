@@ -93,7 +93,7 @@ impl CellDweller {
         // Calculate up vector. Nalgebra will normalise this so we can
         // just use the eye position as a vector; it points up out from
         // the center of the world already!
-        let up = eye.to_vector();
+        let up = eye.coords;
         Iso3::new_observer_frame(&eye, &target, &up)
     }
 

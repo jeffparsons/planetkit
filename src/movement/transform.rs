@@ -41,8 +41,8 @@ pub fn local_to_world(
     // relative to the world, ignoring orientation.
     //
     // Both parts of the apex are expressed in terms of x-dimension.
-    let apex = tri.apex * resolution[0];
-    new_pos2 += apex.to_vector();
+    let apex = Pos2::new(tri.apex[0], tri.apex[1]) * resolution[0];
+    new_pos2 += apex.coords;
     let mut new_pos = pos;
     new_pos.x = new_pos2.x;
     new_pos.y = new_pos2.y;
@@ -58,11 +58,11 @@ pub fn world_to_local(
     tri: &Triangle,
 ) -> (CellPos, Dir) {
     // Both parts of the apex are expressed in terms of x-dimension.
-    let apex = tri.apex * resolution[0];
+    let apex = Pos2::new(tri.apex[0], tri.apex[1]) * resolution[0];
 
     // Translate `pos` relative to `apex` ignoring orientation.
     let pos2 = Pos2::new(pos.x, pos.y);
-    let pos_from_tri_apex = (pos2 - apex).to_point();
+    let pos_from_tri_apex = Pos2::from_coordinates(pos2 - apex);
 
     // Compute rotation required to express `pos` and `dir` relative to apex.
     let x_dir = tri.x_dir;

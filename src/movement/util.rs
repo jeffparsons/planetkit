@@ -83,8 +83,8 @@ pub fn closest_triangle_to_point(
     let pos2 = Pos2::new(pos.x, pos.y);
     candidate_triangles.iter().min_by_key(|triangle| {
         // Both parts of the apex are expressed in terms of x-dimension.
-        let apex = triangle.apex * resolution[0];
-        let apex_to_pos = na::Absolute::abs(&(pos2 - apex));
+        let apex = Pos2::new(triangle.apex[0], triangle.apex[1]) * resolution[0];
+        let apex_to_pos = (pos2 - apex).abs();
         // Hex distance from apex to pos
         apex_to_pos.x + apex_to_pos.y
     }).expect("There should have been exactly three items; this shouldn't be possible!")
@@ -117,8 +117,8 @@ pub fn triangle_on_pos_with_closest_mid_axis(
             // we are exactly on top of.
             use num_traits::Zero;
             // Both parts of the apex are expressed in terms of x-dimension.
-            let apex = triangle.apex * resolution[0];
-            let apex_to_pos = na::Absolute::abs(&(pos2 - apex));
+            let apex = Pos2::new(triangle.apex[0], triangle.apex[1]) * resolution[0];
+            let apex_to_pos = (pos2 - apex).abs();
             apex_to_pos.is_zero()
         })
         .min_by_key(|triangle| {
