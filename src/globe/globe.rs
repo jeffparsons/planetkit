@@ -8,7 +8,7 @@ use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
 use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
 use super::Neighbors;
-use super::chunk::{ Chunk, Cell, Material };
+use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;
 use ::Spatial;
@@ -227,37 +227,6 @@ impl Globe {
         origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
-    pub fn find_lowest_cell_containing(
-        &self,
-        column: CellPos,
-        material: Material
-    ) -> Option<CellPos> {
-        // Translate into owning root, then start at bedrock.
-        let mut pos = PosInOwningRoot::new(column, self.spec.root_resolution);
-        pos.set_z(0);
-
-        loop {
-            let chunk_origin = self.origin_of_chunk_owning(pos);
-            let chunk = match self.chunks.get(&chunk_origin) {
-                // We may have run out of chunks to inspect.
-                // TODO: this may become a problem if we allow infinite
-                // or very loose height for planets. Have a limit?
-                // Probably only limit to planet height, because if you
-                // legitimately have terrain that high, you probably just
-                // want to wait to find it!
-                None => return None,
-                Some(chunk) => chunk,
-            };
-            let cell = chunk.cell(pos.into());
-            if cell.material == material {
-                // Yay, we found it!
-                return Some(pos.into());
-            }
-            let new_z = pos.pos().z + 1;
-            pos.set_z(new_z);
-        }
-    }
-
     pub fn ensure_chunk_view_entities(
         &mut self,
         world: &specs::World,
@@ -370,6 +339,10 @@ impl Globe {
 }
 
 impl<'a> Globe {
+    pub fn chunk_at(&'a self, chunk_origin: ChunkOrigin) -> Option<&'a Chunk> {
+        self.chunks.get(&chunk_origin)
+    }
+
     // TODO: this naming is horrible. :)
 
     pub fn authoritative_cell(

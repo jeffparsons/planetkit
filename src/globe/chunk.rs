@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use specs;
 use globe::{ IntCoord, CellPos, ChunkOrigin, PosInOwningRoot };
 use globe::origin_of_chunk_owning;
@@ -45,6 +43,20 @@ pub struct Chunk {
     // the border of this chunk.
     pub authoritative_neighbors: Vec<Neighbor>,
     pub is_view_dirty: bool,
+    // Chunks that are directly accessible from the given chunk via a single,
+    // step between cells, including this chunk itself.
+    //
+    // Note that this might not be adequate to find all chunks accessible via a single
+    // user action, e.g., stepping a `CellDweller`, because that action might lead
+    // to movement across multiple cells -- in this case, stepping up a block moves
+    // one space forward, and one up, so take care if using this to ensure the relevant
+    // chunks are loaded.
+    //
+    // TODO: unlike `authoritative_neighbors`, which tracks version numbers,
+    // this doesn't really belong here. I'm just storing it here for now because
+    // it's inefficient to compute and most of the time when you'll want it, you'll already
+    // have the chunk loaded.
+    pub accessible_chunks: Vec<ChunkOrigin>,
 }
 
 impl Chunk {
@@ -66,6 +78,11 @@ impl Chunk {
                 chunk_resolution
             ),
             is_view_dirty: true,
+            accessible_chunks: Self::list_accessible_chunks(
+                origin,
+                root_resolution,
+                chunk_resolution,
+            ),
         }
     }
 
@@ -76,6 +93,7 @@ impl Chunk {
     ) -> Vec<Neighbor> {
         // Map neighbor chunk origin to neighbors for efficient lookup
         // during construction.
+        use std::collections::HashMap;
         let mut neighbors_by_origin = HashMap::<ChunkOrigin, Neighbor>::new();
 
         // For every cell, if its owning chunk is not this chunk,
@@ -167,6 +185,57 @@ impl Chunk {
     /// view has been updated since the chunk was last modified.
     pub fn mark_view_as_clean(&mut self) {
         self.is_view_dirty = false;
+    }
+
+    fn list_accessible_chunks(
+        origin: ChunkOrigin,
+        root_resolution: [IntCoord; 2],
+        chunk_resolution: [IntCoord; 3],
+    ) -> Vec<ChunkOrigin> {
+        // Keep track of which chunk origins we've seen.
+        use std::collections::HashSet;
+        let mut chunk_origins = HashSet::<ChunkOrigin>::new();
+
+        // For every cell at a corner of this chunk, find all its neighbors,
+        // and add the origins of their chunks.
+        for (x, y, z) in iproduct!(
+            &[origin.pos().x, origin.pos().x + chunk_resolution[0]],
+            &[origin.pos().y, origin.pos().y + chunk_resolution[1]],
+            // Chunks don't share cells in the z-direction,
+            // but do in the x- and y-directions.
+            &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
+        ) {
+            let corner_pos = CellPos {
+                root: origin.pos().root,
+                x: *x,
+                y: *y,
+                z: *z,
+            };
+            // Find all its neighbors and their chunks' origins.
+            //
+            // TODO: does Neighbors actually guarantee that we'll get chunks
+            // from the roots we intend? I don't think so! Maybe we should introduce
+            // some way to explicitly list all the equivalent representations of
+            // a pos and use that instead here, because looking at "neighbors"
+            // here is actually just a hack workaround for not having that.
+            use super::{
+                Neighbors,
+                origin_of_chunk_in_same_root_containing,
+            };
+            let neighbors = Neighbors::new(corner_pos, root_resolution);
+            for neighbor in neighbors {
+                let neighbor_chunk_origin = origin_of_chunk_in_same_root_containing(
+                    neighbor,
+                    root_resolution,
+                    chunk_resolution,
+                );
+                chunk_origins.insert(neighbor_chunk_origin);
+            }
+        }
+
+        // We'll usually just want to iterate over these. No need to store
+        // as a hash map beyond building it.
+        chunk_origins.iter().cloned().collect()
     }
 }
 

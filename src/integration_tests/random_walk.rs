@@ -25,7 +25,7 @@ fn random_walk() {
     // Create systems.
     use ::system_priority as prio;
 
-    let chunk_sys = globe::ChunkSystem::new(
+    let mut chunk_sys = globe::ChunkSystem::new(
         &root_log,
     );
 
@@ -43,7 +43,6 @@ fn random_walk() {
 
     // Hand the world off to a Specs `Planner`.
     let mut planner = specs::Planner::new(world, 2);
-    planner.add_system(chunk_sys, "chunk", prio::CHUNK);
     planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
     planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
@@ -57,23 +56,18 @@ fn random_walk() {
         .with(globe)
         .build();
 
-    // Step the world once before adding our character;
-    // otherwise there won't be any chunks so we won't know where to put him!
-    planner.dispatch(0.02);
-    planner.wait();
-
     // Find globe surface and put player character on it.
     use globe::{ CellPos, Dir };
     use globe::chunk::Material;
     let mut guy_pos = CellPos::default();
     guy_pos = {
-        let globes = planner
+        let mut globes = planner
             .mut_world()
-            .read::<globe::Globe>();
-        let globe = globes
-            .get(globe_entity)
+            .write::<globe::Globe>();
+        let mut globe = globes
+            .get_mut(globe_entity)
             .expect("Uh oh, where did our Globe go?");
-        globe.find_lowest_cell_containing(guy_pos, Material::Air)
+        chunk_sys.find_lowest_cell_containing(&mut globe, guy_pos, Material::Air)
             .expect("Uh oh, there's something wrong with our globe.")
     };
     planner.mut_world().create_now()
@@ -85,6 +79,8 @@ fn random_walk() {
         ))
         .with(::Spatial::root())
         .build();
+
+    planner.add_system(chunk_sys, "chunk", prio::CHUNK);
 
     // Start our CellDweller moving forward indefinitely.
     use cell_dweller::MovementEvent;

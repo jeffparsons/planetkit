@@ -136,7 +136,7 @@ impl App {
     }
 
     // TODO: none of this should be baked into App.
-    pub fn temp_remove_me_init(&mut self) {
+    pub fn temp_remove_me_init(&mut self, chunk_system: &mut globe::ChunkSystem) {
         use ::Spatial;
 
         // Add some things to the world.
@@ -152,24 +152,18 @@ impl App {
             .with(globe)
             .build();
 
-        // TEMP
-        // Step before adding cell dweller; otherwise there'll be
-        // no chunks, so we won't know where to put him!
-        self.planner.dispatch(0.02);
-        self.planner.wait();
-
         // Find globe surface and put player character on it.
         use globe::{ CellPos, Dir };
         use globe::chunk::Material;
         let mut guy_pos = CellPos::default();
         guy_pos = {
-            let globes = self.planner
+            let mut globes = self.planner
                 .mut_world()
-                .read::<globe::Globe>();
-            let globe = globes
-                .get(globe_entity)
+                .write::<globe::Globe>();
+            let mut globe = globes
+                .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
-            globe.find_lowest_cell_containing(guy_pos, Material::Air)
+            chunk_system.find_lowest_cell_containing(&mut globe, guy_pos, Material::Air)
                 .expect("Uh oh, there's something wrong with our globe.")
         };
         let factory = &mut self.factory.clone();

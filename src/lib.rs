@@ -25,6 +25,8 @@ extern crate slog;
 extern crate slog_term;
 extern crate specs;
 extern crate num_traits;
+#[macro_use]
+extern crate itertools;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;

@@ -12,7 +12,7 @@ use app;
 ///
 /// Uses all default settings, and logs to standard output.
 pub fn new() -> (app::App, PistonWindow) {
-    // Set up logger to print to standard output.
+    use super::system_priority as prio;
     use slog::DrainExt;
     let drain = slog_term::streamer().compact().build().fuse();
     let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
@@ -47,8 +47,6 @@ pub fn new() -> (app::App, PistonWindow) {
         // TODO: move _all_ other system initialization from `app.rs`
         // into here, and then back out into helper functions.
 
-        use super::system_priority as prio;
-
         let movement_sys = cell_dweller::MovementSystem::new(
             movement_input_receiver,
             &log,
@@ -67,11 +65,6 @@ pub fn new() -> (app::App, PistonWindow) {
         );
         planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
-        use globe;
-        let chunk_sys = globe::ChunkSystem::new(
-            &log,
-        );
-        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
         let chunk_view_sys = globe::ChunkViewSystem::new(
             &log,
             0.05, // Seconds between geometry creation
@@ -79,7 +72,18 @@ pub fn new() -> (app::App, PistonWindow) {
         planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
     }
 
-    app.temp_remove_me_init();
+    use globe;
+    let mut chunk_sys = globe::ChunkSystem::new(
+        &log,
+    );
+
+    app.temp_remove_me_init(&mut chunk_sys);
+
+    {
+        // Ew.
+        let planner = app.planner();
+        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
+    }
 
     (app, window)
 }
