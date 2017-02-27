@@ -27,7 +27,6 @@ pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
     encoder_channel: EncoderChannel<R, C>,
     output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
-    first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
 }
 
@@ -37,7 +36,6 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         encoder_channel: EncoderChannel<R, C>,
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
         output_stencil: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
-        first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
         projection: Arc<Mutex<[[f32; 4]; 4]>>,
         parent_log: &Logger,
         mesh_repo: Arc<Mutex<MeshRepository<R>>>,
@@ -62,7 +60,6 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             encoder_channel: encoder_channel,
             output_color: output_color,
             output_stencil: output_stencil,
-            first_person: first_person,
             projection: projection,
             log: log,
             mesh_repo: mesh_repo,
@@ -76,9 +73,11 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         Sd: Deref<Target = specs::MaskedStorage<Spatial>>,
     >(
         &mut self,
-        dt: TimeDelta,
+        _dt: TimeDelta,
+        entities: specs::Entities,
         visuals: specs::Storage<Visual, A, Vd>,
         spatials: specs::Storage<Spatial, A, Sd>,
+        camera: specs::Entity,
     ) {
         // TODO: Systems are currently run on the main thread,
         // so we need to `try_recv` to avoid deadlock.
@@ -96,38 +95,58 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         encoder.clear(&self.output_color, CLEAR_COLOR);
         encoder.clear_depth(&self.output_stencil, 1.0);
 
-        let fp = self.first_person.lock().unwrap();
         let projection = self.projection.lock().unwrap();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
 
         // Try to draw all visuals.
         use specs::Join;
-        for (v, s) in (&visuals, &spatials).iter() {
+        for (entity, visual) in (&entities, &visuals).iter() {
             // Visual might not have its mesh created yet.
-            let mesh_handle = match v.mesh_handle() {
+            let mesh_handle = match visual.mesh_handle() {
                 Some(mesh_handle) => mesh_handle,
                 None => continue,
             };
 
+            // Transform spatial relative to camera.
+            use ::spatial::SpatialStorage;
+            let camera_relative_transform = spatials.a_relative_to_b(
+                entity,
+                camera,
+            );
+
             // TODO: cache the model matrix separately per Visual
+            // if there's a common ancestor that stays the same
+            // for a while.
             use na;
-            use na::Isometry3;
-            let transform_f32: Isometry3<f32> = na::convert(s.transform);
-            let model = transform_f32.to_homogeneous();
+            use na::{ Isometry3, Point3, Vector3 };
+            let model: Isometry3<f32> = na::convert(camera_relative_transform);
+
+            // Turn the camera's model transform into a view matrix.
+            // (This is basically just switching the z-direction because
+            // in view space positive z points out of the screen.)
+            let view: Isometry3<f32> = Isometry3::look_at_rh(
+                &Point3::origin(),
+                &Point3::from_coordinates(Vector3::z()),
+                &Vector3::y(),
+            );
+
+            let model_view = view * model;
+            let model_view_matrix = model_view.to_homogeneous();
+
             // Massage it into a nested array structure and clone it,
             // because `camera_controllers` wants to take ownership.
             let mut model_for_camera_controllers: vecmath::Matrix4<f32> = vecmath::mat4_id();
             // Really? Ew.
             // TODO: probably not getting any value out of `camera_controllers`
             // anymore that you can't get from `nalgebra`.
-            model_for_camera_controllers[0].copy_from_slice(&model.as_slice()[0..4]);
-            model_for_camera_controllers[1].copy_from_slice(&model.as_slice()[4..8]);
-            model_for_camera_controllers[2].copy_from_slice(&model.as_slice()[8..12]);
-            model_for_camera_controllers[3].copy_from_slice(&model.as_slice()[12..16]);
+            model_for_camera_controllers[0].copy_from_slice(&model_view_matrix.as_slice()[0..4]);
+            model_for_camera_controllers[1].copy_from_slice(&model_view_matrix.as_slice()[4..8]);
+            model_for_camera_controllers[2].copy_from_slice(&model_view_matrix.as_slice()[8..12]);
+            model_for_camera_controllers[3].copy_from_slice(&model_view_matrix.as_slice()[12..16]);
 
             let model_view_projection = camera_controllers::model_view_projection(
                 model_for_camera_controllers,
-                fp.camera(dt).orthogonal(),
+                vecmath::mat4_id(),
                 *projection
             );
 
@@ -156,11 +175,16 @@ R: 'static + gfx::Resources,
 C: 'static + gfx::CommandBuffer<R> + Send,
 {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
-        let (visuals, spatials) = arg.fetch(|w|
-            (w.read::<Visual>(), w.read::<Spatial>()),
+        use ::camera::DefaultCamera;
+        let (entities, visuals, spatials, default_camera) = arg.fetch(|w|
+            (
+                w.entities(),
+                w.read::<Visual>(),
+                w.read::<Spatial>(),
+                w.read_resource::<DefaultCamera>(),
+            ),
         );
-
-        self.draw(dt, visuals, spatials);
+        self.draw(dt, entities, visuals, spatials, default_camera.camera_entity);
 
         // TODO: implement own "extrapolated time" concept or similar
         // to decide how often we should actually be trying to render?

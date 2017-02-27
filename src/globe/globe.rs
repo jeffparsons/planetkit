@@ -4,6 +4,7 @@ use specs;
 
 use slog::Logger;
 
+use ::types::*;
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::Root;
 use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
@@ -249,8 +250,7 @@ impl Globe {
             chunk.view_entity = world.create_later_build()
                 .with(chunk_view)
                 .with(empty_visual)
-                // TODO: parent it on the globe when we can do that.
-                .with(Spatial::root())
+                .with(Spatial::new(globe_entity, Iso3::identity()))
                 .build()
                 .into();
         }

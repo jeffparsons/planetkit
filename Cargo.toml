@@ -34,6 +34,8 @@ chrono = "0.2"
 specs = "0.7.0"
 num-traits = "0.1.36"
 itertools = "0.5.9"
+# At time of writing, only used for tests.
+approx = "0.1.1"
 
 [build-dependencies]
 rustc_version = "0.1.*"

@@ -104,7 +104,6 @@ impl App {
             render_sys_encoder_channel,
             window.output_color.clone(),
             window.output_stencil.clone(),
-            first_person_mutex_arc.clone(),
             projection.clone(),
             &log,
             mesh_repo_ptr.clone(),
@@ -150,6 +149,7 @@ impl App {
         // handle on its entity.
         let globe_entity = self.planner.mut_world().create_now()
             .with(globe)
+            .with(Spatial::new_root())
             .build();
 
         // Find globe surface and put player character on it.
@@ -174,7 +174,7 @@ impl App {
         );
         let mut cell_dweller_visual = render::Visual::new_empty();
         cell_dweller_visual.set_mesh_handle(axes_mesh);
-        self.planner.mut_world().create_now()
+        let guy = self.planner.mut_world().create_now()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
                 Dir::default(),
@@ -182,8 +182,22 @@ impl App {
                 Some(globe_entity),
             ))
             .with(cell_dweller_visual)
-            .with(Spatial::root())
+            // The CellDweller's transformation will be set based
+            // on its coordinates in cell space.
+            .with(Spatial::new(globe_entity, Iso3::identity()))
             .build();
+
+        // Create a camera sitting a little bit behind the cell dweller.
+        let eye = Pt3::new(0.0, 0.5, 0.-0.25);
+        let target = Pt3::origin();
+        let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
+        let camera = self.planner.mut_world().create_now()
+            .with(Spatial::new(guy, camera_transform))
+            .build();
+        use ::camera::DefaultCamera;
+        self.planner.mut_world().add_resource(DefaultCamera {
+            camera_entity: camera,
+        });
     }
 
     pub fn run(&mut self, mut window: &mut PistonWindow) {

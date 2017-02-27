@@ -77,7 +77,7 @@ fn random_walk() {
             globe_spec,
             Some(globe_entity),
         ))
-        .with(::Spatial::root())
+        .with(::Spatial::new_root())
         .build();
 
     planner.add_system(chunk_sys, "chunk", prio::CHUNK);

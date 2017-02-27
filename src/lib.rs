@@ -27,6 +27,9 @@ extern crate specs;
 extern crate num_traits;
 #[macro_use]
 extern crate itertools;
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
@@ -41,6 +44,7 @@ pub mod simple;
 pub mod cell_dweller;
 pub mod movement;
 pub mod system_priority;
+pub mod camera;
 
 mod spatial;
 pub use spatial::Spatial;
