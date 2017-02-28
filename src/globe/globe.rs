@@ -81,22 +81,6 @@ impl Globe {
                 block_height: 0.02,
                 root_resolution: [32, 64],
                 chunk_resolution: [16, 16, 4],
-                flat: false,
-            },
-            parent_log,
-        )
-    }
-
-    pub fn new_small_flat(parent_log: &Logger) -> Globe {
-        Globe::new(
-            Spec {
-                seed: 13,
-                floor_radius: 0.91,
-                ocean_radius: 1.13,
-                block_height: 0.02,
-                root_resolution: [8, 16],
-                chunk_resolution: [4, 4, 4],
-                flat: true,
             },
             parent_log,
         )

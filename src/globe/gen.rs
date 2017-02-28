@@ -52,15 +52,10 @@ impl Gen {
         let land_pt3 = self.spec.cell_center_on_unit_sphere(cell_pos);
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
 
-        // More temp; TODO: make a different Gen for flat earth.
         // Vary a little bit around 1.0.
-        let delta = if self.spec.flat {
-            self.spec.ocean_radius * 0.1
-        } else {
-            terrain_noise.apply(&self.pt, &[land_pt3.x, land_pt3.y, land_pt3.z])
+        let delta = terrain_noise.apply(&self.pt, &[land_pt3.x, land_pt3.y, land_pt3.z])
             * self.spec.ocean_radius
-            * 0.3
-        };
+            * 0.3;
         let land_height = self.spec.ocean_radius + delta;
         // TEMP: ...
         let cell_height = cell_pt3.coords.norm();

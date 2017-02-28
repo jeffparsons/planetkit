@@ -54,7 +54,6 @@ pub mod benches {
             block_height: 0.02,
             root_resolution: ROOT_RESOLUTION,
             chunk_resolution: CHUNK_RESOLUTION,
-            flat: false,
         };
         let globe = Globe::new(spec, &log);
         let spec = globe.spec();

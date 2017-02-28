@@ -64,6 +64,7 @@ pub struct MovementSystem {
     step_backward: bool,
     turn_left: bool,
     turn_right: bool,
+    max_step_height: u8,
 }
 
 enum ForwardOrBackward {
@@ -80,7 +81,13 @@ impl MovementSystem {
             step_backward: false,
             turn_left: false,
             turn_right: false,
+            max_step_height: 1,
         }
+    }
+
+    // Pretty much only for tests.
+    pub fn set_step_height(&mut self, new_max_step_height: u8) {
+        self.max_step_height = new_max_step_height;
     }
 
     fn consume_input(&mut self) {
@@ -131,20 +138,19 @@ impl MovementSystem {
             },
         }.expect("CellDweller should have been in good state.");
 
-        // Ask the globe if we can go there.
-        let mut cell = globe.maybe_non_authoritative_cell(new_pos);
-        let mut can_move_to_cell = cell.material != Material::Dirt;
+        // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
+        // Usually we'll allow climbing a maximum of one block, but especially in certain tests
+        // we want to let you climb higher!
+        for _ in 0..(self.max_step_height + 1) {
+            let cell = globe.maybe_non_authoritative_cell(new_pos);
+            let can_move_to_cell = cell.material != Material::Dirt;
 
-        // If we can't move there, then try exactly one
-        // cell up as well; we want to allow stepping up
-        // terrain by one cell, but not more.
-        if !can_move_to_cell {
-            new_pos.z += 1;
-            cell = globe.maybe_non_authoritative_cell(new_pos);
-            can_move_to_cell = cell.material != Material::Dirt;
-        }
+            if !can_move_to_cell {
+                // Try again one higher.
+                new_pos.z += 1;
+                continue;
+            }
 
-        if can_move_to_cell {
             cd.set_cell_transform(new_pos, new_dir, new_last_turn_bias);
             // REVISIT: += ?
             cd.seconds_until_next_move = cd.seconds_between_moves;
