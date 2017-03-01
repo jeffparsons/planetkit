@@ -1,4 +1,4 @@
-use super::{ Globe, CellPos };
+use super::{ Globe, CellPos, ChunkOrigin };
 use super::chunk::{ Chunk, Cell };
 
 /// A cell-oriented view into a globe.
@@ -22,13 +22,37 @@ pub struct Cursor<'a> {
 }
 
 impl<'a> Cursor<'a> {
-    pub fn new(globe: &'a Globe, pos: CellPos) -> Cursor<'a> {
+    // NOTE: do not make any function here just called `new`;
+    // it's super-easy to misuse `Cursor`s, because a lot of the
+    // time you really will mean to read cells from a specific
+    // chunk, even if that's not the owner of the cell, or the most
+    // obvious chunk when you truncate the position.
+
+    /// Only use this if you don't care about which chunk
+    /// we'll attempt to read cells from, keeping in mind that
+    /// cells at the edge of chunks are shared between chunks.
+    ///
+    /// If you know that one particular chunk containing a given
+    /// cell is loaded, and you want to read from that chunk, you should
+    /// use `new_in_chunk` instead.
+    fn new_without_chunk_hint(globe: &'a Globe, pos: CellPos) -> Cursor<'a> {
         Cursor {
             globe: globe,
             pos: pos,
             current_chunk: None,
             current_chunk_might_be_dirty: true,
         }
+    }
+
+    /// Creates a new cursor at the origin of the given chunk.
+    ///
+    /// Use this if you know that a particular chunk is loaded,
+    /// and you want to read cells from that chunk rather than
+    /// any neighboring chunk that might share the same cells.
+    pub fn new_in_chunk(globe: &'a Globe, chunk_origin: ChunkOrigin) -> Cursor<'a> {
+        let mut cursor = Cursor::new_without_chunk_hint(globe, chunk_origin.into());
+        cursor.update_current_chunk();
+        cursor
     }
 
     pub fn pos(&self) -> CellPos {

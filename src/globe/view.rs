@@ -58,7 +58,7 @@ impl View {
     ) {
         trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
 
-        let mut cursor = Cursor::new(globe, *origin.pos());
+        let mut cursor = Cursor::new_in_chunk(globe, origin);
 
         // Include cells _on_ the far edge of the chunk;
         // even though we don't own them we'll need to draw part of them.
