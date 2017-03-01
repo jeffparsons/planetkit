@@ -188,7 +188,7 @@ impl App {
             .build();
 
         // Create a camera sitting a little bit behind the cell dweller.
-        let eye = Pt3::new(0.0, 0.5, 0.-0.25);
+        let eye = Pt3::new(0.0, 0.2, -0.3);
         let target = Pt3::origin();
         let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
         let camera = self.planner.mut_world().create_now()
