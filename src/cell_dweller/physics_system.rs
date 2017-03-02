@@ -30,7 +30,7 @@ impl PhysicsSystem {
         dt: TimeDelta,
     ) {
         // Only make you fall if there's air below you.
-        if cd.pos.z < 0 {
+        if cd.pos.z <= 0 {
             // There's nothing below; someone built a silly globe.
             return;
         }

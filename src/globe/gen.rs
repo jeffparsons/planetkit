@@ -41,21 +41,28 @@ impl Gen {
         // ("expected fn pointer, found fn item")
         let terrain_noise = noise::Brownian3::new(
             noise::open_simplex3::<f64>, 6
-        ).wavelength(1.0);
+        ).wavelength(100.0);
 
         // Calculate height for this cell from world spec.
-        // To do this, project the cell onto a unit sphere
+        // To do this, project the cell onto a sea-level sphere
         // and sample 3D simplex noise to get a height value.
+        //
+        // Basing on sea-level lets us use similar wavelengths
+        // to similar effect, regardless of the globe radius.
         //
         // TODO: split out a proper world generator
         // that layers in lots of different kinds of noise etc.
-        let land_pt3 = self.spec.cell_center_on_unit_sphere(cell_pos);
+        let sea_level_pt3 = self.spec.cell_center_on_unit_sphere(cell_pos)
+            * self.spec.ocean_radius;
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
 
         // Vary a little bit around 1.0.
-        let delta = terrain_noise.apply(&self.pt, &[land_pt3.x, land_pt3.y, land_pt3.z])
-            * self.spec.ocean_radius
-            * 0.3;
+        let delta = terrain_noise.apply(&self.pt, &[sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
+            * (self.spec.ocean_radius - self.spec.floor_radius)
+            // TODO: this 0.9 is only to stop the dirt level
+            // going below bedrock. Need something a bit more sophisticated
+            // than this eventually.
+            * 0.9;
         let land_height = self.spec.ocean_radius + delta;
         // TEMP: ...
         let cell_height = cell_pt3.coords.norm();

@@ -20,7 +20,7 @@ pub fn make_axes_mesh<
 
     // TODO: this spacing is only because the globe I'm testing
     // with is currently stupidly small.
-    let spacing = 0.02;
+    let spacing = 0.5;
     let x_spacing = [spacing, 0.0, 0.0];
     let y_spacing = [0.0, spacing, 0.0];
     let z_spacing = [0.0, 0.0, spacing];
@@ -61,10 +61,10 @@ fn add_blob(
             Vertex::new([
                 // TODO: this multiplier is only because the globe I'm testing
                 // with is currently stupidly small.
-                vertex[0] as f32 * 0.01 + offset[0],
-                vertex[1] as f32 * 0.01 + offset[1],
+                vertex[0] as f32 * 0.2 + offset[0],
+                vertex[1] as f32 * 0.2 + offset[1],
                 // Space the blobs out a bit.
-                vertex[2] as f32 * 0.01 + offset[2],
+                vertex[2] as f32 * 0.2 + offset[2],
             ], color)
         );
     }

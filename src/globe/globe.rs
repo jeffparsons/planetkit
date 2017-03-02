@@ -73,14 +73,18 @@ impl Globe {
     pub fn new_example(parent_log: &Logger) -> Globe {
         Globe::new(
             Spec {
-                seed: 13,
-                floor_radius: 0.91, // TODO: make it ~Earth
+                seed: 14,
+                floor_radius: 25.0, // TODO: make it ~Earth
                 // NOTE: Don't let ocean radius be a neat multiple of block
                 // height above floor radius, or we'll end up with
                 // z-fighting in evaluating what blocks are water/air.
-                ocean_radius: 1.13,
-                block_height: 0.02,
-                root_resolution: [32, 64],
+                ocean_radius: 66.6,
+                block_height: 0.65,
+                // TODO: this is getting to the size where using it for
+                // tests is very slow, presumably on account of so many chunks
+                // being loaded. We need to look at the maximum chunks loaded
+                // at any given time.
+                root_resolution: [64, 128],
                 chunk_resolution: [16, 16, 4],
             },
             parent_log,
