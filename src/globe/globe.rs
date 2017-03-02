@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use na;
 use specs;
 
 use slog::Logger;
@@ -229,12 +230,17 @@ impl Globe {
                 globe_entity,
                 chunk.origin,
             );
+
+            // We store the geometry relative to the bottom-center of the chunk origin cell.
+            let chunk_origin_pos = self.spec.cell_bottom_center(*chunk.origin.pos());
+            let chunk_transform = Iso3::new(chunk_origin_pos.coords, na::zero());
+
             // We'll fill it in later.
             let empty_visual = ::render::Visual::new_empty();
             chunk.view_entity = world.create_later_build()
                 .with(chunk_view)
                 .with(empty_visual)
-                .with(Spatial::new(globe_entity, Iso3::identity()))
+                .with(Spatial::new(globe_entity, chunk_transform))
                 .build()
                 .into();
         }

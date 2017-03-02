@@ -4,6 +4,7 @@ use super::spec::Spec;
 use super::{Globe, CellPos, Cursor, ChunkOrigin};
 use super::chunk::{ Material };
 use super::cell_shape;
+use ::types::Pt3;
 use ::render;
 
 // TODO: between this and "draw" we now have some confusing names.
@@ -33,6 +34,9 @@ impl View {
         }
     }
 
+    /// Creates chunk geometry with vertex positions specified
+    /// relative to the bottom-middle of the chunk origin cell.
+
     // TODO: don't take a reference to a chunk
     // in this method; to make geometry for this
     // chunk we'll eventually need to have data for adjacent chunks
@@ -57,6 +61,9 @@ impl View {
         index_data: &mut Vec<u32>
     ) {
         trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
+
+        // We store the geometry relative to the bottom-center of the chunk origin cell.
+        let chunk_origin_pos = self.spec.cell_bottom_center(*origin.pos());
 
         let mut cursor = Cursor::new_in_chunk(globe, origin);
 
@@ -138,12 +145,10 @@ impl View {
                     // Emit each top vertex of whatever shape we're using for this cell.
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
-                        vertex_data.push(render::Vertex::new([
-                            vertex_pt3[0] as f32,
-                            vertex_pt3[1] as f32,
-                            vertex_pt3[2] as f32,
-                        ], cell_color));
+                        let vertex_pt3 = Pt3::from_coordinates(
+                            self.spec.cell_top_vertex(cell_pos, *offset) - chunk_origin_pos
+                        );
+                        vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
 
                     // Emit triangles for the top of the cell. All triangles
@@ -165,12 +170,10 @@ impl View {
                     let first_side_top_vertex_index = first_top_vertex_index
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.spec.cell_top_vertex(cell_pos, *offset);
-                        vertex_data.push(render::Vertex::new([
-                            vertex_pt3[0] as f32,
-                            vertex_pt3[1] as f32,
-                            vertex_pt3[2] as f32,
-                        ], cell_color));
+                        let vertex_pt3 = Pt3::from_coordinates(
+                            self.spec.cell_top_vertex(cell_pos, *offset) - chunk_origin_pos
+                        );
+                        vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
 
                     // Emit each bottom vertex of whatever shape we're using for this cell.
@@ -181,12 +184,10 @@ impl View {
                     let first_side_bottom_vertex_index = first_side_top_vertex_index
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = self.spec.cell_bottom_vertex(cell_pos, *offset);
-                        vertex_data.push(render::Vertex::new([
-                            vertex_pt3[0] as f32,
-                            vertex_pt3[1] as f32,
-                            vertex_pt3[2] as f32,
-                        ], cell_color));
+                        let vertex_pt3 = Pt3::from_coordinates(
+                            self.spec.cell_bottom_vertex(cell_pos, *offset) - chunk_origin_pos
+                        );
+                        vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
 
                     // Emit triangles for the cell sides.

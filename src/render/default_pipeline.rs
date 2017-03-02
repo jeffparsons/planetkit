@@ -1,5 +1,7 @@
 use gfx;
 
+use ::types::Pt3;
+
 // Pretty basic pipeline currently used for terrain.
 //
 // TODO: determine how aggressively you should be trying
@@ -23,6 +25,17 @@ impl Vertex {
             a_color: color,
             tex_coord: [0.0, 0.0],
         }
+    }
+
+    pub fn new_from_pt3(pos: Pt3, color: [f32; 3]) -> Vertex {
+        Vertex::new(
+            [
+                pos[0] as f32,
+                pos[1] as f32,
+                pos[2] as f32,
+            ],
+            color,
+        )
     }
 }
 
