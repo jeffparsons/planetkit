@@ -7,20 +7,12 @@ use slog::Logger;
 
 use ::types::*;
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
-use super::Root;
 use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
 use super::Neighbors;
 use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;
 use ::Spatial;
-
-// TODO: lift to module level.
-const ROOT_QUADS: u8 = 5;
-
-// TODO: how many to build high?
-// TODO: remove me
-const Z_CHUNKS: i64 = 5;
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -74,10 +66,7 @@ impl Globe {
         Globe::new(
             Spec {
                 seed: 14,
-                floor_radius: 25.0, // TODO: make it ~Earth
-                // NOTE: Don't let ocean radius be a neat multiple of block
-                // height above floor radius, or we'll end up with
-                // z-fighting in evaluating what blocks are water/air.
+                floor_radius: 25.0,
                 ocean_radius: 66.6,
                 block_height: 0.65,
                 // TODO: this is getting to the size where using it for
@@ -85,6 +74,27 @@ impl Globe {
                 // being loaded. We need to look at the maximum chunks loaded
                 // at any given time.
                 root_resolution: [64, 128],
+                chunk_resolution: [16, 16, 4],
+            },
+            parent_log,
+        )
+    }
+
+    pub fn new_earth_scale_example(parent_log: &Logger) -> Globe {
+        let ocean_radius = 6_371_000.0;
+        // TODO: actually more like 60_000 when we know how to:
+        // - Unload chunks properly
+        // - Start with a guess about the z-position of the player
+        //   so we don't have to start at bedrock and search up.
+        let crust_depth = 60.0;
+        let floor_radius = ocean_radius - crust_depth;
+        Globe::new(
+            Spec {
+                seed: 14,
+                floor_radius: floor_radius,
+                ocean_radius: ocean_radius,
+                block_height: 0.65,
+                root_resolution: [8388608, 16777216],
                 chunk_resolution: [16, 16, 4],
             },
             parent_log,
@@ -100,37 +110,18 @@ impl Globe {
     // that automatically ensures that all neighbouring chunks
     // get updated, etc.
     pub fn copy_all_authoritative_cells(&mut self) {
-        // Calculate how many chunks to a root in each direction in (x, y).
-        let chunks_per_root = [
-            self.spec.root_resolution[0] / self.spec.chunk_resolution[0],
-            self.spec.root_resolution[1] / self.spec.chunk_resolution[1],
-        ];
-
-        // Copy cells over from chunks that own cells to those that
-        // contain the same cells but don't own them.
-        // TODO: we won't be able to assume that this is always
-        // possible for long, because often most of the chunks
-        // won't be loaded. This needs to be hooked up in a more
-        // subtle way. :)
-        for root_index in 0..ROOT_QUADS {
-            let root = Root { index: root_index };
-            for z in 0..Z_CHUNKS {
-                for y in 0..chunks_per_root[1] {
-                    for x in 0..chunks_per_root[0] {
-                        let origin = ChunkOrigin::new(
-                            CellPos {
-                                root: root,
-                                x: x * self.spec.chunk_resolution[0],
-                                y: y * self.spec.chunk_resolution[1],
-                                z: z * self.spec.chunk_resolution[2],
-                            },
-                            self.spec.root_resolution,
-                            self.spec.chunk_resolution,
-                        );
-                        self.maybe_copy_authoritative_cells(origin);
-                    }
-                }
-            }
+        // Oh god, this is so horrible. Please forgive this
+        // temporary hack until I figure out what I'm actually
+        // doing with this. I want to destroy the whole interface,
+        // so I'm not going to bother making this good for now.
+        //
+        // TODO: burn it with fire
+        let all_chunk_origins: Vec<ChunkOrigin> = self.chunks
+            .values()
+            .map(|chunk| chunk.origin)
+            .collect();
+        for chunk_origin in all_chunk_origins {
+            self.maybe_copy_authoritative_cells(chunk_origin);
         }
     }
 

@@ -18,6 +18,9 @@ use super::CellPos;
 pub struct Spec {
     pub seed: u32,
     pub floor_radius: f64,
+    // NOTE: Don't let ocean radius be a neat multiple of block
+    // height above floor radius, or we'll end up with
+    // z-fighting in evaluating what blocks are water/air.
     pub ocean_radius: f64,
     pub block_height: f64,
     // These are the full width/height/depth of a given root quad or chunk's voxmap;

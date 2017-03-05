@@ -1,22 +1,13 @@
 use specs;
 use slog::Logger;
 
-use chrono::Duration;
-
 use rand;
 use rand::Rng;
 
 use types::*;
 use super::{ Globe, CellPos, ChunkOrigin, PosInOwningRoot };
 use super::chunk::{ Chunk, Cell, Material };
-use super::Root;
 use cell_dweller::CellDweller;
-
-// TODO: lift to module level.
-const ROOT_QUADS: u8 = 5;
-
-// TODO: remove me
-const Z_CHUNKS: i64 = 5;
 
 /// Loads and unloads `Chunk`s for a `Globe`.
 ///
@@ -24,8 +15,6 @@ const Z_CHUNKS: i64 = 5;
 /// they have never existed before.
 pub struct ChunkSystem {
     log: Logger,
-    // TEMP
-    have_built_chunks: bool,
 }
 
 impl ChunkSystem {
@@ -34,52 +23,7 @@ impl ChunkSystem {
     ) -> ChunkSystem {
         ChunkSystem {
             log: parent_log.new(o!()),
-            have_built_chunks: false,
         }
-    }
-
-    pub fn build_all_chunks(&mut self, globe: &mut Globe) {
-        use super::globe::GlobeGuts;
-
-        // Calculate how many chunks to a root in each direction in (x, y).
-        let spec = globe.spec();
-        let chunks_per_root = [
-            spec.root_resolution[0] / spec.chunk_resolution[0],
-            spec.root_resolution[1] / spec.chunk_resolution[1],
-        ];
-
-        debug!(self.log, "Making chunks...");
-
-        let dt = Duration::span(|| {
-            for root_index in 0..ROOT_QUADS {
-                let root = Root { index: root_index };
-                for z in 0..Z_CHUNKS {
-                    for y in 0..chunks_per_root[1] {
-                        for x in 0..chunks_per_root[0] {
-                            let origin = ChunkOrigin::new(
-                                CellPos {
-                                    root: root,
-                                    x: x * spec.chunk_resolution[0],
-                                    y: y * spec.chunk_resolution[1],
-                                    z: z * spec.chunk_resolution[2],
-                                },
-                                spec.root_resolution,
-                                spec.chunk_resolution,
-                            );
-                            self.build_chunk(globe, origin);
-                        }
-                    }
-                }
-            }
-        });
-
-        debug!(self.log, "Finished making chunks"; "chunks" => globe.chunks().len(), "dt" => format!("{}", dt));
-
-        // TODO: this is _not_ going to fly once we're trickling the
-        // chunks in over time...
-        globe.copy_all_authoritative_cells();
-
-        self.have_built_chunks = true;
     }
 
     // TODO: rewrite this to build or load a chunk, rename it,

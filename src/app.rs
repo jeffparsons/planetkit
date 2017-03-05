@@ -143,7 +143,7 @@ impl App {
         // Make globe and create a mesh for each of its chunks.
         //
         // TODO: don't bake this into the generic app!
-        let globe = globe::Globe::new_example(&self.log);
+        let globe = globe::Globe::new_earth_scale_example(&self.log);
         let globe_spec = globe.spec();
         // First add the globe to the world so we can get a
         // handle on its entity.

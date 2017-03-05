@@ -41,7 +41,10 @@ impl Gen {
         // ("expected fn pointer, found fn item")
         let terrain_noise = noise::Brownian3::new(
             noise::open_simplex3::<f64>, 6
-        ).wavelength(100.0);
+        // TODO: make wavelength etc. part of spec;
+        // the octaves and wavelength of noise you want
+        // will probably depend on planet size.
+        ).wavelength(200.0);
 
         // Calculate height for this cell from world spec.
         // To do this, project the cell onto a sea-level sphere
