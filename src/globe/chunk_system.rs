@@ -1,3 +1,5 @@
+use std::ops::{ Deref, DerefMut };
+
 use specs;
 use slog::Logger;
 
@@ -138,6 +140,67 @@ impl ChunkSystem {
             pos.set_z(new_z);
         }
     }
+
+    fn ensure_essential_chunks_for_cell_dweller_present<
+        A: Deref<Target = specs::Allocator>,
+        Gd: DerefMut<Target = specs::MaskedStorage<Globe>>,
+    >(
+        &mut self,
+        cd: &CellDweller,
+        globes: &mut specs::Storage<Globe, A, Gd>,
+    ) {
+        if let Some(globe_entity) = cd.globe_entity {
+            // Get the associated globe, complaining loudly if we fail.
+            // TODO: this is becoming a common pattern; factor out.
+            let mut globe = match globes.get_mut(globe_entity) {
+                Some(globe) => globe,
+                None => {
+                    warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                    return;
+                },
+            };
+
+            // TODO: throttle, and do in background.
+
+            // TODO: see remarks in `Chunk::list_accessible_chunks`
+            // about this actually being an inappropriate way to approach
+            // this problem; we'll load a bunch of chunks we don't need to yet
+            // in a desperate attempt to not miss the ones we do need.
+
+            // Load all the chunks that we could possibly try
+            // to move into from this chunk within two steps.
+            //
+            // Takes into account that a single user action could lead to
+            // multiple cell jumps, e.g., stepping up a small ledge.
+            //
+            // TODO: this is all a bit finicky and fragile.
+            let cd_pos_in_owning_root = PosInOwningRoot::new(cd.pos, globe.spec().root_resolution);
+            let chunk_origin = globe.origin_of_chunk_owning(cd_pos_in_owning_root);
+            self.ensure_chunk_present(globe, chunk_origin);
+            let accessible_chunks = {
+                use super::globe::GlobeGuts;
+                let chunk = globe.chunks().get(&chunk_origin)
+                    .expect("We just ensured this chunk is loaded.");
+                // TODO: Gah, such slow!
+                chunk.accessible_chunks.clone()
+            };
+            for accessible_chunk_origin in accessible_chunks {
+                self.ensure_chunk_present(globe, accessible_chunk_origin);
+
+                // Repeat this from each immediately accessible chunk.
+                let next_level_accessible_chunks = {
+                    use super::globe::GlobeGuts;
+                    let chunk = globe.chunks().get(&accessible_chunk_origin)
+                        .expect("We just ensured this chunk is loaded.");
+                    // TODO: Gah, such slow!
+                    chunk.accessible_chunks.clone()
+                };
+                for next_level_accessible_chunk_origin in next_level_accessible_chunks {
+                    self.ensure_chunk_present(globe, next_level_accessible_chunk_origin);
+                }
+            }
+        }
+    }
 }
 
 impl specs::System<TimeDelta> for ChunkSystem {
@@ -148,57 +211,7 @@ impl specs::System<TimeDelta> for ChunkSystem {
         });
 
         for cd in cds.iter() {
-            if let Some(globe_entity) = cd.globe_entity {
-                // Get the associated globe, complaining loudly if we fail.
-                // TODO: this is becoming a common pattern; factor out.
-                let mut globe = match globes.get_mut(globe_entity) {
-                    Some(globe) => globe,
-                    None => {
-                        warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
-                        continue;
-                    },
-                };
-
-                // TODO: throttle, and do in background.
-
-                // TODO: see remarks in `Chunk::list_accessible_chunks`
-                // about this actually being an inappropriate way to approach
-                // this problem; we'll load a bunch of chunks we don't need to yet
-                // in a desperate attempt to not miss the ones we do need.
-
-                // Load all the chunks that we could possibly try
-                // to move into from this chunk within two steps.
-                //
-                // Takes into account that a single user action could lead to
-                // multiple cell jumps, e.g., stepping up a small ledge.
-                //
-                // TODO: this is all a bit finicky and fragile.
-                let cd_pos_in_owning_root = PosInOwningRoot::new(cd.pos, globe.spec().root_resolution);
-                let chunk_origin = globe.origin_of_chunk_owning(cd_pos_in_owning_root);
-                self.ensure_chunk_present(globe, chunk_origin);
-                let accessible_chunks = {
-                    use super::globe::GlobeGuts;
-                    let chunk = globe.chunks().get(&chunk_origin)
-                        .expect("We just ensured this chunk is loaded.");
-                    // TODO: Gah, such slow!
-                    chunk.accessible_chunks.clone()
-                };
-                for accessible_chunk_origin in accessible_chunks {
-                    self.ensure_chunk_present(globe, accessible_chunk_origin);
-
-                    // Repeat this from each immediately accessible chunk.
-                    let next_level_accessible_chunks = {
-                        use super::globe::GlobeGuts;
-                        let chunk = globe.chunks().get(&accessible_chunk_origin)
-                            .expect("We just ensured this chunk is loaded.");
-                        // TODO: Gah, such slow!
-                        chunk.accessible_chunks.clone()
-                    };
-                    for next_level_accessible_chunk_origin in next_level_accessible_chunks {
-                        self.ensure_chunk_present(globe, next_level_accessible_chunk_origin);
-                    }
-                }
-            }
+            self.ensure_essential_chunks_for_cell_dweller_present(&cd, &mut globes);
         }
     }
 }
