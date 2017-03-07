@@ -141,17 +141,17 @@ impl ChunkViewSystem {
         Cd: DerefMut<Target = specs::MaskedStorage<ChunkView>>,
     >(
         &mut self,
-        world: &specs::World,
+        run_arg: &specs::RunArg,
         globe: &mut Globe,
         entities: &specs::Entities,
-        mut visuals: specs::Storage<Visual, A, Vd>,
-        mut chunk_views: specs::Storage<ChunkView, A, Cd>,
+        visuals: &mut specs::Storage<Visual, A, Vd>,
+        chunk_views: &mut specs::Storage<ChunkView, A, Cd>,
     ) {
         use specs::Join;
 
         let mut entities_to_remove: Vec<specs::Entity> = Vec::new();
 
-        for (chunk_view, chunk_view_ent) in (&chunk_views, entities).iter() {
+        for (chunk_view, chunk_view_ent) in (&*chunk_views, &*entities).iter() {
             if globe.chunk_at(chunk_view.origin).is_none() {
                 debug!(self.log, "Removing a chunk view"; "origin" => format!("{:?}", chunk_view.origin));
                 entities_to_remove.push(chunk_view_ent);
@@ -176,15 +176,23 @@ impl ChunkViewSystem {
             // the entity itself up for deletion.
             visuals.remove(chunk_view_ent);
             chunk_views.remove(chunk_view_ent);
-            world.delete_later(chunk_view_ent);
+            run_arg.delete(chunk_view_ent);
         }
     }
 
-    pub fn ensure_chunk_view_entities(
+    pub fn ensure_chunk_view_entities<
+        A: Deref<Target = specs::Allocator>,
+        Cd: DerefMut<Target = specs::MaskedStorage<ChunkView>>,
+        Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
+        Sd: DerefMut<Target = specs::MaskedStorage<Spatial>>,
+    >(
         &mut self,
-        world: &specs::World,
+        run_arg: &specs::RunArg,
         globe: &mut Globe,
         globe_entity: specs::Entity,
+        chunk_views: &mut specs::Storage<ChunkView, A, Cd>,
+        visuals: &mut specs::Storage<Visual, A, Vd>,
+        spatials: &mut specs::Storage<Spatial, A, Sd>,
     ) {
         use globe::globe::GlobeGuts;
         let globe_spec = globe.spec();
@@ -204,12 +212,11 @@ impl ChunkViewSystem {
 
             // We'll fill it in later.
             let empty_visual = ::render::Visual::new_empty();
-            chunk.view_entity = world.create_later_build()
-                .with(chunk_view)
-                .with(empty_visual)
-                .with(Spatial::new(globe_entity, chunk_transform))
-                .build()
-                .into();
+            let new_ent = run_arg.create();
+            chunk.view_entity = Some(new_ent);
+            chunk_views.insert(new_ent, chunk_view);
+            visuals.insert(new_ent, empty_visual);
+            spatials.insert(new_ent, Spatial::new(globe_entity, chunk_transform));
         }
     }
 }
@@ -219,31 +226,43 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
         self.seconds_since_last_geometry_creation += dt;
 
         use specs::Join;
-        let (globes, visuals, chunk_views) = arg.fetch(|w| {
-            let mut globes = w.write::<Globe>();
-            let entities = w.entities();
-            for (globe, globe_entity) in (&mut globes, &entities).iter() {
-                // Destroy views for any chunks that are no longer loaded.
-                // TODO: can we just return `w` from our `fetch` closure?
-                self.remove_views_for_dead_chunks(
-                    w,
-                    globe,
-                    &entities,
-                    w.write::<Visual>(),
-                    w.write::<ChunkView>()
-                );
+        let (entities, mut globes, mut visuals, mut spatials, mut chunk_views) =
+            arg.fetch(|w| (
+                w.entities(),
+                w.write::<Globe>(),
+                w.write::<Visual>(),
+                w.write::<Spatial>(),
+                w.write::<ChunkView>(),
+            ));
 
-                // Ensure that there is a visual for
-                // every chunk in the globe.
-                //
-                // TODO: we don't actually want to do this
-                // long-term; it's just a first step in migrating
-                // to systems-based view creation. Eventually we'll
-                // be selective about what views to have.
-                self.ensure_chunk_view_entities(w, globe, globe_entity);
-            }
-            (globes, w.write::<Visual>(), w.write::<ChunkView>())
-        });
+        // Destroy views for any chunks that are no longer loaded.
+        for (globe, globe_entity) in (&mut globes, &entities).iter() {
+            self.remove_views_for_dead_chunks(
+                &arg,
+                globe,
+                &entities,
+                &mut visuals,
+                &mut chunk_views,
+            );
+
+            // Ensure that there is a visual for
+            // every chunk currently loaded in the globe.
+            //
+            // TODO: we don't actually want to do this
+            // long-term; it's just a first step in migrating
+            // to systems-based view creation. Eventually we'll
+            // be selective about what views to have; i.e. we might
+            // have 1000 chunks loaded, and only render 200 of them
+            // on this client.
+            self.ensure_chunk_view_entities(
+                &arg,
+                globe,
+                globe_entity,
+                &mut chunk_views,
+                &mut visuals,
+                &mut spatials,
+            );
+        }
 
         // Build geometry for some chunks; throttled
         // so we don't spend too much time doing this each frame.
