@@ -67,6 +67,8 @@ impl Globe {
                 // being loaded. We need to look at the maximum chunks loaded
                 // at any given time.
                 root_resolution: [64, 128],
+                // Chunks should probably be taller, but short chunks are a bit
+                // better for now in exposing bugs visually.
                 chunk_resolution: [16, 16, 4],
             },
         )
@@ -87,6 +89,8 @@ impl Globe {
                 ocean_radius: ocean_radius,
                 block_height: 0.65,
                 root_resolution: [8388608, 16777216],
+                // Chunks should probably be taller, but short chunks are a bit
+                // better for now in exposing bugs visually.
                 chunk_resolution: [16, 16, 4],
             },
         )
