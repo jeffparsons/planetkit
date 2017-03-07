@@ -1,11 +1,13 @@
 use std::ops::{ Deref, DerefMut };
 
+use na;
 use specs;
 use slog::Logger;
 
 use types::*;
 use globe::{ Globe, View, ChunkView };
 use ::render::{ Visual, ProtoMesh, Vertex };
+use ::Spatial;
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.
@@ -178,6 +180,38 @@ impl ChunkViewSystem {
         }
     }
 
+    pub fn ensure_chunk_view_entities(
+        &mut self,
+        world: &specs::World,
+        globe: &mut Globe,
+        globe_entity: specs::Entity,
+    ) {
+        use globe::globe::GlobeGuts;
+        let globe_spec = globe.spec();
+        for chunk in globe.chunks_mut().values_mut() {
+            if chunk.view_entity.is_some() {
+                continue;
+            }
+            trace!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
+            let chunk_view = ChunkView::new(
+                globe_entity,
+                chunk.origin,
+            );
+
+            // We store the geometry relative to the bottom-center of the chunk origin cell.
+            let chunk_origin_pos = globe_spec.cell_bottom_center(*chunk.origin.pos());
+            let chunk_transform = Iso3::new(chunk_origin_pos.coords, na::zero());
+
+            // We'll fill it in later.
+            let empty_visual = ::render::Visual::new_empty();
+            chunk.view_entity = world.create_later_build()
+                .with(chunk_view)
+                .with(empty_visual)
+                .with(Spatial::new(globe_entity, chunk_transform))
+                .build()
+                .into();
+        }
+    }
 }
 
 impl specs::System<TimeDelta> for ChunkViewSystem {
@@ -206,7 +240,7 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
                 // long-term; it's just a first step in migrating
                 // to systems-based view creation. Eventually we'll
                 // be selective about what views to have.
-                globe.ensure_chunk_view_entities(w, globe_entity);
+                self.ensure_chunk_view_entities(w, globe, globe_entity);
             }
             (globes, w.write::<Visual>(), w.write::<ChunkView>())
         });

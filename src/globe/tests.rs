@@ -55,7 +55,7 @@ pub mod benches {
             root_resolution: ROOT_RESOLUTION,
             chunk_resolution: CHUNK_RESOLUTION,
         };
-        let globe = Globe::new(spec, &log);
+        let globe = Globe::new(spec);
         let spec = globe.spec();
         let globe_view = View::new(spec, &log);
         let mut vertex_data: Vec<Vertex> = Vec::new();

@@ -56,7 +56,7 @@ impl Walker {
 
         // Use an Earth-scale globe to make it likely we're constantly
         // visiting new chunks.
-        let globe = globe::Globe::new_earth_scale_example(&root_log);
+        let globe = globe::Globe::new_earth_scale_example();
         // First add the globe to the world so we can get a handle on its entity.
         let globe_spec = globe.spec();
         let globe_entity = planner.mut_world().create_now()

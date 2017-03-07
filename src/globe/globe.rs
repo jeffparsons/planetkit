@@ -1,18 +1,13 @@
 use std::collections::HashMap;
 
-use na;
 use specs;
 
-use slog::Logger;
-
-use ::types::*;
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
 use super::Neighbors;
 use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;
-use ::Spatial;
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -31,7 +26,6 @@ pub struct Globe {
     // pseudo-chunks for rendering planets at a distance.
     // But maybe you can put that off?
     chunks: HashMap<ChunkOrigin, Chunk>,
-    log: Logger,
 }
 
 // Allowing sibling modules to reach into semi-private parts
@@ -52,17 +46,16 @@ impl<'a> GlobeGuts<'a> for Globe {
 }
 
 impl Globe {
-    pub fn new(spec: Spec, parent_log: &Logger) -> Globe {
+    pub fn new(spec: Spec) -> Globe {
         let globe = Globe {
             spec: spec,
             gen: Gen::new(spec),
             chunks: HashMap::new(),
-            log: parent_log.new(o!()),
         };
         globe
     }
 
-    pub fn new_example(parent_log: &Logger) -> Globe {
+    pub fn new_example() -> Globe {
         Globe::new(
             Spec {
                 seed: 14,
@@ -76,11 +69,10 @@ impl Globe {
                 root_resolution: [64, 128],
                 chunk_resolution: [16, 16, 4],
             },
-            parent_log,
         )
     }
 
-    pub fn new_earth_scale_example(parent_log: &Logger) -> Globe {
+    pub fn new_earth_scale_example() -> Globe {
         let ocean_radius = 6_371_000.0;
         // TODO: actually more like 60_000 when we know how to:
         // - Unload chunks properly
@@ -97,7 +89,6 @@ impl Globe {
                 root_resolution: [8388608, 16777216],
                 chunk_resolution: [16, 16, 4],
             },
-            parent_log,
         )
     }
 
@@ -206,41 +197,6 @@ impl Globe {
     pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> ChunkOrigin {
         // Figure out what chunk this is in.
         origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
-    }
-
-    // TODO: probably move this into ChunkViewSystem;
-    // the goal should be to make Globe dumber where possible.
-    pub fn ensure_chunk_view_entities(
-        &mut self,
-        world: &specs::World,
-        globe_entity: specs::Entity,
-    ) {
-        for chunk in self.chunks.values_mut() {
-            // TODO: when we're dynamically destroying chunk views,
-            // you'll need to check whether it's still alive when trying
-            // to ensure it exists.
-            if chunk.view_entity.is_some() {
-                continue;
-            }
-            trace!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
-            let chunk_view = super::ChunkView::new(
-                globe_entity,
-                chunk.origin,
-            );
-
-            // We store the geometry relative to the bottom-center of the chunk origin cell.
-            let chunk_origin_pos = self.spec.cell_bottom_center(*chunk.origin.pos());
-            let chunk_transform = Iso3::new(chunk_origin_pos.coords, na::zero());
-
-            // We'll fill it in later.
-            let empty_visual = ::render::Visual::new_empty();
-            chunk.view_entity = world.create_later_build()
-                .with(chunk_view)
-                .with(empty_visual)
-                .with(Spatial::new(globe_entity, chunk_transform))
-                .build()
-                .into();
-        }
     }
 
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
