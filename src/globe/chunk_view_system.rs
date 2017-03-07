@@ -132,6 +132,52 @@ impl ChunkViewSystem {
             return;
         }
     }
+
+    pub fn remove_views_for_dead_chunks<
+        A: Deref<Target = specs::Allocator>,
+        Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
+        Cd: DerefMut<Target = specs::MaskedStorage<ChunkView>>,
+    >(
+        &mut self,
+        world: &specs::World,
+        globe: &mut Globe,
+        entities: &specs::Entities,
+        mut visuals: specs::Storage<Visual, A, Vd>,
+        mut chunk_views: specs::Storage<ChunkView, A, Cd>,
+    ) {
+        use specs::Join;
+
+        let mut entities_to_remove: Vec<specs::Entity> = Vec::new();
+
+        for (chunk_view, chunk_view_ent) in (&chunk_views, entities).iter() {
+            if globe.chunk_at(chunk_view.origin).is_none() {
+                debug!(self.log, "Removing a chunk view"; "origin" => format!("{:?}", chunk_view.origin));
+                entities_to_remove.push(chunk_view_ent);
+            }
+        }
+
+        for chunk_view_ent in entities_to_remove {
+            // TODO: don't forget to remove the MESH.
+            // TODO: don't forget to remove the MESH.
+            // TODO: don't forget to remove the MESH.
+            // TODO: don't forget to remove the MESH.
+            // TODO: don't forget to remove the MESH.
+            //
+            // If you don't do that, then we'll slowly leak VBOs etc.
+            //
+            // But you can get away with not doing that for now because
+            // the tests don't start the render system, and so will never
+            // make those meshes to begin with.
+
+            // Remove Visual and ChunkView components (to prevent accidentally
+            // iterating over them later within the same frame) and then queue
+            // the entity itself up for deletion.
+            visuals.remove(chunk_view_ent);
+            chunk_views.remove(chunk_view_ent);
+            world.delete_later(chunk_view_ent);
+        }
+    }
+
 }
 
 impl specs::System<TimeDelta> for ChunkViewSystem {
@@ -143,6 +189,16 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
             let mut globes = w.write::<Globe>();
             let entities = w.entities();
             for (globe, globe_entity) in (&mut globes, &entities).iter() {
+                // Destroy views for any chunks that are no longer loaded.
+                // TODO: can we just return `w` from our `fetch` closure?
+                self.remove_views_for_dead_chunks(
+                    w,
+                    globe,
+                    &entities,
+                    w.write::<Visual>(),
+                    w.write::<ChunkView>()
+                );
+
                 // Ensure that there is a visual for
                 // every chunk in the globe.
                 //

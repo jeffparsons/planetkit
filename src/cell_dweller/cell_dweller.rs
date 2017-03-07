@@ -97,6 +97,12 @@ impl CellDweller {
         Iso3::new_observer_frame(&eye, &target, &up)
     }
 
+    // Make it a long cumbersome name so you make it explicit you're
+    // not storing the result on a Spatial.
+    pub fn real_transform_without_setting_clean(&self) -> Iso3 {
+        self.real_transform()
+    }
+
     pub fn is_real_space_transform_dirty(&self) -> bool {
         self.is_real_space_transform_dirty
     }

@@ -54,7 +54,9 @@ impl Walker {
         planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
         planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
 
-        let globe = globe::Globe::new_example(&root_log);
+        // Use an Earth-scale globe to make it likely we're constantly
+        // visiting new chunks.
+        let globe = globe::Globe::new_earth_scale_example(&root_log);
         // First add the globe to the world so we can get a handle on its entity.
         let globe_spec = globe.spec();
         let globe_entity = planner.mut_world().create_now()
@@ -139,9 +141,9 @@ pub mod benches {
     #[bench]
     // # History for random walks:
     //
-    // TODO: start recording this when you have a sufficiently large world that would
-    // very quickly OOM without dynamic chunk unloading, and then fix the chunk system
-    // and other bits until they're not stupidly inefficient.
+    // - Earth-scale globe, with initial implementation of unloading most
+    //   distant chunks when you have too many loaded.
+    //     - 185,350,057 ns/iter (+/- 128,603,998)
     //
     // NOTE: avoid premature fiddly optimisation through clever caching, or anything that makes
     // the design harder to work with; rather go for the optimisations that push all this

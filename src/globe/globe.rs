@@ -208,6 +208,8 @@ impl Globe {
         origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
 
+    // TODO: probably move this into ChunkViewSystem;
+    // the goal should be to make Globe dumber where possible.
     pub fn ensure_chunk_view_entities(
         &mut self,
         world: &specs::World,
