@@ -78,7 +78,4 @@ pub mod benches {
             );
         });
     }
-
-    // TODO: bench randomly walking around on a large globe,
-    // loading and unloading chunks as we go.
 }

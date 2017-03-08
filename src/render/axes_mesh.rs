@@ -18,8 +18,6 @@ pub fn make_axes_mesh<
     let mut vertex_data = Vec::<Vertex>::new();
     let mut index_vec = Vec::<u32>::new();
 
-    // TODO: this spacing is only because the globe I'm testing
-    // with is currently stupidly small.
     let spacing = 0.5;
     let x_spacing = [spacing, 0.0, 0.0];
     let y_spacing = [0.0, spacing, 0.0];
@@ -40,6 +38,7 @@ fn add_axis(
     spacing: [f32; 3],
 ) {
     for i in 0..3 {
+        // Space the blobs out a bit.
         let offset = [
             (i as f32 + 1.0) * spacing[0],
             (i as f32 + 1.0) * spacing[1],
@@ -59,11 +58,8 @@ fn add_blob(
     for vertex in &icosahedron::VERTICES {
         vertex_data.push(
             Vertex::new([
-                // TODO: this multiplier is only because the globe I'm testing
-                // with is currently stupidly small.
                 vertex[0] as f32 * 0.2 + offset[0],
                 vertex[1] as f32 * 0.2 + offset[1],
-                // Space the blobs out a bit.
                 vertex[2] as f32 * 0.2 + offset[2],
             ], color)
         );

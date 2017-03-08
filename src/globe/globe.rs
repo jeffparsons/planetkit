@@ -19,12 +19,10 @@ pub struct Globe {
     pub gen: Gen,
     // Map chunk origins to chunks.
     //
-    // TODO: figure out what structure to store these in.
-    // You'll never have all chunks loaded in the real world.
-    //
     // TODO: you'll probably also want to store some lower-res
     // pseudo-chunks for rendering planets at a distance.
-    // But maybe you can put that off?
+    // But maybe you can put that off? Or maybe that's an entirely
+    // different type of Globe-oid?
     chunks: HashMap<ChunkOrigin, Chunk>,
 }
 
@@ -61,10 +59,6 @@ impl Globe {
                 floor_radius: 25.0,
                 ocean_radius: 66.6,
                 block_height: 0.65,
-                // TODO: this is getting to the size where using it for
-                // tests is very slow, presumably on account of so many chunks
-                // being loaded. We need to look at the maximum chunks loaded
-                // at any given time.
                 root_resolution: [64, 128],
                 // Chunks should probably be taller, but short chunks are a bit
                 // better for now in exposing bugs visually.

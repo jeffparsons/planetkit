@@ -23,7 +23,7 @@ pub struct Cell {
 
 // Stores from (0, 0) to (chunk_resolution, chunk_resolution) _inclusive_.
 //
-// TODO: copy storage layout and cell ownership rules from:
+// Storage layout and cell ownership rules are mostly following:
 // <http://kiwi.atmos.colostate.edu/BUGS/geodesic/text.html>.
 // They seem to have a pretty good grasp on these things. :)
 pub struct Chunk {
@@ -56,6 +56,9 @@ pub struct Chunk {
     // this doesn't really belong here. I'm just storing it here for now because
     // it's inefficient to compute and most of the time when you'll want it, you'll already
     // have the chunk loaded.
+    //
+    // TODO: look at clients, and consider whether a separate lazily-cached
+    // map of these on Globe might be more appropriate.
     pub accessible_chunks: Vec<ChunkOrigin>,
 }
 
@@ -264,6 +267,6 @@ pub struct Neighbor {
 
     pub origin: ChunkOrigin,
     pub last_known_version: u64,
-    // TODO: make this a "trusted to be in owner" wrapper.
+    // TODO: make this a PosInOwningChunk when that exists.
     pub shared_cells: Vec<CellPos>,
 }
