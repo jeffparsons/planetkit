@@ -47,12 +47,11 @@ impl<'a> GlobeGuts<'a> for Globe {
 
 impl Globe {
     pub fn new(spec: Spec) -> Globe {
-        let globe = Globe {
+        Globe {
             spec: spec,
             gen: Gen::new(spec),
             chunks: HashMap::new(),
-        };
-        globe
+        }
     }
 
     pub fn new_example() -> Globe {

@@ -29,15 +29,13 @@ impl input_adapter::InputAdapter for MiningInputAdapter {
         use piston::input::keyboard::Key;
 
         if let Some(Button::Keyboard(key)) = input_event.press_args() {
-            match key {
-                Key::U => self.sender.send(MiningEvent::PickUp(true)).unwrap(),
-                _ => (),
+            if key == Key::U {
+                self.sender.send(MiningEvent::PickUp(true)).unwrap();
             }
         }
         if let Some(Button::Keyboard(key)) = input_event.release_args() {
-            match key {
-                Key::U => self.sender.send(MiningEvent::PickUp(false)).unwrap(),
-                _ => (),
+            if key == Key::U {
+                self.sender.send(MiningEvent::PickUp(false)).unwrap();
             }
         }
     }

@@ -209,9 +209,9 @@ impl ChunkOrigin {
         assert!(pos.y < root_resolution[1]);
 
         // Chunk origins sit at multiples of `chunk_resolution[axis_index]`.
-        assert!(pos.x == pos.x / chunk_resolution[0] * chunk_resolution[0]);
-        assert!(pos.y == pos.y / chunk_resolution[1] * chunk_resolution[1]);
-        assert!(pos.z == pos.z / chunk_resolution[2] * chunk_resolution[2]);
+        assert_eq!(pos.x, pos.x / chunk_resolution[0] * chunk_resolution[0]);
+        assert_eq!(pos.y, pos.y / chunk_resolution[1] * chunk_resolution[1]);
+        assert_eq!(pos.z, pos.z / chunk_resolution[2] * chunk_resolution[2]);
 
         ChunkOrigin {
             pos: pos,

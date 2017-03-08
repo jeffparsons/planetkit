@@ -288,7 +288,7 @@ impl specs::System<TimeDelta> for ChunkSystem {
         }
 
         for cd in cds.iter() {
-            self.ensure_essential_chunks_for_cell_dweller_present(&cd, &mut globes);
+            self.ensure_essential_chunks_for_cell_dweller_present(cd, &mut globes);
         }
     }
 }

@@ -115,7 +115,7 @@ impl ChunkViewSystem {
             // Don't attempt to create an empty mesh.
             // Back-end doesn't seem to like this, and there's no point
             // in wasting the VBOs etc. for nothing.
-            if vertex_data.len() == 0 || index_data.len() == 0 {
+            if vertex_data.is_empty() || index_data.is_empty() {
                 trace!(self.log, "Skipping chunk proto-mesh that would be empty"; "origin" => format!("{:?}", chunk_view.origin));
 
                 // TODO: is there anything that will assume we need to make the
