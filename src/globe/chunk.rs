@@ -267,6 +267,7 @@ pub struct Neighbor {
 
     pub origin: ChunkOrigin,
     pub last_known_version: u64,
-    // TODO: make this a PosInOwningChunk when that exists.
+    // List of positions owned by the neighbor (source),
+    // but specified in the root of the primary (target) chunk.
     pub shared_cells: Vec<CellPos>,
 }
