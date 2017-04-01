@@ -1,3 +1,6 @@
+extern crate planetkit as pk;
+
 fn main() {
-    println!("Hello, world!");
+    let (mut app, mut window) = pk::simple::new();
+    app.run(&mut window);
 }

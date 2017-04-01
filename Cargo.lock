@@ -1,6 +1,9 @@
 [root]
 name = "woolgather"
-version = "0.1.0"
+version = "0.0.1"
+dependencies = [
+ "planetkit 0.0.1",
+]
 
 [[package]]
 name = "adler32"

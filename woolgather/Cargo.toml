@@ -1,6 +1,7 @@
 [package]
 name = "woolgather"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Jeff Parsons <jeff@parsons.io>"]
 
 [dependencies]
+planetkit = { path = "../planetkit" }
