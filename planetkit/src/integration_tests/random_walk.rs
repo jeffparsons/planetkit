@@ -77,7 +77,7 @@ impl Walker {
             chunk_sys.find_lowest_cell_containing(&mut globe, guy_pos, Material::Air)
                 .expect("Uh oh, there's something wrong with our globe.")
         };
-        planner.mut_world().create_now()
+        let guy_entity = planner.mut_world().create_now()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
                 Dir::default(),
@@ -86,6 +86,9 @@ impl Walker {
             ))
             .with(::Spatial::new_root())
             .build();
+        planner.mut_world().add_resource(::simple::ControlledEntity {
+            entity: guy_entity,
+        });
 
         planner.add_system(chunk_sys, "chunk", prio::CHUNK);
 
