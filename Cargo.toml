@@ -1,4 +1,7 @@
 [workspace]
 members = [
+    # Main PlanetKit crate
     "planetkit",
+    # Example single-player game involving rescuing sheep that have fallen into holes
+    "woolgather",
 ]

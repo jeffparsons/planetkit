@@ -1,0 +1,6 @@
+[package]
+name = "woolgather"
+version = "0.1.0"
+authors = ["Jeff Parsons <jeff@parsons.io>"]
+
+[dependencies]
