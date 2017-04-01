@@ -163,6 +163,7 @@ impl ChunkSystem {
     >(
         &mut self,
         globe: &mut Globe,
+        globe_entity: specs::Entity,
         cds: &specs::Storage<CellDweller, A, Cd>,
     ) {
         use super::globe::GlobeGuts;
@@ -172,11 +173,14 @@ impl ChunkSystem {
             return;
         }
 
-        // TEMP: assume only one cell dweller, who is on the same planet.
-        // TODO: fix this by doing everything per globe...
-        // ...and not assuming all cell dwellers are equally points of interest.
+        // TEMP: assume only one cell dweller per globe.
+        // TODO: proper entities/points/volumes of interest system.
         use specs::Join;
-        let one_true_cd = match cds.iter().next() {
+        // Use the first CellDweller we find on this Globe.
+        let one_true_cd = match cds.iter()
+            .filter(|cd| cd.globe_entity == Some(globe_entity))
+            .next()
+        {
             Some(cd) => cd,
             // There are no cell dwellers, so no interesting terrain.
             // (If a tree falls in a forest...)
@@ -278,13 +282,13 @@ impl ChunkSystem {
 impl specs::System<TimeDelta> for ChunkSystem {
     fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
         use specs::Join;
-        let (mut globes, cds) = arg.fetch(|w| {
-            (w.write::<Globe>(), w.read::<CellDweller>())
+        let (mut globes, cds, entities) = arg.fetch(|w| {
+            (w.write::<Globe>(), w.read::<CellDweller>(), w.entities())
         });
 
         // If we have too many chunks loaded, then unload some of them.
-        for mut globe in (&mut globes).iter() {
-            self.unload_excess_chunks_if_necessary(&mut globe, &cds);
+        for (mut globe, globe_entity) in (&mut globes, &entities).iter() {
+            self.unload_excess_chunks_if_necessary(&mut globe, globe_entity, &cds);
         }
 
         for cd in cds.iter() {

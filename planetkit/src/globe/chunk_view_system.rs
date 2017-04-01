@@ -143,6 +143,7 @@ impl ChunkViewSystem {
         &mut self,
         run_arg: &specs::RunArg,
         globe: &mut Globe,
+        globe_entity: specs::Entity,
         entities: &specs::Entities,
         visuals: &mut specs::Storage<Visual, A, Vd>,
         chunk_views: &mut specs::Storage<ChunkView, A, Cd>,
@@ -152,6 +153,11 @@ impl ChunkViewSystem {
         let mut entities_to_remove: Vec<specs::Entity> = Vec::new();
 
         for (chunk_view, chunk_view_ent) in (&*chunk_views, &*entities).iter() {
+            // Ignore chunks not belonging to this globe.
+            if chunk_view.globe_entity != globe_entity {
+                continue;
+            }
+
             if globe.chunk_at(chunk_view.origin).is_none() {
                 debug!(self.log, "Removing a chunk view"; "origin" => format!("{:?}", chunk_view.origin));
                 entities_to_remove.push(chunk_view_ent);
@@ -240,6 +246,7 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
             self.remove_views_for_dead_chunks(
                 &arg,
                 globe,
+                globe_entity,
                 &entities,
                 &mut visuals,
                 &mut chunk_views,
