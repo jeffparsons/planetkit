@@ -140,9 +140,6 @@ impl App {
 
         // Add some things to the world.
 
-        // Make globe and create a mesh for each of its chunks.
-        //
-        // TODO: don't bake this into the generic app!
         let globe = globe::Globe::new_earth_scale_example();
         let globe_spec = globe.spec();
         // First add the globe to the world so we can get a
@@ -186,6 +183,9 @@ impl App {
             // on its coordinates in cell space.
             .with(Spatial::new(globe_entity, Iso3::identity()))
             .build();
+        self.planner.mut_world().add_resource(::simple::ControlledEntity {
+            entity: guy,
+        });
 
         // Create a camera sitting a little bit behind the cell dweller.
         let eye = Pt3::new(0.0, 4.0, -6.0);

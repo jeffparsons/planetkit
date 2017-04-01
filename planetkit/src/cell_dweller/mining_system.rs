@@ -160,34 +160,37 @@ impl MiningSystem {
 
 impl specs::System<TimeDelta> for MiningSystem {
     fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
-        use specs::Join;
         self.consume_input();
-        let (mut cell_dwellers, mut globes) = arg.fetch(|w|
-            (w.write::<CellDweller>(), w.write::<Globe>())
+        let (mut cell_dwellers, mut globes, controlled_entity) = arg.fetch(|w|
+            (
+                w.write::<CellDweller>(),
+                w.write::<Globe>(),
+                w.read_resource::<::simple::ControlledEntity>().entity,
+            )
         );
-        for cd in (&mut cell_dwellers).iter() {
-            // Get the associated globe, complaining loudly if we fail.
-            let globe_entity = match cd.globe_entity {
-                Some(globe_entity) => globe_entity,
-                None => {
-                    warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
-                    continue;
-                },
-            };
-            let globe = match globes.get_mut(globe_entity) {
-                Some(globe) => globe,
-                None => {
-                    warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
-                    continue;
-                },
-            };
+        let cd = cell_dwellers.get_mut(controlled_entity).expect("Someone deleted the controlled entity's CellDweller");
 
-            if self.pick_up {
-                self.pick_up_if_possible(
-                    cd,
-                    globe,
-                );
-            }
+        // Get the associated globe, complaining loudly if we fail.
+        let globe_entity = match cd.globe_entity {
+            Some(globe_entity) => globe_entity,
+            None => {
+                warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
+                return;
+            },
+        };
+        let globe = match globes.get_mut(globe_entity) {
+            Some(globe) => globe,
+            None => {
+                warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                return;
+            },
+        };
+
+        if self.pick_up {
+            self.pick_up_if_possible(
+                cd,
+                globe,
+            );
         }
     }
 }

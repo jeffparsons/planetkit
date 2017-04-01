@@ -4,9 +4,16 @@ use piston_window::PistonWindow;
 
 use slog;
 use slog_term;
+use specs;
 
 use window;
 use app;
+
+/// `World`-global resource for finding the current entity being controlled
+/// by the player.
+pub struct ControlledEntity {
+    pub entity: specs::Entity,
+}
 
 /// Create a new simple PlanetKit app and window.
 ///
