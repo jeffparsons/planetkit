@@ -79,7 +79,8 @@ impl<
 
     // TODO: Add a bunch of `debug_assert`s throughout to make sure
     // that the arguments you're getting are legit for these functions!
-
+    //
+    // TODO: consider returning Option<Entity> in case they have no common ancestor.
     fn lowest_common_ancestor(&self, mut a: Entity, mut b: Entity) -> Entity {
         // If one `Spatial` is deeper than the other, then the path to the lowest common
         // ancestor from the deeper will necessarily pass through a `Spatial` at the same
@@ -112,11 +113,11 @@ impl<
             a = self.get(a)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
-                .expect("I thought this Spatial had a parent...");
+                .expect("I thought this Spatial had a parent; maybe a and b do not share a root...");
             b = self.get(b)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
-                .expect("I thought this Spatial had a parent...");
+                .expect("I thought this Spatial had a parent; maybe a and b do not share a root...");
         }
         a
     }
