@@ -11,6 +11,9 @@ use app;
 
 /// `World`-global resource for finding the current entity being controlled
 /// by the player.
+//
+// TODO: find somewhere proper for this. Perhaps a "ActiveCellDweller"
+// 1-tuple/newtype.
 pub struct ControlledEntity {
     pub entity: specs::Entity,
 }
