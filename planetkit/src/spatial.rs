@@ -51,6 +51,8 @@ impl specs::Component for Spatial {
 pub trait SpatialStorage {
     // Signed so we can do tricksy math without casting.
     fn depth_of(&self, entity: Entity) -> i32;
+    fn root_of(&self, entity: Entity) -> Entity;
+    fn have_common_ancestor(&self, a: Entity, b: Entity) -> bool;
     fn lowest_common_ancestor(&self, a: Entity, b: Entity) -> Entity;
     fn a_relative_to_b(&self, a: Entity, b: Entity) -> Iso3;
     fn a_relative_to_ancestor_b(&self, a: Entity, b: Entity) -> Iso3;
@@ -77,11 +79,28 @@ impl<
         }
     }
 
+    fn root_of(&self, entity: Entity) -> Entity {
+        let spatial = self.get(entity)
+            .expect("Given entity doesn't have a Spatial");
+        match spatial.parent_entity {
+            None => entity,
+            Some(parent) => {
+                self.root_of(parent)
+            }
+        }
+    }
+
+    fn have_common_ancestor(&self, a: Entity, b: Entity) -> bool {
+        self.root_of(a) == self.root_of(b)
+    }
+
     // TODO: Add a bunch of `debug_assert`s throughout to make sure
     // that the arguments you're getting are legit for these functions!
     //
     // TODO: consider returning Option<Entity> in case they have no common ancestor.
     fn lowest_common_ancestor(&self, mut a: Entity, mut b: Entity) -> Entity {
+        debug_assert!(self.have_common_ancestor(a, b));
+
         // If one `Spatial` is deeper than the other, then the path to the lowest common
         // ancestor from the deeper will necessarily pass through a `Spatial` at the same
         // depth as the shallower node.

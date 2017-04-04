@@ -101,6 +101,14 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         // Try to draw all visuals.
         use specs::Join;
         for (entity, visual) in (&entities, &visuals).iter() {
+            use ::spatial::SpatialStorage;
+
+            // Don't try to draw things that aren't in the same
+            // spatial tree as the camera.
+            if !spatials.have_common_ancestor(entity, camera) {
+                continue;
+            }
+
             // Visual might not have its mesh created yet.
             let mesh_handle = match visual.mesh_handle() {
                 Some(mesh_handle) => mesh_handle,
@@ -108,7 +116,6 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             };
 
             // Transform spatial relative to camera.
-            use ::spatial::SpatialStorage;
             let camera_relative_transform = spatials.a_relative_to_b(
                 entity,
                 camera,
