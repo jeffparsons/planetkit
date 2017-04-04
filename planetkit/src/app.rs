@@ -152,15 +152,15 @@ impl App {
         // Find globe surface and put player character on it.
         use globe::{ CellPos, Dir };
         use globe::chunk::Material;
-        let mut guy_pos = CellPos::default();
-        guy_pos = {
+        let guy_pos = {
+            let guy_column = CellPos::default();
             let mut globes = self.planner
                 .mut_world()
                 .write::<globe::Globe>();
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
-            globe.find_lowest_cell_containing(guy_pos, Material::Air)
+            globe.find_lowest_cell_containing(guy_column, Material::Air)
                 .expect("Uh oh, there's something wrong with our globe.")
         };
         let factory = &mut self.factory.clone();

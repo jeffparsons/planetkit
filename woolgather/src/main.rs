@@ -24,5 +24,11 @@ fn create_entities(world: &mut specs::World) {
 
     // Create the shepherd.
     let shepherd_entity = shepherd::create_now(world, globe_entity, globe_spec);
-    // TODO: register shepherd as controlled entity.
+    // Register shepherd as currently controlled cell dweller.
+    // Overwrite it, because App sets it. TODO: just add it after you gut App?
+    // Or have it always present, and as an Option<_>?
+    *world.write_resource::<pk::simple::ControlledEntity>() =
+        pk::simple::ControlledEntity {
+            entity: shepherd_entity,
+        };
 }
