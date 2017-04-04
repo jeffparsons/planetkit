@@ -30,7 +30,7 @@ impl Walker {
         // Create systems.
         use ::system_priority as prio;
 
-        let mut chunk_sys = globe::ChunkSystem::new(
+        let chunk_sys = globe::ChunkSystem::new(
             &root_log,
         );
 
@@ -53,6 +53,7 @@ impl Walker {
         let mut planner = specs::Planner::new(world, 2);
         planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
         planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
+        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
 
         // Use an Earth-scale globe to make it likely we're constantly
         // visiting new chunks.
@@ -74,7 +75,7 @@ impl Walker {
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
-            chunk_sys.find_lowest_cell_containing(&mut globe, guy_pos, Material::Air)
+            globe.find_lowest_cell_containing(guy_pos, Material::Air)
                 .expect("Uh oh, there's something wrong with our globe.")
         };
         let guy_entity = planner.mut_world().create_now()
@@ -89,8 +90,6 @@ impl Walker {
         planner.mut_world().add_resource(::simple::ControlledEntity {
             entity: guy_entity,
         });
-
-        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
 
         Walker {
             movement_input_sender: movement_input_sender,

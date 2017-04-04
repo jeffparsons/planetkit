@@ -135,7 +135,7 @@ impl App {
     }
 
     // TODO: none of this should be baked into App.
-    pub fn temp_remove_me_init(&mut self, chunk_system: &mut globe::ChunkSystem) {
+    pub fn temp_remove_me_init(&mut self) {
         use ::Spatial;
 
         // Add some things to the world.
@@ -160,7 +160,7 @@ impl App {
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
-            chunk_system.find_lowest_cell_containing(&mut globe, guy_pos, Material::Air)
+            globe.find_lowest_cell_containing(guy_pos, Material::Air)
                 .expect("Uh oh, there's something wrong with our globe.")
         };
         let factory = &mut self.factory.clone();

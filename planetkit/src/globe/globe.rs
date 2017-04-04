@@ -5,7 +5,7 @@ use specs;
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
 use super::Neighbors;
-use super::chunk::{ Chunk, Cell };
+use super::chunk::{ Chunk, Cell, Material };
 use super::spec::Spec;
 use super::gen::Gen;
 
@@ -275,6 +275,118 @@ impl Globe {
     pub fn remove_chunk(&mut self, chunk_origin: ChunkOrigin) -> Chunk {
         self.chunks.remove(&chunk_origin)
             .expect("Attempted to remove a chunk that was not loaded")
+    }
+
+    // TODO: consider moving `load_or_build_chunk`, `ensure_chunk_present`,
+    // and `find_lowest_cell_containing` back out into a smarter component
+    // so that `Globe` can be dumber, or move more of `Globe` down into a new
+    // dumber component, e.g., `GlobeVoxMap`.
+
+    pub fn load_or_build_chunk(&mut self, origin: ChunkOrigin) {
+        use rand;
+        use rand::Rng;
+
+        let spec = self.spec();
+
+        let mut cells: Vec<Cell> = Vec::new();
+        // Include cells _on_ the far edge of the chunk;
+        // even though we don't own them we'll need to draw part of them.
+        let end_x = origin.pos().x + spec.chunk_resolution[0];
+        let end_y = origin.pos().y + spec.chunk_resolution[1];
+        // Chunks don't share cells in the z-direction,
+        // but do in the x- and y-directions.
+        let end_z = origin.pos().z + spec.chunk_resolution[2] - 1;
+        for cell_z in origin.pos().z..(end_z + 1) {
+            for cell_y in origin.pos().y..(end_y + 1) {
+                for cell_x in origin.pos().x..(end_x + 1) {
+                    let cell_pos = CellPos {
+                        root: origin.pos().root,
+                        x: cell_x,
+                        y: cell_y,
+                        z: cell_z,
+                    };
+                    let mut cell = self.gen.cell_at(cell_pos);
+                    // Temp hax?
+                    let mut rng = rand::thread_rng();
+                    cell.shade = 1.0 - 0.5 * rng.next_f32();
+                    cells.push(cell);
+                }
+            }
+        }
+        self.add_chunk(Chunk::new(
+            origin,
+            cells,
+            spec.root_resolution,
+            spec.chunk_resolution,
+        ));
+    }
+
+    /// Ensures the specified chunk is present.
+    ///
+    /// If the chunk is already present, then do nothing. Otherwise, the chunk
+    /// may be either loaded from disk, or generated fresh if it has never been
+    /// saved.
+    ///
+    /// This pays no regard to preferred limits on the number of chunks that should
+    /// be loaded, and chunks added through this mechanism may well be unloaded
+    /// immediately the next time this system is invoked, making this only suitable
+    /// for immediate actions.
+    pub fn ensure_chunk_present(&mut self, chunk_origin: ChunkOrigin) {
+        if self.chunk_at(chunk_origin).is_some() {
+            return;
+        }
+        self.load_or_build_chunk(chunk_origin);
+
+        // TODO: slow, oh gods, don't do this.
+        // But for now, it will at least correctly copy in/out
+        // any authoritative cells.
+        self.copy_all_authoritative_cells();
+    }
+
+    // TODO: this is not sufficient for finding a suitable place
+    // to put a cell dweller; i.e. we need something that randomly
+    // samples positions to find a column with land at the top,
+    // probably by using the `Gen` to find an approximate location,
+    // and then working up and down at the same time to find the
+    // closest land to the "surface".
+    pub fn find_lowest_cell_containing(
+        &mut self,
+        column: CellPos,
+        material: Material
+    ) -> Option<CellPos> {
+        // Translate into owning root, then start at bedrock.
+        let mut pos = PosInOwningRoot::new(column, self.spec.root_resolution);
+        pos.set_z(0);
+
+        loop {
+            // TODO: cursor doesn't guarantee you're reading authoritative data.
+            // Do we care about that? Do we just need to make sure that "ensure chunk"
+            // loads any other chunks that might be needed? But gah, then you're going to
+            // have a chain reaction, and load ALL chunks. Maybe it's Cursor's
+            // responsibility, then. TODO: think about this. :)
+            //
+            // Maybe you need a special kind of cursor. That only looks at owned cells
+            // and automatically updates itself whenever you set its position.
+            let chunk_origin = self.origin_of_chunk_owning(pos);
+            self.ensure_chunk_present(chunk_origin);
+            let chunk = match self.chunks.get(&chunk_origin) {
+                // We may have run out of chunks to inspect.
+                // TODO: this may become a problem if we allow infinite
+                // or very loose height for planets. Have a limit?
+                // Probably only limit to planet height, because if you
+                // legitimately have terrain that high, you probably just
+                // want to wait to find it!
+                None => return None,
+                Some(chunk) => chunk,
+            };
+            let cell = chunk.cell(pos.into());
+            if cell.material == material {
+                // Yay, we found it!
+                return Some(pos.into());
+            }
+            let new_z = pos.pos().z + 1;
+            pos.set_z(new_z);
+        }
     }
 }
 
