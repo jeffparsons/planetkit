@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use slog;
 use globe;
 use specs;
+use specs::Gate;
 use cell_dweller;
 use types::*;
 
@@ -50,7 +51,7 @@ impl Walker {
         );
 
         // Hand the world off to a Specs `Planner`.
-        let mut planner = specs::Planner::new(world, 2);
+        let mut planner = specs::Planner::new(world);
         planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
         planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
         planner.add_system(chunk_sys, "chunk", prio::CHUNK);
@@ -71,7 +72,8 @@ impl Walker {
         guy_pos = {
             let mut globes = planner
                 .mut_world()
-                .write::<globe::Globe>();
+                .write::<globe::Globe>()
+                .pass();
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");

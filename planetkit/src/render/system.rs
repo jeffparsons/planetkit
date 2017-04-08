@@ -100,7 +100,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         // Try to draw all visuals.
         use specs::Join;
-        for (entity, visual) in (&entities, &visuals).iter() {
+        for (entity, visual) in (&entities, &visuals).join() {
             use ::spatial::SpatialStorage;
 
             // Don't try to draw things that aren't in the same

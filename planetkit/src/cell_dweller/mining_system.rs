@@ -161,13 +161,14 @@ impl MiningSystem {
 impl specs::System<TimeDelta> for MiningSystem {
     fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
         self.consume_input();
-        let (mut cell_dwellers, mut globes, controlled_entity) = arg.fetch(|w|
+        let (mut cell_dwellers, mut globes, controlled_entity_resource) = arg.fetch(|w|
             (
                 w.write::<CellDweller>(),
                 w.write::<Globe>(),
-                w.read_resource::<::simple::ControlledEntity>().entity,
+                w.read_resource::<::simple::ControlledEntity>(),
             )
         );
+        let controlled_entity = controlled_entity_resource.entity;
         let cd = cell_dwellers.get_mut(controlled_entity).expect("Someone deleted the controlled entity's CellDweller");
 
         // Get the associated globe, complaining loudly if we fail.

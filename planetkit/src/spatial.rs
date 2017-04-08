@@ -177,6 +177,7 @@ impl<
 #[cfg(test)]
 mod tests {
     use specs;
+    use specs::Gate;
     use na;
 
     use super::*;
@@ -242,7 +243,7 @@ mod tests {
     #[test]
     fn pos_relative_to_parent() {
         let ss = SolarSystem::new();
-        let spatials = ss.world.read::<Spatial>();
+        let spatials = ss.world.read::<Spatial>().pass();
 
         let earth_from_sun = spatials.a_relative_to_b(ss.earth, ss.sun);
         assert_relative_eq!(
@@ -260,7 +261,7 @@ mod tests {
     #[test]
     fn pos_relative_to_grandparent() {
         let ss = SolarSystem::new();
-        let spatials = ss.world.read::<Spatial>();
+        let spatials = ss.world.read::<Spatial>().pass();
 
         let moon_from_sun = spatials.a_relative_to_b(ss.moon, ss.sun);
         assert_relative_eq!(
@@ -278,7 +279,7 @@ mod tests {
     #[test]
     fn pos_accounting_for_orientation_relative_to_parent() {
         let ss = SolarSystem::new();
-        let mut spatials = ss.world.write::<Spatial>();
+        let mut spatials = ss.world.write::<Spatial>().pass();
 
         let earth_from_polar_satellite = spatials.a_relative_to_b(ss.earth, ss.polar_satellite);
         assert_relative_eq!(

@@ -60,7 +60,7 @@ impl ChunkSystem {
         // TODO: proper entities/points/volumes of interest system.
         use specs::Join;
         // Use the first CellDweller we find on this Globe.
-        let one_true_cd = match cds.iter()
+        let one_true_cd = match cds.join()
             .filter(|cd| cd.globe_entity == Some(globe_entity))
             .next()
         {
@@ -170,11 +170,11 @@ impl specs::System<TimeDelta> for ChunkSystem {
         });
 
         // If we have too many chunks loaded, then unload some of them.
-        for (mut globe, globe_entity) in (&mut globes, &entities).iter() {
+        for (mut globe, globe_entity) in (&mut globes, &entities).join() {
             self.unload_excess_chunks_if_necessary(&mut globe, globe_entity, &cds);
         }
 
-        for cd in cds.iter() {
+        for cd in cds.join() {
             self.ensure_essential_chunks_for_cell_dweller_present(cd, &mut globes);
         }
     }

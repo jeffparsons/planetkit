@@ -48,7 +48,7 @@ impl ChunkViewSystem {
         }
 
         use specs::Join;
-        for (visual, chunk_view) in (&mut visuals, &chunk_views).iter() {
+        for (visual, chunk_view) in (&mut visuals, &chunk_views).join() {
             // TODO: find the closest mesh to the player that needs
             // to be generated (i.e. absent or dirty).
             //
@@ -152,7 +152,7 @@ impl ChunkViewSystem {
 
         let mut entities_to_remove: Vec<specs::Entity> = Vec::new();
 
-        for (chunk_view, chunk_view_ent) in (&*chunk_views, &*entities).iter() {
+        for (chunk_view, chunk_view_ent) in (&*chunk_views, &*entities).join() {
             // Ignore chunks not belonging to this globe.
             if chunk_view.globe_entity != globe_entity {
                 continue;
@@ -218,7 +218,8 @@ impl ChunkViewSystem {
 
             // We'll fill it in later.
             let empty_visual = ::render::Visual::new_empty();
-            let new_ent = run_arg.create();
+            // TODO: Use `create_later_build`, now that it exists?
+            let new_ent = run_arg.create_pure();
             chunk.view_entity = Some(new_ent);
             chunk_views.insert(new_ent, chunk_view);
             visuals.insert(new_ent, empty_visual);
@@ -242,7 +243,7 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
             ));
 
         // Destroy views for any chunks that are no longer loaded.
-        for (globe, globe_entity) in (&mut globes, &entities).iter() {
+        for (globe, globe_entity) in (&mut globes, &entities).join() {
             self.remove_views_for_dead_chunks(
                 &arg,
                 globe,

@@ -70,7 +70,7 @@ impl specs::System<TimeDelta> for PhysicsSystem {
         let (mut cell_dwellers, mut spatials, globes) = arg.fetch(|w|
             (w.write::<CellDweller>(), w.write::<Spatial>(), w.read::<Globe>())
         );
-        for (cd, spatial) in (&mut cell_dwellers, &mut spatials).iter() {
+        for (cd, spatial) in (&mut cell_dwellers, &mut spatials).join() {
             // Get the associated globe, complaining loudly if we fail.
             let globe_entity = match cd.globe_entity {
                 Some(globe_entity) => globe_entity,

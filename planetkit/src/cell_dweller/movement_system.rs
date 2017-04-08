@@ -162,14 +162,15 @@ impl MovementSystem {
 impl specs::System<TimeDelta> for MovementSystem {
     fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
         self.consume_input();
-        let (mut cell_dwellers, mut spatials, globes, controlled_entity) = arg.fetch(|w|
+        let (mut cell_dwellers, mut spatials, globes, controlled_entity_resource) = arg.fetch(|w|
             (
                 w.write::<CellDweller>(),
                 w.write::<Spatial>(),
                 w.read::<Globe>(),
-                w.read_resource::<::simple::ControlledEntity>().entity,
+                w.read_resource::<::simple::ControlledEntity>(),
             )
         );
+        let controlled_entity = controlled_entity_resource.entity;
         let cd = cell_dwellers.get_mut(controlled_entity).expect("Someone deleted the controlled entity's CellDweller");
         let spatial = spatials.get_mut(controlled_entity).expect("Someone deleted the controlled entity's Spatial");
 

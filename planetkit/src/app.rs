@@ -116,7 +116,7 @@ impl App {
         // i.e. the interaction between sets of components.
         let world = specs::World::new();
 
-        let mut planner = specs::Planner::new(world, 2);
+        let mut planner = specs::Planner::new(world);
         planner.add_system(render_sys, "render", 50);
 
         App {
@@ -136,6 +136,7 @@ impl App {
 
     // TODO: none of this should be baked into App.
     pub fn temp_remove_me_init(&mut self) {
+        use specs::Gate;
         use ::Spatial;
 
         // Add some things to the world.
@@ -156,7 +157,8 @@ impl App {
             let guy_column = CellPos::default();
             let mut globes = self.planner
                 .mut_world()
-                .write::<globe::Globe>();
+                .write::<globe::Globe>()
+                .pass();
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
@@ -268,14 +270,16 @@ impl App {
     // the whole disgusting thing and find a better way
     // to work around the root problem.
     fn realize_proto_meshes(&mut self) {
+        use specs::Gate;
+
         // NOTE: it is essential that we lock the world first.
         // Otherwise we could dead-lock against, e.g., the render
         // system while it's trying to lock the mesh repository.
         let world = self.planner.mut_world();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
-        let mut visuals = world.write::<Visual>();
+        let mut visuals = world.write::<Visual>().pass();
         use specs::Join;
-        for visual in (&mut visuals).iter() {
+        for visual in (&mut visuals).join() {
             // Even if there's a realized mesh already, the presence of
             // a proto-mesh indicates we need to realize again.
             // (We clear out the proto-mesh when we realize it.)
