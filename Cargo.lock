@@ -106,6 +106,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "chrono"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "num 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
+ "time 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -828,7 +837,7 @@ version = "0.0.1"
 dependencies = [
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "camera_controllers 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1288,6 +1297,7 @@ dependencies = [
 "checksum camera_controllers 0.20.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6d05c599dd4e32e3476b08d595eb355e5b6e5c3cd6b97006bbc7a6492e888259"
 "checksum cgl 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "8bdd78cca65a739cb5475dbf6b6bbb49373e327f4a6f2b499c0f98632df38c10"
 "checksum chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)" = "9213f7cd7c27e95c2b57c49f0e69b1ea65b27138da84a170133fd21b07659c00"
+"checksum chrono 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "158b0bd7d75cbb6bf9c25967a48a2e9f77da95876b858eadfabaa99cd069de6e"
 "checksum cocoa 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3afe4613f57a171039a98db1773f5840b5743cf85aaf03afb65ddfade4f4a9db"
 "checksum cocoa 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1e1be5fd98bb7e8ef0eea233a4984f4e85ecdcfa002a90b8b12b7a20faf44dc1"
 "checksum color_quant 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a475fc4af42d83d28adf72968d9bcfaf035a1a9381642d8e85d8a04957767b0d"
