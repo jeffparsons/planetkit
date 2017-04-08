@@ -38,4 +38,4 @@ itertools = "0.5.9"
 approx = "0.1.1"
 
 [build-dependencies]
-rustc_version = "0.1.*"
+rustc_version = "0.2.1"
