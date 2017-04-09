@@ -19,32 +19,38 @@ use super::chunk::{ Cell, Material };
 /// a distant blob in the sky, to a shiny dot in the distance.
 pub struct Gen {
     spec: Spec,
-    // Permutation table for noise
-    pt: noise::Seed,
 }
 
 impl Gen {
     pub fn new(spec: Spec) -> Gen {
         assert!(spec.is_valid(), "Invalid globe spec!");
-        let pt = noise::Seed::new(spec.seed);
         Gen {
             spec: spec,
-            pt: pt,
         }
     }
 
     pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
+        use noise::NoiseModule;
+        use noise::Seedable;
+        use noise::MultiFractal;
+
         // TODO: get parameters from spec
         //
         // TODO: store this function... when you figure
         // out what's going on with the types.
         // ("expected fn pointer, found fn item")
-        let terrain_noise = noise::Brownian3::new(
-            noise::open_simplex3::<f64>, 6
+        //
+        // TODO: even more pressing now that the noise API has
+        // changed to deprecate PermutationTable; is it now stored
+        // within Fbm? This might be super-slow now...
+        let terrain_noise = noise::Fbm::<f64>::new()
         // TODO: make wavelength etc. part of spec;
         // the octaves and wavelength of noise you want
         // will probably depend on planet size.
-        ).wavelength(200.0);
+            .set_octaves(6)
+            .set_frequency(1.0 / 200.0)
+            // TODO: probably allow a bigger seed; what's the smallest usize on any real platform?
+            .set_seed(self.spec.seed as usize);
 
         // Calculate height for this cell from world spec.
         // To do this, project the cell onto a sea-level sphere
@@ -60,7 +66,7 @@ impl Gen {
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
 
         // Vary a little bit around 1.0.
-        let delta = terrain_noise.apply(&self.pt, &[sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
+        let delta = terrain_noise.get([sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
             * (self.spec.ocean_radius - self.spec.floor_radius)
             // TODO: this 0.9 is only to stop the dirt level
             // going below bedrock. Need something a bit more sophisticated

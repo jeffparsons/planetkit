@@ -15,7 +15,7 @@ name = "demo"
 path = "src/bin/main.rs"
 
 [dependencies]
-noise = "0.2.0"
+noise = "0.4.0"
 piston = "0.31.3"
 piston2d-graphics = "0.21.1"
 pistoncore-glutin_window = "0.35.0"
