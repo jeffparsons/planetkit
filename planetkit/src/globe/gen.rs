@@ -19,20 +19,15 @@ use super::chunk::{ Cell, Material };
 /// a distant blob in the sky, to a shiny dot in the distance.
 pub struct Gen {
     spec: Spec,
+    terrain_noise: noise::Fbm<f64>,
 }
 
 impl Gen {
     pub fn new(spec: Spec) -> Gen {
-        assert!(spec.is_valid(), "Invalid globe spec!");
-        Gen {
-            spec: spec,
-        }
-    }
-
-    pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
-        use noise::NoiseModule;
         use noise::Seedable;
         use noise::MultiFractal;
+
+        assert!(spec.is_valid(), "Invalid globe spec!");
 
         // TODO: get parameters from spec
         //
@@ -48,9 +43,17 @@ impl Gen {
         // the octaves and wavelength of noise you want
         // will probably depend on planet size.
             .set_octaves(6)
-            .set_frequency(1.0 / 200.0)
+            .set_frequency(1.0 / 700.0)
             // TODO: probably allow a bigger seed; what's the smallest usize on any real platform?
-            .set_seed(self.spec.seed as usize);
+            .set_seed(spec.seed as usize);
+        Gen {
+            spec: spec,
+            terrain_noise: terrain_noise,
+        }
+    }
+
+    pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
+        use noise::NoiseModule;
 
         // Calculate height for this cell from world spec.
         // To do this, project the cell onto a sea-level sphere
@@ -66,7 +69,7 @@ impl Gen {
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
 
         // Vary a little bit around 1.0.
-        let delta = terrain_noise.get([sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
+        let delta = self.terrain_noise.get([sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
             * (self.spec.ocean_radius - self.spec.floor_radius)
             // TODO: this 0.9 is only to stop the dirt level
             // going below bedrock. Need something a bit more sophisticated

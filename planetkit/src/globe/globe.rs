@@ -77,6 +77,8 @@ impl Globe {
         let floor_radius = ocean_radius - crust_depth;
         Globe::new(
             Spec {
+                // TODO: This only coincidentally puts you on land.
+                // Implement deterministic (PRNG) land finding so that the seed does not matter.
                 seed: 14,
                 floor_radius: floor_radius,
                 ocean_radius: ocean_radius,
