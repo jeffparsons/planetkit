@@ -1,6 +1,7 @@
 // Don't make `globe` public; we re-export the
 // main bits at this level below.
 mod globe;
+mod globe_ext;
 pub mod icosahedron;
 mod spec;
 pub mod chunk;
@@ -32,7 +33,7 @@ pub use self::dir::*;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
 pub use self::chunk_system::ChunkSystem;
-pub use self::cursor::Cursor;
+pub use self::cursor::{ Cursor, CursorMut };
 
 pub type IntCoord = i64;
 

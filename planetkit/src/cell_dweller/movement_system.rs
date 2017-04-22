@@ -111,6 +111,8 @@ impl MovementSystem {
         // Only allow movement if you're sitting above solid ground.
         // (Or, rather, the stuff we consider to be solid for now,
         // which is anything other than air.)
+        //
+        // TODO: Fix to be <= 0 and log error.
         if cd.pos.z < 0 {
             // There's nothing below; someone built a silly globe.
             return;

@@ -12,6 +12,7 @@ use types::*;
 struct Walker {
     movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
     planner: specs::Planner<TimeDelta>,
+    guy_entity: specs::Entity,
 }
 
 impl Walker {
@@ -78,7 +79,6 @@ impl Walker {
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
             globe.find_lowest_cell_containing(guy_pos, Material::Air)
-                .expect("Uh oh, there's something wrong with our globe.")
         };
         let guy_entity = planner.mut_world().create_now()
             .with(cell_dweller::CellDweller::new(
@@ -96,6 +96,7 @@ impl Walker {
         Walker {
             movement_input_sender: movement_input_sender,
             planner: planner,
+            guy_entity: guy_entity,
         }
     }
 
@@ -132,8 +133,17 @@ impl Walker {
 
 #[test]
 fn random_walk() {
+    use globe::CellPos;
+
     let mut walker = Walker::new();
     walker.tick_lots(10000);
+
+    // Walking should have taken us away from the origin.
+    let guy_entity = walker.guy_entity;
+    let world = walker.planner.mut_world();
+    let cd_storage = world.read::<::cell_dweller::CellDweller>().pass();
+    let cd = cd_storage.get(guy_entity).unwrap();
+    assert_ne!(cd.pos, CellPos::default());
 }
 
 #[cfg(feature = "nightly")]

@@ -163,7 +163,6 @@ impl App {
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
             globe.find_lowest_cell_containing(guy_column, Material::Air)
-                .expect("Uh oh, there's something wrong with our globe.")
         };
         let factory = &mut self.factory.clone();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
