@@ -16,7 +16,6 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity, globe_s
             .get_mut(globe_entity)
             .expect("Uh oh, where did our Globe go?");
         globe.find_lowest_cell_containing(shepherd_column, Material::Air)
-            .expect("Uh oh, there's something wrong with our globe.")
     };
     world.create_now()
         .with(pk::cell_dweller::CellDweller::new(
