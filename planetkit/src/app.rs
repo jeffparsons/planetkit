@@ -138,6 +138,7 @@ impl App {
     pub fn temp_remove_me_init(&mut self) {
         use specs::Gate;
         use ::Spatial;
+        use rand::{ XorShiftRng, SeedableRng };
 
         // Add some things to the world.
 
@@ -151,10 +152,8 @@ impl App {
             .build();
 
         // Find globe surface and put player character on it.
-        use globe::{ CellPos, Dir };
-        use globe::chunk::Material;
+        use globe::Dir;
         let guy_pos = {
-            let guy_column = CellPos::default();
             let mut globes = self.planner
                 .mut_world()
                 .write::<globe::Globe>()
@@ -162,7 +161,15 @@ impl App {
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
-            globe.find_lowest_cell_containing(guy_column, Material::Air)
+            // Seed RNG with world seed.
+            let seed = globe.spec().seed;
+            let mut rng = XorShiftRng::from_seed([seed, seed, seed, seed]);
+            globe.air_above_random_surface_dry_land(
+                &mut rng,
+                2, // Min air cells above
+                5, // Max distance from starting point
+                5, // Max attempts
+            ).expect("Oh noes, we took too many attempts to find a decent spawn point!")
         };
         let factory = &mut self.factory.clone();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
