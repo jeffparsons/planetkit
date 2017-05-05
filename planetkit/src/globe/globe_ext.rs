@@ -108,9 +108,11 @@ impl Globe {
         let mut attempts_remaining = max_attempts;
         while attempts_remaining > 0 {
             let column = random_column(self.spec().root_resolution, rng);
-            let pos = self.find_surface_dry_land(column, min_air_cells_above, max_distance_from_starting_point);
-            if pos.is_some() {
-                return pos;
+            let maybe_pos = self.find_surface_dry_land(column, min_air_cells_above, max_distance_from_starting_point);
+            if let Some(mut pos) = maybe_pos {
+                // We want the air above the land we found.
+                pos.z += 1;
+                return Some(pos);
             }
             attempts_remaining -= 1;
         }
@@ -123,6 +125,9 @@ impl Globe {
     // probably by using the `Gen` to find an approximate location,
     // and then working up and down at the same time to find the
     // closest land to the "surface".
+    //
+    // TODO: now that `air_above_random_surface_dry_land` exists,
+    // track down and destroy all uses of this.
     pub fn find_lowest_cell_containing(
         &mut self,
         column: CellPos,
