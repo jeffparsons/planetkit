@@ -31,6 +31,28 @@ pub struct Spec {
 }
 
 impl Spec {
+    pub fn new_earth_scale_example() -> Spec {
+        let ocean_radius = 6_371_000.0;
+        // TODO: actually more like 60_000 when we know how to:
+        // - Unload chunks properly
+        // - Start with a guess about the z-position of the player
+        //   so we don't have to start at bedrock and search up.
+        let crust_depth = 60.0;
+        let floor_radius = ocean_radius - crust_depth;
+        Spec {
+            // TODO: This only coincidentally puts you on land.
+            // Implement deterministic (PRNG) land finding so that the seed does not matter.
+            seed: 14,
+            floor_radius: floor_radius,
+            ocean_radius: ocean_radius,
+            block_height: 0.65,
+            root_resolution: [8388608, 16777216],
+            // Chunks should probably be taller, but short chunks are a bit
+            // better for now in exposing bugs visually.
+            chunk_resolution: [16, 16, 4],
+        }
+    }
+
     pub fn is_valid(&self) -> bool {
         // Chunk resolution needs to divide perfectly into root resolution.
         let cprs = self.chunks_per_root_side();
@@ -108,5 +130,10 @@ impl Spec {
         // The top of one cell is the bottom of the next.
         cell_pos.z += 1;
         self.cell_bottom_vertex(cell_pos, offset)
+    }
+
+    // TODO: test me.
+    pub fn approx_cell_z_from_radius(&self, radius: f64) -> IntCoord {
+        ((radius - self.floor_radius) / self.block_height) as IntCoord
     }
 }

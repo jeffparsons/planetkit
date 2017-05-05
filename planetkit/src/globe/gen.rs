@@ -52,7 +52,7 @@ impl Gen {
         }
     }
 
-    pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
+    pub fn land_height(&self, column: CellPos) -> f64 {
         use noise::NoiseModule;
 
         // Calculate height for this cell from world spec.
@@ -64,18 +64,24 @@ impl Gen {
         //
         // TODO: split out a proper world generator
         // that layers in lots of different kinds of noise etc.
-        let sea_level_pt3 = self.spec.cell_center_on_unit_sphere(cell_pos)
+        let sea_level_pt3 = self.spec.cell_center_on_unit_sphere(column)
             * self.spec.ocean_radius;
-        let cell_pt3 = self.spec.cell_center_center(cell_pos);
-
         // Vary a little bit around 1.0.
         let delta = self.terrain_noise.get([sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
             * (self.spec.ocean_radius - self.spec.floor_radius)
             // TODO: this 0.9 is only to stop the dirt level
             // going below bedrock. Need something a bit more sophisticated
             // than this eventually.
-            * 0.9;
-        let land_height = self.spec.ocean_radius + delta;
+            //
+            // Also... OpenSimplex, which FBM uses, appears to be totally bonkers?
+            // https://github.com/brendanzab/noise-rs/issues/149
+            * 0.45;
+        self.spec.ocean_radius + delta
+    }
+
+    pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
+        let land_height = self.land_height(cell_pos);
+        let cell_pt3 = self.spec.cell_center_center(cell_pos);
         // TEMP: ...
         let cell_height = cell_pt3.coords.norm();
         let material = if cell_height < land_height {

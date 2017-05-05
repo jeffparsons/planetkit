@@ -34,7 +34,7 @@ impl From<RootIndex> for Root {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::Root;
 
     #[test]

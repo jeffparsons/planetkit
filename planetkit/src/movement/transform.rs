@@ -89,7 +89,7 @@ pub fn world_to_local(
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use ::globe::{ CellPos, Dir };
 

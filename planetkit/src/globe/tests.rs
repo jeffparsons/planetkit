@@ -1,3 +1,35 @@
+use super::*;
+
+#[test]
+fn find_spawn_points() {
+    use rand;
+
+    // Don't bother seeding it off the world spec/seed for now;
+    // we just want to check that if we keep finding new points
+    // then some of them will fail, because they are underwater.
+    let mut rng = rand::thread_rng();
+    const TRIALS: usize = 100;
+    let successes = (0..TRIALS)
+        .map(|_| {
+            // TODO: move globe out of closure and "collect garbage" chunks
+            // on each iteration? Need to get into the habit of doing this.
+            // Maybe also make globe or something record stats on how many
+            // chunks loaded over time.
+            let mut globe = Globe::new_earth_scale_example();
+            globe.air_above_random_surface_dry_land(
+                &mut rng,
+                5, // Min air cells above
+                5, // Max distance from starting point
+                3, // Max attempts
+            )
+        })
+        .filter(|maybe_pos| maybe_pos.is_some())
+        .count();
+    // Some should eventually succeed, some should give up.
+    assert!(successes > 5);
+    assert!(successes < TRIALS - 5);
+}
+
 #[cfg(feature = "nightly")]
 pub mod benches {
     use test::Bencher;

@@ -1,3 +1,5 @@
+use rand::Rng;
+
 // Don't make `globe` public; we re-export the
 // main bits at this level below.
 mod globe;
@@ -294,5 +296,25 @@ pub fn origin_of_chunk_owning(
             root_resolution,
             chunk_resolution,
         )
+    }
+}
+
+/// Generate a random column on the globe.
+///
+/// The position returned will always have a `z`-value of 0.
+pub fn random_column<R: Rng>(
+    root_resolution: [IntCoord; 2],
+    rng: &mut R,
+) -> CellPos {
+    // TODO: this is a bit dodgy; it isn't uniformly distributed
+    // over all points in the world.
+    let root_index: RootIndex = rng.gen_range(0, 5);
+    let x: IntCoord = rng.gen_range(0, root_resolution[0]);
+    let y: IntCoord = rng.gen_range(0, root_resolution[0]);
+    CellPos {
+        root: root_index.into(),
+        x: x,
+        y: y,
+        z: 0,
     }
 }
