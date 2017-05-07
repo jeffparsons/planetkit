@@ -4,6 +4,7 @@ use piston_window::PistonWindow;
 
 use slog;
 use slog_term;
+use slog_async;
 use specs;
 
 use window;
@@ -22,9 +23,12 @@ pub struct ControlledEntity {
 ///
 /// Uses all default settings, and logs to standard output.
 pub fn new() -> (app::App, PistonWindow) {
+    use slog::Drain;
     use super::system_priority as prio;
-    use slog::DrainExt;
-    let drain = slog_term::streamer().compact().build().fuse();
+
+    let decorator = slog_term::TermDecorator::new().build();
+    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = slog_async::Async::new(drain).build().fuse();
     let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
     let log = root_log;
 

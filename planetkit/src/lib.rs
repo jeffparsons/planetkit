@@ -58,6 +58,7 @@ extern crate nalgebra as na;
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
+extern crate slog_async;
 extern crate specs;
 extern crate num_traits;
 #[macro_use]
