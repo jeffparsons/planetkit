@@ -16,8 +16,9 @@ use render;
 
 /// Create a new simple PlanetKit app and window.
 ///
-/// Uses all default settings, and logs to standard output.
-pub fn new() -> (app::App, PistonWindow) {
+/// Uses all default settings, logs to standard output, and registers most
+/// of the systems you're likely to want to use.
+pub fn new_empty() -> (app::App, PistonWindow) {
     use slog::Drain;
     use super::system_priority as prio;
 
@@ -87,14 +88,24 @@ pub fn new() -> (app::App, PistonWindow) {
             0.05, // Seconds between geometry creation
         );
         planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
+    }
 
-        // Populate the world.
-        let world = planner.mut_world();
+    (app, window)
+}
+
+/// Create a new simple PlanetKit app and window with some example entities.
+///
+/// Creates a world using `new_empty` then populates it with some entities.
+/// Hack first, ask questions later.
+pub fn new_populated() -> (app::App, PistonWindow) {
+    let (mut app, window) = new_empty();
+    // Populate the world.
+    {
+        let world = app.planner().mut_world();
         let globe_entity = create_simple_globe_now(world);
         let player_character_entity = create_simple_player_character_now(world, globe_entity);
         create_simple_chase_camera_now(world, player_character_entity);
     }
-
     (app, window)
 }
 
@@ -110,7 +121,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
     use rand::{ XorShiftRng, SeedableRng };
     use specs::Gate;
 
-    // Find globe surface and put player character on it.
+    // Find a suitable spawn point for the player character at the globe surface.
     use globe::Dir;
     let (globe_spec, player_character_pos) = {
         let mut globe_storage = world.write::<globe::Globe>().pass();
@@ -133,6 +144,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
     // For now this is just an axes mesh.
     let mut player_character_visual = render::Visual::new_empty();
     player_character_visual.proto_mesh = Some(render::make_axes_mesh());
+
     let player_character_entity = world.create_now()
         .with(cell_dweller::CellDweller::new(
             player_character_pos,
