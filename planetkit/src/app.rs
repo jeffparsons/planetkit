@@ -10,8 +10,6 @@ use specs;
 use render;
 use render::{ Visual, Mesh, MeshRepository };
 use types::*;
-use globe;
-use cell_dweller;
 use input_adapter::InputAdapter;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
@@ -134,78 +132,14 @@ impl App {
         }
     }
 
-    // TODO: none of this should be baked into App.
-    pub fn temp_remove_me_init(&mut self) {
-        use specs::Gate;
-        use ::Spatial;
-        use rand::{ XorShiftRng, SeedableRng };
-
-        // Add some things to the world.
-
-        let globe = globe::Globe::new_earth_scale_example();
-        let globe_spec = globe.spec();
-        // First add the globe to the world so we can get a
-        // handle on its entity.
-        let globe_entity = self.planner.mut_world().create_now()
-            .with(globe)
-            .with(Spatial::new_root())
-            .build();
-
-        // Find globe surface and put player character on it.
-        use globe::Dir;
-        let guy_pos = {
-            let mut globes = self.planner
-                .mut_world()
-                .write::<globe::Globe>()
-                .pass();
-            let mut globe = globes
-                .get_mut(globe_entity)
-                .expect("Uh oh, where did our Globe go?");
-            // Seed RNG with world seed.
-            let seed = globe.spec().seed;
-            let mut rng = XorShiftRng::from_seed([seed, seed, seed, seed]);
-            globe.air_above_random_surface_dry_land(
-                &mut rng,
-                2, // Min air cells above
-                5, // Max distance from starting point
-                5, // Max attempts
-            ).expect("Oh noes, we took too many attempts to find a decent spawn point!")
-        };
+    pub fn new_axes_mesh(&mut self) -> render::MeshHandle {
+        // TODO: Why do we need to clone this? Do we?
         let factory = &mut self.factory.clone();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
-        let axes_mesh = render::make_axes_mesh(
+        render::make_axes_mesh(
             factory,
             &mut mesh_repo,
-        );
-        let mut cell_dweller_visual = render::Visual::new_empty();
-        cell_dweller_visual.set_mesh_handle(axes_mesh);
-        let guy = self.planner.mut_world().create_now()
-            .with(cell_dweller::CellDweller::new(
-                guy_pos,
-                Dir::default(),
-                globe_spec,
-                Some(globe_entity),
-            ))
-            .with(cell_dweller_visual)
-            // The CellDweller's transformation will be set based
-            // on its coordinates in cell space.
-            .with(Spatial::new(globe_entity, Iso3::identity()))
-            .build();
-        self.planner.mut_world().add_resource(::simple::ControlledEntity {
-            entity: guy,
-        });
-
-        // Create a camera sitting a little bit behind the cell dweller.
-        let eye = Pt3::new(0.0, 4.0, -6.0);
-        let target = Pt3::origin();
-        let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
-        let camera = self.planner.mut_world().create_now()
-            .with(Spatial::new(guy, camera_transform))
-            .build();
-        use ::camera::DefaultCamera;
-        self.planner.mut_world().add_resource(DefaultCamera {
-            camera_entity: camera,
-        });
+        )
     }
 
     pub fn run(&mut self, mut window: &mut PistonWindow) {

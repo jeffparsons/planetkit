@@ -7,8 +7,12 @@ use slog_term;
 use slog_async;
 use specs;
 
+use types::*;
 use window;
 use app;
+use globe;
+use cell_dweller;
+use render;
 
 /// `World`-global resource for finding the current entity being controlled
 /// by the player.
@@ -45,6 +49,9 @@ pub fn new() -> (app::App, PistonWindow) {
     let mining_input_adapter = cell_dweller::MiningInputAdapter::new(mining_input_sender);
     app.add_input_adapter(Box::new(mining_input_adapter));
 
+    // TODO: find a home for this
+    let axes_mesh_handle = app.new_axes_mesh();
+
     {
         let planner = app.planner();
 
@@ -58,8 +65,8 @@ pub fn new() -> (app::App, PistonWindow) {
             world.register::<::globe::ChunkView>();
         }
 
-        // TODO: move _all_ other system initialization from `app.rs`
-        // into here, and then back out into helper functions.
+        // Initialize all systems.
+        // TODO: split out system initialization into helper functions.
 
         let movement_sys = cell_dweller::MovementSystem::new(
             movement_input_receiver,
@@ -90,9 +97,81 @@ pub fn new() -> (app::App, PistonWindow) {
             0.05, // Seconds between geometry creation
         );
         planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
+
+        // Populate the world.
+        let world = planner.mut_world();
+        let globe_entity = create_simple_globe_now(world);
+        let player_character_entity = create_simple_player_character_now(world, globe_entity, axes_mesh_handle);
+        create_simple_chase_camera_now(world, player_character_entity);
     }
 
-    app.temp_remove_me_init();
-
     (app, window)
+}
+
+pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
+    let globe = globe::Globe::new_earth_scale_example();
+    world.create_now()
+        .with(globe)
+        .with(::Spatial::new_root())
+        .build()
+}
+
+pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity: specs::Entity, axes_mesh_handle: render::MeshHandle) -> specs::Entity {
+    use rand::{ XorShiftRng, SeedableRng };
+    use specs::Gate;
+
+    // Find globe surface and put player character on it.
+    use globe::Dir;
+    let (globe_spec, player_character_pos) = {
+        let mut globe_storage = world.write::<globe::Globe>().pass();
+        let globe = globe_storage.get_mut(globe_entity)
+            .expect("Uh oh, it looks like our Globe went missing.");
+        let globe_spec = globe.spec();
+        // Seed spawn point RNG with world seed.
+        let seed = globe_spec.seed;
+        let mut rng = XorShiftRng::from_seed([seed, seed, seed, seed]);
+        let player_character_pos = globe.air_above_random_surface_dry_land(
+            &mut rng,
+            2, // Min air cells above
+            5, // Max distance from starting point
+            5, // Max attempts
+        ).expect("Oh noes, we took too many attempts to find a decent spawn point!");
+        (globe_spec, player_character_pos)
+    };
+    let mut cell_dweller_visual = render::Visual::new_empty();
+    cell_dweller_visual.set_mesh_handle(axes_mesh_handle);
+    let player_character_entity = world.create_now()
+        .with(cell_dweller::CellDweller::new(
+            player_character_pos,
+            Dir::default(),
+            globe_spec,
+            Some(globe_entity),
+        ))
+        .with(cell_dweller_visual)
+        // The CellDweller's transformation will be set based
+        // on its coordinates in cell space.
+        .with(::Spatial::new(globe_entity, Iso3::identity()))
+        .build();
+    // TODO: make something else register this always, as an Option,
+    // so you can just assume it's there and update it.
+    world.add_resource(::simple::ControlledEntity {
+        entity: player_character_entity,
+    });
+    player_character_entity
+}
+
+pub fn create_simple_chase_camera_now(world: &mut specs::World, player_character_entity: specs::Entity) -> specs::Entity {
+    // Create a camera sitting a little bit behind the cell dweller.
+    let eye = Pt3::new(0.0, 4.0, -6.0);
+    let target = Pt3::origin();
+    let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
+    let camera_entity = world.create_now()
+        .with(::Spatial::new(player_character_entity, camera_transform))
+        .build();
+    use ::camera::DefaultCamera;
+    // TODO: gah, where does this belong?
+    world.add_resource(DefaultCamera {
+        camera_entity: camera_entity,
+    });
+    camera_entity
 }
