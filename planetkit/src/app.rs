@@ -132,16 +132,6 @@ impl App {
         }
     }
 
-    pub fn new_axes_mesh(&mut self) -> render::MeshHandle {
-        // TODO: Why do we need to clone this? Do we?
-        let factory = &mut self.factory.clone();
-        let mut mesh_repo = self.mesh_repo.lock().unwrap();
-        render::make_axes_mesh(
-            factory,
-            &mut mesh_repo,
-        )
-    }
-
     pub fn run(&mut self, mut window: &mut PistonWindow) {
         use piston::input::*;
 

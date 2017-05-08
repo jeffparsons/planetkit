@@ -49,9 +49,6 @@ pub fn new() -> (app::App, PistonWindow) {
     let mining_input_adapter = cell_dweller::MiningInputAdapter::new(mining_input_sender);
     app.add_input_adapter(Box::new(mining_input_adapter));
 
-    // TODO: find a home for this
-    let axes_mesh_handle = app.new_axes_mesh();
-
     {
         let planner = app.planner();
 
@@ -101,7 +98,7 @@ pub fn new() -> (app::App, PistonWindow) {
         // Populate the world.
         let world = planner.mut_world();
         let globe_entity = create_simple_globe_now(world);
-        let player_character_entity = create_simple_player_character_now(world, globe_entity, axes_mesh_handle);
+        let player_character_entity = create_simple_player_character_now(world, globe_entity);
         create_simple_chase_camera_now(world, player_character_entity);
     }
 
@@ -116,7 +113,7 @@ pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
         .build()
 }
 
-pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity: specs::Entity, axes_mesh_handle: render::MeshHandle) -> specs::Entity {
+pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity: specs::Entity) -> specs::Entity {
     use rand::{ XorShiftRng, SeedableRng };
     use specs::Gate;
 
@@ -138,8 +135,11 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
         ).expect("Oh noes, we took too many attempts to find a decent spawn point!");
         (globe_spec, player_character_pos)
     };
-    let mut cell_dweller_visual = render::Visual::new_empty();
-    cell_dweller_visual.set_mesh_handle(axes_mesh_handle);
+
+    // Make visual appearance of player character.
+    // For now this is just an axes mesh.
+    let mut player_character_visual = render::Visual::new_empty();
+    player_character_visual.proto_mesh = Some(render::make_axes_mesh());
     let player_character_entity = world.create_now()
         .with(cell_dweller::CellDweller::new(
             player_character_pos,
@@ -147,7 +147,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
             globe_spec,
             Some(globe_entity),
         ))
-        .with(cell_dweller_visual)
+        .with(player_character_visual)
         // The CellDweller's transformation will be set based
         // on its coordinates in cell space.
         .with(::Spatial::new(globe_entity, Iso3::identity()))

@@ -1,6 +1,4 @@
-use gfx;
-
-use super::{ MeshRepository, MeshHandle, Vertex };
+use super::{ ProtoMesh, Vertex };
 use ::globe::icosahedron;
 
 pub const GRAY: [f32; 3] = [ 0.5, 0.5, 0.5 ];
@@ -8,13 +6,7 @@ pub const RED: [f32; 3] = [ 1.0, 0.0, 0.0 ];
 pub const GREEN: [f32; 3] = [ 0.0, 1.0, 0.0 ];
 pub const BLUE: [f32; 3] = [ 0.0, 0.0, 1.0 ];
 
-pub fn make_axes_mesh<
-    R: gfx::Resources,
-    F: gfx::Factory<R>,
->(
-    factory: &mut F,
-    mesh_repo: &mut MeshRepository<R>,
-) -> MeshHandle {
+pub fn make_axes_mesh() -> ProtoMesh {
     let mut vertex_data = Vec::<Vertex>::new();
     let mut index_vec = Vec::<u32>::new();
 
@@ -28,7 +20,7 @@ pub fn make_axes_mesh<
     add_axis(&mut vertex_data, &mut index_vec, GREEN, y_spacing);
     add_axis(&mut vertex_data, &mut index_vec, BLUE, z_spacing);
 
-    mesh_repo.create(factory, vertex_data, index_vec)
+    ProtoMesh::new(vertex_data, index_vec)
 }
 
 fn add_axis(
