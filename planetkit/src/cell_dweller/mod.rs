@@ -7,3 +7,23 @@ pub use self::cell_dweller::{ CellDweller };
 pub use self::movement_system::{ MovementSystem, MovementEvent, MovementInputAdapter };
 pub use self::mining_system::{ MiningSystem, MiningEvent, MiningInputAdapter };
 pub use self::physics_system::PhysicsSystem;
+
+use specs;
+
+/// `World`-global resource for finding the current cell-dwelling entity being controlled
+/// by the player, if any.
+///
+/// TODO: make this a more general "controlled entity" somewhere?
+pub struct ActiveCellDweller {
+    pub maybe_entity: Option<specs::Entity>,
+}
+
+impl ActiveCellDweller {
+    pub fn ensure_registered(world: &mut specs::World) {
+        if !world.has_resource::<ActiveCellDweller>() {
+            world.add_resource(ActiveCellDweller {
+                maybe_entity: None,
+            });
+        }
+    }
+}

@@ -14,15 +14,6 @@ use globe;
 use cell_dweller;
 use render;
 
-/// `World`-global resource for finding the current entity being controlled
-/// by the player.
-//
-// TODO: find somewhere proper for this. Perhaps a "ActiveCellDweller"
-// 1-tuple/newtype.
-pub struct ControlledEntity {
-    pub entity: specs::Entity,
-}
-
 /// Create a new simple PlanetKit app and window.
 ///
 /// Uses all default settings, and logs to standard output.
@@ -65,16 +56,18 @@ pub fn new() -> (app::App, PistonWindow) {
         // Initialize all systems.
         // TODO: split out system initialization into helper functions.
 
-        let movement_sys = cell_dweller::MovementSystem::new(
+        let mut movement_sys = cell_dweller::MovementSystem::new(
             movement_input_receiver,
             &log,
         );
+        movement_sys.init(planner.mut_world());
         planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
 
-        let mining_sys = cell_dweller::MiningSystem::new(
+        let mut mining_sys = cell_dweller::MiningSystem::new(
             mining_input_receiver,
             &log,
         );
+        mining_sys.init(planner.mut_world());
         planner.add_system(mining_sys, "cd_mining", prio::CD_MINING);
 
         let physics_sys = cell_dweller::PhysicsSystem::new(
@@ -152,11 +145,9 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
         // on its coordinates in cell space.
         .with(::Spatial::new(globe_entity, Iso3::identity()))
         .build();
-    // TODO: make something else register this always, as an Option,
-    // so you can just assume it's there and update it.
-    world.add_resource(::simple::ControlledEntity {
-        entity: player_character_entity,
-    });
+    // Set our new character as the currently controlled cell dweller.
+    world.write_resource::<cell_dweller::ActiveCellDweller>().pass().maybe_entity =
+        Some(player_character_entity);
     player_character_entity
 }
 

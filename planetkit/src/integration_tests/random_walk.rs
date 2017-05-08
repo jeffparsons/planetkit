@@ -41,6 +41,7 @@ impl Walker {
             movement_input_receiver,
             &root_log,
         );
+        movement_sys.init(&mut world);
         // Stop the player from getting stuck on cliffs; we want to test what
         // happens when they walk really aggressively all around the world, not what
         // happens when they fall into a hole and don't move anywhere.
@@ -89,9 +90,9 @@ impl Walker {
             ))
             .with(::Spatial::new_root())
             .build();
-        planner.mut_world().add_resource(::simple::ControlledEntity {
-            entity: guy_entity,
-        });
+        // Set our new character as the currently controlled cell dweller.
+        planner.mut_world().write_resource::<cell_dweller::ActiveCellDweller>().pass().maybe_entity =
+            Some(guy_entity);
 
         Walker {
             movement_input_sender: movement_input_sender,

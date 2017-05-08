@@ -4,7 +4,7 @@ use slog::Logger;
 use piston::input::Input;
 
 use types::*;
-use super::CellDweller;
+use super::{ CellDweller, ActiveCellDweller };
 use ::movement::*;
 use globe::{ Globe, PosInOwningRoot };
 use globe::chunk::Material;
@@ -62,6 +62,13 @@ impl MiningSystem {
             log: parent_log.new(o!()),
             pick_up: false,
         }
+    }
+
+    // TODO: move into special trait, e.g., `PlanetKitSystem`, and require all systems to be
+    // added through my interface. We can then specialise that to automatically call this initialisation
+    // code if the system happens to provide it.
+    pub fn init(&mut self, world: &mut specs::World) {
+        ActiveCellDweller::ensure_registered(world);
     }
 
     fn consume_input(&mut self) {
@@ -161,15 +168,18 @@ impl MiningSystem {
 impl specs::System<TimeDelta> for MiningSystem {
     fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
         self.consume_input();
-        let (mut cell_dwellers, mut globes, controlled_entity_resource) = arg.fetch(|w|
+        let (mut cell_dwellers, mut globes, active_cell_dweller_resource) = arg.fetch(|w|
             (
                 w.write::<CellDweller>(),
                 w.write::<Globe>(),
-                w.read_resource::<::simple::ControlledEntity>(),
+                w.read_resource::<ActiveCellDweller>(),
             )
         );
-        let controlled_entity = controlled_entity_resource.entity;
-        let cd = cell_dwellers.get_mut(controlled_entity).expect("Someone deleted the controlled entity's CellDweller");
+        let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
+            Some(entity) => entity,
+            None => return,
+        };
+        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect("Someone deleted the controlled entity's CellDweller");
 
         // Get the associated globe, complaining loudly if we fail.
         let globe_entity = match cd.globe_entity {
