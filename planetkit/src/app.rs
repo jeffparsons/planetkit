@@ -132,6 +132,18 @@ impl App {
         }
     }
 
+    /// Add a system created by the given function.
+    ///
+    /// The function will be provided with essential inputs, like a `slog::Logger`,
+    /// `specs::World`, etc.
+    pub fn add_system<S: 'static + ::System<TimeDelta>, F>(&mut self, create_system: F)
+        where F: Fn(&Logger) -> (S, &'static str, i32)
+    {
+        let (mut system, name, priority) = create_system(&self.log);
+        system.init(self.planner().mut_world());
+        self.planner.add_system(system, name, priority);
+    }
+
     pub fn run(&mut self, mut window: &mut PistonWindow) {
         use piston::input::*;
 

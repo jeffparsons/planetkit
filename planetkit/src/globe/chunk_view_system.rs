@@ -84,6 +84,7 @@ impl ChunkViewSystem {
             }
 
             // Make a proto-mesh for the chunk.
+            // TODO: debounce/throttle per chunk.
             trace!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
             // TEMP: just use the existing globe `View` struct
             // to get this done. TODO: move into `ChunkView`.

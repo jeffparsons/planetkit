@@ -4,6 +4,7 @@ version = "0.0.1"
 dependencies = [
  "planetkit 0.0.1",
  "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog 2.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

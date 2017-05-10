@@ -1,16 +1,31 @@
 extern crate planetkit as pk;
 extern crate specs;
 extern crate rand;
+#[macro_use]
+extern crate slog;
 
 mod shepherd;
+mod game_state;
+mod game_system;
 
 fn main() {
     let (mut app, mut window) = pk::simple::new_empty();
     {
-        let mut world = app.planner().mut_world();
-        create_entities(&mut world);
+        add_systems(&mut app);
+        let world = app.planner().mut_world();
+        create_entities(world);
     }
     app.run(&mut window);
+}
+
+fn add_systems(app: &mut pk::app::App) {
+    app.add_system(|logger| (
+        game_system::GameSystem::new(logger),
+        "woolgather_game",
+        // TODO: figure out how to interleave PlanetKit and application priorities.
+        // Constraints would be so much better.
+        150,
+    ));
 }
 
 fn create_entities(world: &mut specs::World) {

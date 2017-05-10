@@ -7,3 +7,4 @@ authors = ["Jeff Parsons <jeff@parsons.io>"]
 planetkit = { path = "../planetkit" }
 rand = "0.3.14"
 specs = "0.8.1"
+slog = "2.0.4"
