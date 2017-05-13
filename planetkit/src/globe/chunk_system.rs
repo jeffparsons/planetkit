@@ -4,7 +4,8 @@ use specs;
 use slog::Logger;
 
 use types::*;
-use super::{ Globe, ChunkOrigin, PosInOwningRoot };
+use grid::PosInOwningRoot;
+use super::{ Globe, ChunkOrigin };
 use cell_dweller::CellDweller;
 
 /// Loads and unloads `Chunk`s for a `Globe`.

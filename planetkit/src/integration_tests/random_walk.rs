@@ -68,7 +68,7 @@ impl Walker {
             .build();
 
         // Find globe surface and put player character on it.
-        use globe::{ CellPos, Dir };
+        use grid::{ CellPos, Dir };
         use globe::chunk::Material;
         let mut guy_pos = CellPos::default();
         guy_pos = {
@@ -134,7 +134,7 @@ impl Walker {
 
 #[test]
 fn random_walk() {
-    use globe::CellPos;
+    use grid::CellPos;
 
     let mut walker = Walker::new();
     walker.tick_lots(10000);

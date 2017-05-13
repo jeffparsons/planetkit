@@ -1,7 +1,6 @@
 use types::*;
 
-use super::IntCoord;
-use super::CellPos;
+use grid::{ IntCoord, CellPos };
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.

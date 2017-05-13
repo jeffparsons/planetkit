@@ -1,7 +1,7 @@
 use noise;
 
+use grid::CellPos;
 use super::spec::Spec;
-use super::CellPos;
 use super::chunk::{ Cell, Material };
 
 // TODO: turn this into a component that we can slap onto a Globe

@@ -1,5 +1,5 @@
 use super::*;
-use ::globe::{ CellPos, Dir };
+use ::grid::{ CellPos, Dir };
 use super::triangles::TRIANGLES;
 use na;
 

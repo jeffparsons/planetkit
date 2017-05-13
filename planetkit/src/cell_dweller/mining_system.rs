@@ -6,7 +6,8 @@ use piston::input::Input;
 use types::*;
 use super::{ CellDweller, ActiveCellDweller };
 use ::movement::*;
-use globe::{ Globe, PosInOwningRoot };
+use grid::PosInOwningRoot;
+use globe::Globe;
 use globe::chunk::Material;
 use ::input_adapter;
 

@@ -1,6 +1,7 @@
 use specs;
 use pk;
 use pk::types::*;
+use pk::grid;
 use pk::globe;
 use pk::render;
 use pk::cell_dweller;
@@ -37,7 +38,7 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
     let shepherd_entity = world.create_now()
         .with(cell_dweller::CellDweller::new(
             shepherd_pos,
-            globe::Dir::default(),
+            grid::Dir::default(),
             globe_spec,
             Some(globe_entity),
         ))

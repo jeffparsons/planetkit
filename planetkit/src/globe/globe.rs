@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use specs;
 
+use grid::{ CellPos, PosInOwningRoot, Neighbors };
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
-use super::{ CellPos, PosInOwningRoot, ChunkOrigin };
-use super::Neighbors;
+use super::ChunkOrigin;
 use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;

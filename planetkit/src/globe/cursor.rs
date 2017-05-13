@@ -1,4 +1,5 @@
-use super::{ Globe, CellPos, ChunkOrigin };
+use grid::CellPos;
+use super::{ Globe, ChunkOrigin };
 use super::chunk::{ Chunk, Cell };
 use globe::globe::GlobeGuts;
 

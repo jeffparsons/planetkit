@@ -71,6 +71,7 @@ extern crate approx;
 extern crate test;
 
 pub mod input_adapter;
+pub mod grid;
 pub mod globe;
 pub mod types;
 pub mod app;

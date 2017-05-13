@@ -3,11 +3,11 @@
 
 use rand::Rng;
 
-use super::{ CellPos, PosInOwningRoot, IntCoord };
+use grid::{ CellPos, PosInOwningRoot, IntCoord };
+use grid::random_column;
 use super::chunk::Material;
 use super::CursorMut;
 use super::globe::Globe;
-use super::random_column;
 
 impl Globe {
     /// Attempt to find dry land at surface level. See `find_dry_land`.

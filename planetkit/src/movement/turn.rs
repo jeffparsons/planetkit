@@ -1,4 +1,4 @@
-use ::globe::{ IntCoord, CellPos, Dir };
+use ::grid::{ IntCoord, CellPos, Dir };
 
 use super::transform::*;
 use super::util::*;

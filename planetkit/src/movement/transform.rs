@@ -4,8 +4,8 @@
 
 use na;
 
-use globe::{ IntCoord, CellPos, Dir };
-use globe::cell_shape::NEIGHBOR_OFFSETS;
+use grid::{ IntCoord, CellPos, Dir };
+use grid::cell_shape::NEIGHBOR_OFFSETS;
 use super::triangles::*;
 
 // Use nalgebra for some local transformations.
@@ -91,7 +91,7 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::globe::{ CellPos, Dir };
+    use ::grid::{ CellPos, Dir };
 
     const RESOLUTION: [i64; 2] = [32, 64];
 

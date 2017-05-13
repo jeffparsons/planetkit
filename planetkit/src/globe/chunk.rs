@@ -1,5 +1,6 @@
 use specs;
-use globe::{ IntCoord, CellPos, ChunkOrigin, PosInOwningRoot };
+use grid::{ IntCoord, CellPos, PosInOwningRoot };
+use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
@@ -221,10 +222,8 @@ impl Chunk {
             // some way to explicitly list all the equivalent representations of
             // a pos and use that instead here, because looking at "neighbors"
             // here is actually just a hack workaround for not having that.
-            use super::{
-                Neighbors,
-                origin_of_chunk_in_same_root_containing,
-            };
+            use grid::Neighbors;
+            use super::origin_of_chunk_in_same_root_containing;
             let neighbors = Neighbors::new(corner_pos, root_resolution);
             for neighbor in neighbors {
                 let neighbor_chunk_origin = origin_of_chunk_in_same_root_containing(

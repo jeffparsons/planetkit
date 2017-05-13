@@ -1,9 +1,10 @@
 use slog::Logger;
 
+use grid::CellPos;
+use grid::cell_shape;
 use super::spec::Spec;
-use super::{Globe, CellPos, Cursor, ChunkOrigin};
+use super::{Globe, Cursor, ChunkOrigin};
 use super::chunk::{ Material };
-use super::cell_shape;
 use ::types::Pt3;
 use ::render;
 
@@ -208,7 +209,7 @@ impl View {
     }
 
     fn cull_cell(&self, cursor: &Cursor) -> bool {
-        use super::Neighbors;
+        use grid::Neighbors;
 
         let resolution = cursor.globe().spec().root_resolution;
 

@@ -122,7 +122,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
     use specs::Gate;
 
     // Find a suitable spawn point for the player character at the globe surface.
-    use globe::Dir;
+    use grid::Dir;
     let (globe_spec, player_character_pos) = {
         let mut globe_storage = world.write::<globe::Globe>().pass();
         let globe = globe_storage.get_mut(globe_entity)

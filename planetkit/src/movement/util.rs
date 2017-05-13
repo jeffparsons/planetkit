@@ -1,7 +1,7 @@
 use na;
 
-use globe::{ IntCoord, CellPos, Dir };
-use globe::cell_shape::NEIGHBOR_OFFSETS;
+use grid::{ IntCoord, CellPos, Dir };
+use grid::cell_shape::NEIGHBOR_OFFSETS;
 
 use super::triangles::*;
 use super::transform::*;

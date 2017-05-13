@@ -1,7 +1,8 @@
 use specs;
 
 use ::types::*;
-use globe::{ CellPos, Dir, Spec };
+use grid::{ CellPos, Dir };
+use globe::Spec;
 use ::movement::*;
 
 pub struct CellDweller {
