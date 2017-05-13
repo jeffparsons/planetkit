@@ -3,7 +3,7 @@
 
 use rand::Rng;
 
-use grid::{ CellPos, PosInOwningRoot, IntCoord };
+use grid::{ GridPoint2, CellPos, PosInOwningRoot, IntCoord };
 use grid::random_column;
 use super::chunk::Material;
 use super::CursorMut;
@@ -13,17 +13,15 @@ impl Globe {
     /// Attempt to find dry land at surface level. See `find_dry_land`.
     pub fn find_surface_dry_land(
         &mut self,
-        column: CellPos,
+        column: GridPoint2,
         min_air_cells_above: IntCoord,
         max_distance_from_starting_point: IntCoord,
     ) -> Option<CellPos> {
         // Use land height from world gen to approximate cell position where we might find land.
         let land_height = self.gen.land_height(column);
         let approx_cell_z = self.spec().approx_cell_z_from_radius(land_height);
-        // Augment column with approximate z-value.
-        let mut pos = column;
-        pos.z = approx_cell_z;
-        // Pass the buck.
+        // Augment original column with approximate z-value and pass the buck.
+        let pos = column.with_z(approx_cell_z);
         self.find_dry_land(pos, min_air_cells_above, max_distance_from_starting_point)
     }
 

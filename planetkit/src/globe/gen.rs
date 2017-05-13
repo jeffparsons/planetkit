@@ -1,6 +1,6 @@
 use noise;
 
-use grid::CellPos;
+use grid::{ GridPoint2, CellPos };
 use super::spec::Spec;
 use super::chunk::{ Cell, Material };
 
@@ -52,7 +52,7 @@ impl Gen {
         }
     }
 
-    pub fn land_height(&self, column: CellPos) -> f64 {
+    pub fn land_height(&self, column: GridPoint2) -> f64 {
         use noise::NoiseModule;
 
         // Calculate height for this cell from world spec.
@@ -80,7 +80,7 @@ impl Gen {
     }
 
     pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
-        let land_height = self.land_height(cell_pos);
+        let land_height = self.land_height(cell_pos.rxy);
         let cell_pt3 = self.spec.cell_center_center(cell_pos);
         // TEMP: ...
         let cell_height = cell_pt3.coords.norm();

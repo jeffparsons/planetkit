@@ -1,6 +1,6 @@
 use types::*;
 
-use grid::{ IntCoord, CellPos };
+use grid::{ IntCoord, GridPoint2, CellPos };
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.
@@ -86,26 +86,26 @@ impl Spec {
     // This is useful for, e.g., sampling noise to determine elevation
     // at a particular point on the surface, or other places where you're
     // really just talking about longitude/latitude.
-    pub fn cell_center_on_unit_sphere(&self, cell_pos: CellPos) -> Pt3 {
+    pub fn cell_center_on_unit_sphere(&self, column: GridPoint2) -> Pt3 {
         let res_x = self.root_resolution[0] as f64;
         let res_y = self.root_resolution[1] as f64;
         let pt_in_root_quad = Pt2::new(
-            cell_pos.x as f64 / res_x,
-            cell_pos.y as f64 / res_y,
+            column.x as f64 / res_x,
+            column.y as f64 / res_y,
         );
-        super::project(cell_pos.root, pt_in_root_quad)
+        super::project(column.root, pt_in_root_quad)
     }
 
     pub fn cell_center_center(&self, cell_pos: CellPos) -> Pt3 {
         let radius = self.floor_radius +
             self.block_height * (cell_pos.z as f64 + 0.5);
-        radius * self.cell_center_on_unit_sphere(cell_pos)
+        radius * self.cell_center_on_unit_sphere(cell_pos.rxy)
     }
 
     pub fn cell_bottom_center(&self, cell_pos: CellPos) -> Pt3 {
         let radius = self.floor_radius +
             self.block_height * (cell_pos.z as f64);
-        radius * self.cell_center_on_unit_sphere(cell_pos)
+        radius * self.cell_center_on_unit_sphere(cell_pos.rxy)
     }
 
     // TODO: describe meaning of offsets, where to get it from, etc.?
