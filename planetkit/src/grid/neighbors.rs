@@ -150,8 +150,8 @@ impl Iterator for FastIntraRootNeighbors {
     fn next(&mut self) -> Option<CellPos> {
         self.offsets.next().map(|offset| {
             self.origin
-                .set_x(self.origin.x + offset.0)
-                .set_y(self.origin.y + offset.1)
+                .with_x(self.origin.x + offset.0)
+                .with_y(self.origin.y + offset.1)
         })
     }
 }
@@ -183,7 +183,7 @@ impl Iterator for AboveAndBelow {
         if !self.yielded_above {
             // Yield position above.
             self.yielded_above = true;
-            return Some(self.origin.clone().set_z(self.origin.z + 1));
+            return Some(self.origin.with_z(self.origin.z + 1));
         }
 
         if !self.yielded_below {
@@ -194,7 +194,7 @@ impl Iterator for AboveAndBelow {
 
             // Yield position below.
             self.yielded_below = true;
-            return Some(self.origin.set_z(self.origin.z - 1));
+            return Some(self.origin.with_z(self.origin.z - 1));
         }
 
         None

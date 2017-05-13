@@ -281,12 +281,12 @@ impl Globe {
         for cell_z in origin.pos().z..(end_z + 1) {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
-                    let cell_pos = CellPos {
-                        root: origin.pos().root,
-                        x: cell_x,
-                        y: cell_y,
-                        z: cell_z,
-                    };
+                    let cell_pos = CellPos::new(
+                        origin.pos().root,
+                        cell_x,
+                        cell_y,
+                        cell_z,
+                    );
                     let mut cell = self.gen.cell_at(cell_pos);
                     // Temp hax?
                     let mut rng = rand::thread_rng();

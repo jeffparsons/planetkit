@@ -221,12 +221,12 @@ pub fn origin_of_chunk_in_same_root_containing(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
 
     ChunkOrigin::new(
-        CellPos {
-            root: pos.root,
-            x: chunk_origin_x,
-            y: chunk_origin_y,
-            z: chunk_origin_z,
-        },
+        CellPos::new(
+            pos.root,
+            chunk_origin_x,
+            chunk_origin_y,
+            chunk_origin_z,
+        ),
         root_resolution,
         chunk_resolution,
     )
@@ -250,24 +250,24 @@ pub fn origin_of_chunk_owning(
     if pos.x == 0 && pos.y == 0 {
         // Chunk at (0, 0) owns north pole.
         ChunkOrigin::new(
-            CellPos {
-                root: pos.root,
-                x: 0,
-                y: 0,
-                z: chunk_origin_z,
-            },
+            CellPos::new(
+                pos.root,
+                0,
+                0,
+                chunk_origin_z,
+            ),
             root_resolution,
             chunk_resolution,
         )
     } else if pos.x == end_x && pos.y == end_y {
         // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
         ChunkOrigin::new(
-            CellPos {
-                root: pos.root,
-                x: last_chunk_x,
-                y: last_chunk_y,
-                z: chunk_origin_z,
-            },
+            CellPos::new(
+                pos.root,
+                last_chunk_x,
+                last_chunk_y,
+                chunk_origin_z,
+            ),
             root_resolution,
             chunk_resolution,
         )
@@ -278,12 +278,12 @@ pub fn origin_of_chunk_owning(
         // Shift everything down by one in y-direction.
         let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
         ChunkOrigin::new(
-            CellPos {
-                root: pos.root,
-                x: chunk_origin_x,
-                y: chunk_origin_y,
-                z: chunk_origin_z,
-            },
+            CellPos::new(
+                pos.root,
+                chunk_origin_x,
+                chunk_origin_y,
+                chunk_origin_z,
+            ),
             root_resolution,
             chunk_resolution,
         )

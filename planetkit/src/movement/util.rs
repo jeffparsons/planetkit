@@ -26,12 +26,12 @@ pub fn adjacent_pos_in_dir(
     // points at edge 0.
     let edge_index = (dir.index / 2) as usize;
     let (dx, dy) = NEIGHBOR_OFFSETS[edge_index];
-    Ok(CellPos {
-        root: pos.root,
-        x: pos.x + dx,
-        y: pos.y + dy,
-        z: pos.z,
-    })
+    Ok(CellPos::new(
+        pos.root,
+        pos.x + dx,
+        pos.y + dy,
+        pos.z,
+    ))
 }
 
 // Transform (x, y, dir) back to local coordinates near where we started,

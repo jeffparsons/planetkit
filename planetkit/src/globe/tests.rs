@@ -38,7 +38,7 @@ pub mod benches {
 
     use super::super::*;
 
-    use ::globe::{ CellPos, Root };
+    use ::globe::CellPos;
 
     #[bench]
     // # History for picking the "middle of the vector" chunk.
@@ -95,7 +95,7 @@ pub mod benches {
         // Copied from output of old version of test to make sure
         // we're actually benchmarking the same thing.
         let middle_chunk_origin = ChunkOrigin::new(
-            CellPos { root: Root { index: 2 }, x: 16, y: 16, z: 8 },
+            CellPos::new(2.into(), 16, 16, 8),
             ROOT_RESOLUTION,
             CHUNK_RESOLUTION,
         );

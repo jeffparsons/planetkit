@@ -112,12 +112,12 @@ impl Chunk {
         for cell_z in origin.pos().z..(end_z + 1) {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
-                    let other_pos = CellPos {
-                        root: origin.pos().root,
-                        x: cell_x,
-                        y: cell_y,
-                        z: cell_z,
-                    };
+                    let other_pos = CellPos::new(
+                        origin.pos().root,
+                        cell_x,
+                        cell_y,
+                        cell_z,
+                    );
 
                     // Find what chunk this belongs to.
                     let other_pos_in_owning_root = PosInOwningRoot::new(
@@ -209,12 +209,12 @@ impl Chunk {
             // but do in the x- and y-directions.
             &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
         ) {
-            let corner_pos = CellPos {
-                root: origin.pos().root,
-                x: *x,
-                y: *y,
-                z: *z,
-            };
+            let corner_pos = CellPos::new(
+                origin.pos().root,
+                *x,
+                *y,
+                *z,
+            );
             // Find all its neighbors and their chunks' origins.
             //
             // TODO: does Neighbors actually guarantee that we'll get chunks

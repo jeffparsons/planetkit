@@ -1,6 +1,7 @@
 use rand::Rng;
 
 mod root;
+mod grid_point2;
 pub mod cell_shape;
 mod cell_pos;
 mod neighbors;
@@ -8,6 +9,7 @@ mod dir;
 
 // TODO: be selective in what you export; no wildcards!
 pub use self::root::*;
+pub use self::grid_point2::GridPoint2;
 pub use self::cell_pos::*;
 pub use self::neighbors::*;
 pub use self::dir::*;
@@ -26,10 +28,5 @@ pub fn random_column<R: Rng>(
     let root_index: RootIndex = rng.gen_range(0, 5);
     let x: IntCoord = rng.gen_range(0, root_resolution[0]);
     let y: IntCoord = rng.gen_range(0, root_resolution[0]);
-    CellPos {
-        root: root_index.into(),
-        x: x,
-        y: y,
-        z: 0,
-    }
+    CellPos::new(root_index.into(), x, y, 0)
 }

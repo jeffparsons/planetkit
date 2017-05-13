@@ -10,7 +10,7 @@ fn move_forward_in_positive_x_direction() {
     let mut pos = CellPos::default();
     let mut dir = Dir::default();
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
-    assert_eq!(CellPos::default().set_x(1), pos);
+    assert_eq!(CellPos::default().with_x(1), pos);
     assert_eq!(Dir::default(), dir);
 }
 
@@ -18,8 +18,8 @@ fn move_forward_in_positive_x_direction() {
 fn move_forward_into_northern_tropic_pentagon() {
     // Start facing east, just west of a northern tropic pentagon.
     let mut pos = CellPos::default()
-        .set_x(1)
-        .set_y(RESOLUTION[0] - 1);
+        .with_x(1)
+        .with_y(RESOLUTION[0] - 1);
     let mut dir = Dir::new(4);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
@@ -30,8 +30,8 @@ fn move_forward_into_northern_tropic_pentagon() {
     // Note that it wouldn't be legal to step in this direction.
     assert_eq!(
         CellPos::default()
-            .set_root(1)
-            .set_x(RESOLUTION[0]),
+            .with_root(1)
+            .with_x(RESOLUTION[0]),
         pos
     );
     assert_eq!(Dir::new(3), dir);
@@ -48,8 +48,8 @@ fn move_forward_into_northern_tropic_pentagon() {
     // We should now be back where we started, but facing west.
     assert_eq!(
         CellPos::default()
-            .set_x(1)
-            .set_y(RESOLUTION[0] - 1),
+            .with_x(1)
+            .with_y(RESOLUTION[0] - 1),
         pos
     );
     assert_eq!(Dir::new(10), dir);
@@ -63,9 +63,9 @@ fn turn_left_at_northern_tropic() {
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
     let mut pos = CellPos::default()
-        .set_root(0)
-        .set_x(apex.x)
-        .set_y(apex.y);
+        .with_root(0)
+        .with_x(apex.x)
+        .with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -121,9 +121,9 @@ fn turn_right_at_northern_tropic() {
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
     let mut pos = CellPos::default()
-        .set_root(0)
-        .set_x(apex.x)
-        .set_y(apex.y);
+        .with_root(0)
+        .with_x(apex.x)
+        .with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -170,28 +170,28 @@ fn move_east_under_north_pole() {
     // Start just south of the north pole in root 4,
     // facing north-east.
     let mut pos = CellPos::default()
-        .set_root(4)
-        .set_x(1)
-        .set_y(1);
+        .with_root(4)
+        .with_x(1)
+        .with_y(1);
     let mut dir = Dir::new(6);
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 4 and 0,
     // facing east into root 0.
-    assert_eq!(CellPos::default().set_x(1), pos);
+    assert_eq!(CellPos::default().with_x(1), pos);
     assert_eq!(Dir::new(4), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 0 and 1,
     // facing south-east into root 1.
-    assert_eq!(CellPos::default().set_root(1).set_x(1), pos);
+    assert_eq!(CellPos::default().with_root(1).with_x(1), pos);
     assert_eq!(Dir::new(2), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be just south of the north pole in root 1.
-    assert_eq!(CellPos::default().set_root(1).set_x(1).set_y(1), pos);
+    assert_eq!(CellPos::default().with_root(1).with_x(1).with_y(1), pos);
     assert_eq!(Dir::new(2), dir);
 }
 
@@ -200,28 +200,28 @@ fn move_west_under_north_pole() {
     // Start just south of the north pole in root 1,
     // facing north-west.
     let mut pos = CellPos::default()
-        .set_root(1)
-        .set_x(1)
-        .set_y(1);
+        .with_root(1)
+        .with_x(1)
+        .with_y(1);
     let mut dir = Dir::new(8);
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 1 and 0,
     // facing west into root 0.
-    assert_eq!(CellPos::default().set_y(1), pos);
+    assert_eq!(CellPos::default().with_y(1), pos);
     assert_eq!(Dir::new(10), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 0 and 4,
     // facing south-west into root 1.
-    assert_eq!(CellPos::default().set_root(4).set_y(1), pos);
+    assert_eq!(CellPos::default().with_root(4).with_y(1), pos);
     assert_eq!(Dir::new(0), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be just south of the north pole in root 4.
-    assert_eq!(CellPos::default().set_root(4).set_x(1).set_y(1), pos);
+    assert_eq!(CellPos::default().with_root(4).with_x(1).with_y(1), pos);
     assert_eq!(Dir::new(0), dir);
 }
 
@@ -240,9 +240,9 @@ fn walk_anticlockwise_around_all_pentagons() {
             // Both parts of the apex are expressed in terms of x-dimension.
             let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
             let mut pos = CellPos::default()
-                .set_root(root_index)
-                .set_x(apex.x)
-                .set_y(apex.y);
+                .with_root(root_index)
+                .with_x(apex.x)
+                .with_y(apex.y);
             let mut dir = Dir::new(triangle.x_dir);
 
             // Take one step out along the x-axis and then face towards
@@ -288,9 +288,9 @@ fn walk_clockwise_around_all_pentagons() {
             // Both parts of the apex are expressed in terms of x-dimension.
             let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
             let mut pos = CellPos::default()
-                .set_root(root_index)
-                .set_x(apex.x)
-                .set_y(apex.y);
+                .with_root(root_index)
+                .with_x(apex.x)
+                .with_y(apex.y);
             let mut dir = Dir::new(triangle.x_dir);
 
             // Take one step out along the x-axis and then face towards

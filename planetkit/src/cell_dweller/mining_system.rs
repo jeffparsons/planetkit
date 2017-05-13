@@ -96,10 +96,7 @@ impl MiningSystem {
             // There's nothing below; someone built a silly globe.
             return;
         }
-        // TODO: this reveals that functions like `set_z`
-        // are misleading; this implicitly copies (because it consumes self)--
-        // not changes the orignal!
-        let under_pos = cd.pos.set_z(cd.pos.z - 1);
+        let under_pos = cd.pos.with_z(cd.pos.z - 1);
         {
             // Inner scope to fight borrowck.
             let under_cell = globe.maybe_non_authoritative_cell(under_pos);
@@ -121,7 +118,7 @@ impl MiningSystem {
         // in my initial use case I don't want to allow mining below
         // the surface.
         let air_above_target = {
-            let above_new_pos = new_pos.set_z(new_pos.z + 1);
+            let above_new_pos = new_pos.with_z(new_pos.z + 1);
             let cell = globe.maybe_non_authoritative_cell(above_new_pos);
             cell.material == Material::Air
         };

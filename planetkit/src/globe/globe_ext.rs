@@ -160,7 +160,7 @@ impl Globe {
                     return pos.into();
                 }
             }
-            let new_pos = cursor.pos().set_z(cursor.pos().z + 1);
+            let new_pos = cursor.pos().with_z(cursor.pos().z + 1);
             cursor.set_pos(new_pos);
         }
     }

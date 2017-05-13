@@ -1,44 +1,44 @@
-use super::{ IntCoord, Root, RootIndex };
+use std::ops::{ Deref, DerefMut };
 
+use super::{ IntCoord, GridPoint2, Root, RootIndex };
+
+// TODO: rename to GridPoint3
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct CellPos {
-    pub root: Root,
-    pub x: IntCoord,
-    pub y: IntCoord,
+    pub rxy: GridPoint2,
     pub z: IntCoord,
 }
 
 impl CellPos {
-    // Convenience methods, mostly for testing.
-    // This is kind of like the builder pattern
-    // in that it allows chaining by returning self.
-    //
-    // I toyed with using a proper builder for this
-    // but its use was just too verbose to justify.
-    //
-    // TODO: move them into a special module that you
-    // only import in tests?
-
-    // TODO: get rid of these; they are too easy to misuse.
-
-    pub fn set_root(mut self, new_root_index: RootIndex) -> Self {
-        self.root.index = new_root_index;
-        self
+    pub fn new(root: Root, x: IntCoord, y: IntCoord, z: IntCoord) -> CellPos {
+        CellPos {
+            rxy: GridPoint2::new(root, x, y),
+            z: z,
+        }
     }
 
-    pub fn set_x(mut self, new_x: IntCoord) -> Self {
-        self.x = new_x;
-        self
+    pub fn with_root(&self, new_root_index: RootIndex) -> Self {
+        let mut new_point = *self;
+        new_point.rxy.root.index = new_root_index;
+        new_point
     }
 
-    pub fn set_y(mut self, new_y: IntCoord) -> Self {
-        self.y = new_y;
-        self
+    pub fn with_x(&self, new_x: IntCoord) -> Self {
+        let mut new_point = *self;
+        new_point.rxy.x = new_x;
+        new_point
     }
 
-    pub fn set_z(mut self, new_z: IntCoord) -> Self {
-        self.z = new_z;
-        self
+    pub fn with_y(&self, new_y: IntCoord) -> Self {
+        let mut new_point = *self;
+        new_point.rxy.y = new_y;
+        new_point
+    }
+
+    pub fn with_z(&self, new_z: IntCoord) -> Self {
+        let mut new_point = *self;
+        new_point.z = new_z;
+        new_point
     }
 }
 
@@ -107,49 +107,49 @@ impl PosInOwningRoot {
         // Special cases for north and south poles
         let pos_in_owning_root = if pos.x == 0 && pos.y == 0 {
             // North pole
-            CellPos {
+            CellPos::new(
                 // First root owns north pole.
-                root: 0.into(),
-                x: 0,
-                y: 0,
-                z: pos.z,
-            }
+                0.into(),
+                0,
+                0,
+                pos.z,
+            )
         } else if pos.x == end_x && pos.y == end_y {
             // South pole
-            CellPos {
+            CellPos::new(
                 // Last root owns south pole.
-                root: 4.into(),
-                x: end_x,
-                y: end_y,
-                z: pos.z,
-            }
+                4.into(),
+                end_x,
+                end_y,
+                pos.z,
+            )
         } else if pos.y == 0 {
             // Roots don't own their north-west edge;
             // translate to next root's north-east edge.
-            CellPos {
-                root: pos.root.next_west(),
-                x: 0,
-                y: pos.x,
-                z: pos.z,
-            }
+            CellPos::new(
+                pos.root.next_west(),
+                0,
+                pos.x,
+                pos.z,
+            )
         } else if pos.x == end_x && pos.y < half_y {
             // Roots don't own their mid-west edge;
             // translate to the next root's mid-east edge.
-            CellPos {
-                root: pos.root.next_west(),
-                x: 0,
-                y: half_y + pos.y,
-                z: pos.z,
-            }
+            CellPos::new(
+                pos.root.next_west(),
+                0,
+                half_y + pos.y,
+                pos.z,
+            )
         } else if pos.x == end_x {
             // Roots don't own their south-west edge;
             // translate to the next root's south-east edge.
-            CellPos {
-                root: pos.root.next_west(),
-                y: end_y,
-                x: pos.y - half_y,
-                z: pos.z,
-            }
+            CellPos::new(
+                pos.root.next_west(),
+                pos.y - half_y,
+                end_y,
+                pos.z,
+            )
         } else {
             // `pos` is either on an edge owned by its root,
             // or somewhere in the middle of the root.
@@ -173,5 +173,21 @@ impl PosInOwningRoot {
 impl<'a> PosInOwningRoot {
     pub fn pos(&'a self) -> &'a CellPos {
         &self.pos
+    }
+}
+
+// Evil tricks to allow access to GridPoint2 fields from `self.rxy`
+// as if they belong to `Self`.
+impl Deref for CellPos {
+    type Target = GridPoint2;
+
+    fn deref(&self) -> &GridPoint2 {
+        &self.rxy
+    }
+}
+
+impl DerefMut for CellPos {
+    fn deref_mut(&mut self) -> &mut GridPoint2 {
+        &mut self.rxy
     }
 }

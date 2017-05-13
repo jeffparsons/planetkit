@@ -113,7 +113,7 @@ mod tests {
         // starting a bit south of the pole and pointing up.
         // NOTE: this isn't a valid direction to move in,
         // but that doesn't matter; it's still valid to transform.
-        let pos = CellPos::default().set_x(1).set_y(1);
+        let pos = CellPos::default().with_x(1).with_y(1);
         let dir = Dir::new(7);
         let tri = &TRIANGLES[0];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
@@ -126,16 +126,16 @@ mod tests {
     fn world_to_tri_4() {
         // Transform from just below northern tropic, facing north-west.
         let pos = CellPos::default()
-            .set_x(2)
-            .set_y(RESOLUTION[1] / 2 - 1);
+            .with_x(2)
+            .with_y(RESOLUTION[1] / 2 - 1);
         let dir = Dir::new(8);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
         // Should now be just below north pole, facing west.
         assert_eq!(
             CellPos::default()
-                .set_x(1)
-                .set_y(1),
+                .with_x(1)
+                .with_y(1),
             new_pos
         );
         assert_eq!(Dir::new(10), new_dir);
@@ -146,8 +146,8 @@ mod tests {
         // Transform from just below north pole, facing west.
 
         let pos = CellPos::default()
-                .set_x(1)
-                .set_y(1);
+                .with_x(1)
+                .with_y(1);
         let dir = Dir::new(10);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = local_to_world(pos, dir, RESOLUTION, tri);
@@ -155,8 +155,8 @@ mod tests {
         // Should now be just below northern tropic, facing north-west.
         assert_eq!(
             CellPos::default()
-            .set_x(2)
-            .set_y(RESOLUTION[1] / 2 - 1),
+            .with_x(2)
+            .with_y(RESOLUTION[1] / 2 - 1),
             new_pos
         );
         assert_eq!(Dir::new(8), new_dir);

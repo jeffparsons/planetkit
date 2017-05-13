@@ -79,12 +79,12 @@ impl View {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
                     // Use cell center as first vertex of each triangle.
-                    let cell_pos = CellPos {
-                        x: cell_x,
-                        y: cell_y,
-                        z: cell_z,
-                        root: origin.pos().root,
-                    };
+                    let cell_pos = CellPos::new(
+                        origin.pos().root,
+                        cell_x,
+                        cell_y,
+                        cell_z,
+                    );
 
                     cursor.set_pos(cell_pos);
 
