@@ -28,7 +28,7 @@ pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::{ Cursor, CursorMut };
 pub use self::chunk_origin::*;
 
-use grid::{ IntCoord, CellPos, Root, PosInOwningRoot };
+use grid::{ IntCoord, GridPoint3, Root, PosInOwningRoot };
 
 // TODO: move project into icosahedron module.
 
@@ -193,7 +193,7 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
 /// so you should assume that any chunk in this root that contains
 /// the position at all may be returned.
 pub fn origin_of_chunk_in_same_root_containing(
-    pos: CellPos,
+    pos: GridPoint3,
     root_resolution: [IntCoord; 2],
     chunk_resolution: [IntCoord; 3],
 ) -> ChunkOrigin {
@@ -221,7 +221,7 @@ pub fn origin_of_chunk_in_same_root_containing(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
 
     ChunkOrigin::new(
-        CellPos::new(
+        GridPoint3::new(
             pos.root,
             chunk_origin_x,
             chunk_origin_y,
@@ -237,7 +237,7 @@ pub fn origin_of_chunk_owning(
     root_resolution: [IntCoord; 2],
     chunk_resolution: [IntCoord; 3],
 ) -> ChunkOrigin {
-    let pos: CellPos = pos_in_owning_root.into();
+    let pos: GridPoint3 = pos_in_owning_root.into();
 
     // Figure out what chunk this is in.
     let end_x = root_resolution[0];
@@ -250,7 +250,7 @@ pub fn origin_of_chunk_owning(
     if pos.x == 0 && pos.y == 0 {
         // Chunk at (0, 0) owns north pole.
         ChunkOrigin::new(
-            CellPos::new(
+            GridPoint3::new(
                 pos.root,
                 0,
                 0,
@@ -262,7 +262,7 @@ pub fn origin_of_chunk_owning(
     } else if pos.x == end_x && pos.y == end_y {
         // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
         ChunkOrigin::new(
-            CellPos::new(
+            GridPoint3::new(
                 pos.root,
                 last_chunk_x,
                 last_chunk_y,
@@ -278,7 +278,7 @@ pub fn origin_of_chunk_owning(
         // Shift everything down by one in y-direction.
         let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
         ChunkOrigin::new(
-            CellPos::new(
+            GridPoint3::new(
                 pos.root,
                 chunk_origin_x,
                 chunk_origin_y,

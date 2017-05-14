@@ -1,14 +1,14 @@
 use specs;
 
 use ::types::*;
-use grid::{ CellPos, Dir };
+use grid::{ GridPoint3, Dir };
 use globe::Spec;
 use ::movement::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
     // TODO: is this guts pattern worth a separate macro crate of its own?
-    pub pos: CellPos,
+    pub pos: GridPoint3,
     pub dir: Dir,
     pub last_turn_bias: TurnDir,
     // Most `CellDweller`s will also be `Spatial`s. Track whether the
@@ -25,7 +25,7 @@ pub struct CellDweller {
 }
 
 impl CellDweller {
-    pub fn new(pos: CellPos, dir: Dir, globe_spec: Spec, globe_entity: Option<specs::Entity>) -> CellDweller {
+    pub fn new(pos: GridPoint3, dir: Dir, globe_spec: Spec, globe_entity: Option<specs::Entity>) -> CellDweller {
         CellDweller {
             pos: pos,
             dir: dir,
@@ -43,13 +43,13 @@ impl CellDweller {
         }
     }
 
-    pub fn pos(&self) -> CellPos {
+    pub fn pos(&self) -> GridPoint3 {
         self.pos
     }
 
-    pub fn set_cell_pos(
+    pub fn set_grid_point(
         &mut self,
-        new_pos: CellPos,
+        new_pos: GridPoint3,
     ) {
         self.pos = new_pos;
         self.is_real_space_transform_dirty = true;
@@ -57,7 +57,7 @@ impl CellDweller {
 
     pub fn set_cell_transform(
         &mut self,
-        new_pos: CellPos,
+        new_pos: GridPoint3,
         new_dir: Dir,
         new_last_turn_bias: TurnDir,
     ) {

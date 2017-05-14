@@ -1,5 +1,5 @@
 use super::{ IntCoord, Root, RootIndex };
-use super::CellPos;
+use super::GridPoint3;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct GridPoint2 {
@@ -35,7 +35,7 @@ impl GridPoint2 {
         new_point
     }
 
-    pub fn with_z(&self, z: IntCoord) -> CellPos {
-        CellPos::new(self.root, self.x, self.y, z)
+    pub fn with_z(&self, z: IntCoord) -> GridPoint3 {
+        GridPoint3::new(self.root, self.x, self.y, z)
     }
 }

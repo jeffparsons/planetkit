@@ -1,5 +1,5 @@
 use specs;
-use grid::{ IntCoord, CellPos, PosInOwningRoot };
+use grid::{ IntCoord, GridPoint3, PosInOwningRoot };
 use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
 
@@ -112,7 +112,7 @@ impl Chunk {
         for cell_z in origin.pos().z..(end_z + 1) {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
-                    let other_pos = CellPos::new(
+                    let other_pos = GridPoint3::new(
                         origin.pos().root,
                         cell_x,
                         cell_y,
@@ -152,7 +152,7 @@ impl Chunk {
     // Panics or returns nonsense if given coordinates of a cell we don't have data for.
     //
     // TODO: _store_ more information to make lookups cheaper.
-    fn cell_index(&self, pos: CellPos) -> usize {
+    fn cell_index(&self, pos: GridPoint3) -> usize {
         let local_x = pos.x - self.origin.pos().x;
         let local_y = pos.y - self.origin.pos().y;
         let local_z = pos.z - self.origin.pos().z;
@@ -168,7 +168,7 @@ impl Chunk {
     ///
     /// Note that this does not consider whether or not this chunk _owns_ the
     /// cell at `pos`.
-    pub fn contains_pos(&self, pos: CellPos) -> bool {
+    pub fn contains_pos(&self, pos: GridPoint3) -> bool {
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
         let end_x = self.origin.pos().x + self.chunk_resolution[0];
@@ -209,7 +209,7 @@ impl Chunk {
             // but do in the x- and y-directions.
             &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
         ) {
-            let corner_pos = CellPos::new(
+            let corner_pos = GridPoint3::new(
                 origin.pos().root,
                 *x,
                 *y,
@@ -248,13 +248,13 @@ impl<'a> Chunk {
     // - one that is happy to get any old version of the cell.
 
     // Panics if given coordinates of a cell we don't have data for.
-    pub fn cell(&'a self, pos: CellPos) -> &'a Cell {
+    pub fn cell(&'a self, pos: GridPoint3) -> &'a Cell {
         let cell_i = self.cell_index(pos);
         &self.cells[cell_i]
     }
 
     // Panics if given coordinates of a cell we don't have data for.
-    pub fn cell_mut(&'a mut self, pos: CellPos) -> &'a mut Cell {
+    pub fn cell_mut(&'a mut self, pos: GridPoint3) -> &'a mut Cell {
         let cell_i = self.cell_index(pos);
         &mut self.cells[cell_i]
     }
@@ -268,5 +268,5 @@ pub struct Neighbor {
     pub last_known_version: u64,
     // List of positions owned by the neighbor (source),
     // but specified in the root of the primary (target) chunk.
-    pub shared_cells: Vec<CellPos>,
+    pub shared_cells: Vec<GridPoint3>,
 }

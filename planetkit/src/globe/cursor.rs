@@ -1,4 +1,4 @@
-use grid::CellPos;
+use grid::GridPoint3;
 use super::{ Globe, ChunkOrigin };
 use super::chunk::{ Chunk, Cell };
 use globe::globe::GlobeGuts;
@@ -23,7 +23,7 @@ use globe::globe::GlobeGuts;
 #[derive(Clone)]
 pub struct Cursor<'a> {
     globe: &'a Globe,
-    pos: CellPos,
+    pos: GridPoint3,
     // Avoid needing to find a chunk containing `pos` when moving to another cell,
     // if the last chunk we were working in still contains it.
     //
@@ -46,7 +46,7 @@ pub struct Cursor<'a> {
 /// are loaded.
 pub struct CursorMut<'a> {
     globe: &'a mut Globe,
-    pos: CellPos,
+    pos: GridPoint3,
     // Avoid needing to find current chunk again when moving to another
     // pos if we're moving into another pos in the same chunk.
     //
@@ -79,11 +79,11 @@ macro_rules! cursor {
                 cursor
             }
 
-            pub fn pos(&self) -> CellPos {
+            pub fn pos(&self) -> GridPoint3 {
                 self.pos
             }
 
-            pub fn set_pos(&mut self, new_pos: CellPos) {
+            pub fn set_pos(&mut self, new_pos: GridPoint3) {
                 self.pos = new_pos;
                 self.current_chunk_might_be_dirty = true;
             }
@@ -151,7 +151,7 @@ impl<'a> Cursor<'a> {
     /// If you know that one particular chunk containing a given
     /// cell is loaded, and you want to read from that chunk, you should
     /// use `new_in_chunk` instead.
-    fn new_without_chunk_hint(globe: &'a Globe, pos: CellPos) -> Cursor<'a> {
+    fn new_without_chunk_hint(globe: &'a Globe, pos: GridPoint3) -> Cursor<'a> {
         Cursor {
             globe: globe,
             pos: pos,
@@ -185,7 +185,7 @@ impl<'a> CursorMut<'a> {
     /// If you know that one particular chunk containing a given
     /// cell is loaded, and you want to read from that chunk, you should
     /// use `new_in_chunk` instead.
-    fn new_without_chunk_hint(globe: &'a mut Globe, pos: CellPos) -> CursorMut<'a> {
+    fn new_without_chunk_hint(globe: &'a mut Globe, pos: GridPoint3) -> CursorMut<'a> {
         CursorMut {
             globe: globe,
             pos: pos,

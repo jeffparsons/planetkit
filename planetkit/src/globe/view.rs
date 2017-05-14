@@ -1,6 +1,6 @@
 use slog::Logger;
 
-use grid::CellPos;
+use grid::GridPoint3;
 use grid::cell_shape;
 use super::spec::Spec;
 use super::{Globe, Cursor, ChunkOrigin};
@@ -79,14 +79,14 @@ impl View {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
                     // Use cell center as first vertex of each triangle.
-                    let cell_pos = CellPos::new(
+                    let grid_point = GridPoint3::new(
                         origin.pos().root,
                         cell_x,
                         cell_y,
                         cell_z,
                     );
 
-                    cursor.set_pos(cell_pos);
+                    cursor.set_pos(grid_point);
 
                     if self.cull_cell(&cursor) {
                        continue;
@@ -147,7 +147,7 @@ impl View {
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_top_vertex(cell_pos, *offset) - chunk_origin_pos
+                            self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -172,7 +172,7 @@ impl View {
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_top_vertex(cell_pos, *offset) - chunk_origin_pos
+                            self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -186,7 +186,7 @@ impl View {
                         + offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_bottom_vertex(cell_pos, *offset) - chunk_origin_pos
+                            self.spec.cell_bottom_vertex(grid_point, *offset) - chunk_origin_pos
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -213,12 +213,12 @@ impl View {
 
         let resolution = cursor.globe().spec().root_resolution;
 
-        let cell_pos = cursor.pos();
+        let grid_point = cursor.pos();
         let mut neighbor_cursor = cursor.clone();
 
         // If none of the neighboring cells contain air,
         // then we won't render the cell at all.
-        let neighbors = Neighbors::new(cell_pos, resolution);
+        let neighbors = Neighbors::new(grid_point, resolution);
         for neighbor_pos in neighbors {
             neighbor_cursor.set_pos(neighbor_pos);
             if let Some(neighbor) = neighbor_cursor.cell() {

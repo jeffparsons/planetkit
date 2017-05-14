@@ -68,9 +68,9 @@ impl Walker {
             .build();
 
         // Find globe surface and put player character on it.
-        use grid::{ CellPos, Dir };
+        use grid::{ GridPoint3, Dir };
         use globe::chunk::Material;
-        let mut guy_pos = CellPos::default();
+        let mut guy_pos = GridPoint3::default();
         guy_pos = {
             let mut globes = planner
                 .mut_world()
@@ -134,7 +134,7 @@ impl Walker {
 
 #[test]
 fn random_walk() {
-    use grid::CellPos;
+    use grid::GridPoint3;
 
     let mut walker = Walker::new();
     walker.tick_lots(10000);
@@ -144,7 +144,7 @@ fn random_walk() {
     let world = walker.planner.mut_world();
     let cd_storage = world.read::<::cell_dweller::CellDweller>().pass();
     let cd = cd_storage.get(guy_entity).unwrap();
-    assert_ne!(cd.pos, CellPos::default());
+    assert_ne!(cd.pos, GridPoint3::default());
 }
 
 #[cfg(feature = "nightly")]

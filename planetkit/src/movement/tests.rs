@@ -1,5 +1,5 @@
 use super::*;
-use ::grid::{ CellPos, Dir };
+use ::grid::{ GridPoint3, Dir };
 use super::triangles::TRIANGLES;
 use na;
 
@@ -7,17 +7,17 @@ const RESOLUTION: [i64; 2] = [32, 64];
 
 #[test]
 fn move_forward_in_positive_x_direction() {
-    let mut pos = CellPos::default();
+    let mut pos = GridPoint3::default();
     let mut dir = Dir::default();
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
-    assert_eq!(CellPos::default().with_x(1), pos);
+    assert_eq!(GridPoint3::default().with_x(1), pos);
     assert_eq!(Dir::default(), dir);
 }
 
 #[test]
 fn move_forward_into_northern_tropic_pentagon() {
     // Start facing east, just west of a northern tropic pentagon.
-    let mut pos = CellPos::default()
+    let mut pos = GridPoint3::default()
         .with_x(1)
         .with_y(RESOLUTION[0] - 1);
     let mut dir = Dir::new(4);
@@ -29,7 +29,7 @@ fn move_forward_into_northern_tropic_pentagon() {
     //
     // Note that it wouldn't be legal to step in this direction.
     assert_eq!(
-        CellPos::default()
+        GridPoint3::default()
             .with_root(1)
             .with_x(RESOLUTION[0]),
         pos
@@ -47,7 +47,7 @@ fn move_forward_into_northern_tropic_pentagon() {
 
     // We should now be back where we started, but facing west.
     assert_eq!(
-        CellPos::default()
+        GridPoint3::default()
             .with_x(1)
             .with_y(RESOLUTION[0] - 1),
         pos
@@ -62,7 +62,7 @@ fn turn_left_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = CellPos::default()
+    let mut pos = GridPoint3::default()
         .with_root(0)
         .with_x(apex.x)
         .with_y(apex.y);
@@ -120,7 +120,7 @@ fn turn_right_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = CellPos::default()
+    let mut pos = GridPoint3::default()
         .with_root(0)
         .with_x(apex.x)
         .with_y(apex.y);
@@ -169,7 +169,7 @@ fn turn_right_at_northern_tropic() {
 fn move_east_under_north_pole() {
     // Start just south of the north pole in root 4,
     // facing north-east.
-    let mut pos = CellPos::default()
+    let mut pos = GridPoint3::default()
         .with_root(4)
         .with_x(1)
         .with_y(1);
@@ -178,20 +178,20 @@ fn move_east_under_north_pole() {
 
     // We should now be on the edge of root 4 and 0,
     // facing east into root 0.
-    assert_eq!(CellPos::default().with_x(1), pos);
+    assert_eq!(GridPoint3::default().with_x(1), pos);
     assert_eq!(Dir::new(4), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 0 and 1,
     // facing south-east into root 1.
-    assert_eq!(CellPos::default().with_root(1).with_x(1), pos);
+    assert_eq!(GridPoint3::default().with_root(1).with_x(1), pos);
     assert_eq!(Dir::new(2), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be just south of the north pole in root 1.
-    assert_eq!(CellPos::default().with_root(1).with_x(1).with_y(1), pos);
+    assert_eq!(GridPoint3::default().with_root(1).with_x(1).with_y(1), pos);
     assert_eq!(Dir::new(2), dir);
 }
 
@@ -199,7 +199,7 @@ fn move_east_under_north_pole() {
 fn move_west_under_north_pole() {
     // Start just south of the north pole in root 1,
     // facing north-west.
-    let mut pos = CellPos::default()
+    let mut pos = GridPoint3::default()
         .with_root(1)
         .with_x(1)
         .with_y(1);
@@ -208,20 +208,20 @@ fn move_west_under_north_pole() {
 
     // We should now be on the edge of root 1 and 0,
     // facing west into root 0.
-    assert_eq!(CellPos::default().with_y(1), pos);
+    assert_eq!(GridPoint3::default().with_y(1), pos);
     assert_eq!(Dir::new(10), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be on the edge of root 0 and 4,
     // facing south-west into root 1.
-    assert_eq!(CellPos::default().with_root(4).with_y(1), pos);
+    assert_eq!(GridPoint3::default().with_root(4).with_y(1), pos);
     assert_eq!(Dir::new(0), dir);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be just south of the north pole in root 4.
-    assert_eq!(CellPos::default().with_root(4).with_x(1).with_y(1), pos);
+    assert_eq!(GridPoint3::default().with_root(4).with_x(1).with_y(1), pos);
     assert_eq!(Dir::new(0), dir);
 }
 
@@ -239,7 +239,7 @@ fn walk_anticlockwise_around_all_pentagons() {
             // Start at triangle apex.
             // Both parts of the apex are expressed in terms of x-dimension.
             let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-            let mut pos = CellPos::default()
+            let mut pos = GridPoint3::default()
                 .with_root(root_index)
                 .with_x(apex.x)
                 .with_y(apex.y);
@@ -287,7 +287,7 @@ fn walk_clockwise_around_all_pentagons() {
             // Start at triangle apex.
             // Both parts of the apex are expressed in terms of x-dimension.
             let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-            let mut pos = CellPos::default()
+            let mut pos = GridPoint3::default()
                 .with_root(root_index)
                 .with_x(apex.x)
                 .with_y(apex.y);
@@ -353,7 +353,7 @@ fn random_walks() {
         // Start at (0, 0). This is not a very interesting place to start, but we'll
         // be randomly walking all over the place, so there shouldn't be any need for
         // the starting point to be interesting.
-        let mut pos = CellPos::default();
+        let mut pos = GridPoint3::default();
         let mut dir = Dir::default();
         let mut last_turn_bias = TurnDir::Left;
 
@@ -446,7 +446,7 @@ fn random_walks_retraced_by_stepping_backwards() {
         // Start at (0, 0). This is not a very interesting place to start, but we'll
         // be randomly walking all over the place, so there shouldn't be any need for
         // the starting point to be interesting.
-        let mut pos = CellPos::default();
+        let mut pos = GridPoint3::default();
         let mut dir = Dir::default();
         let mut last_turn_bias = TurnDir::Left;
 

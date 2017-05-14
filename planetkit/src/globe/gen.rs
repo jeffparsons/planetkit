@@ -1,6 +1,6 @@
 use noise;
 
-use grid::{ GridPoint2, CellPos };
+use grid::{ GridPoint2, GridPoint3 };
 use super::spec::Spec;
 use super::chunk::{ Cell, Material };
 
@@ -79,9 +79,9 @@ impl Gen {
         self.spec.ocean_radius + delta
     }
 
-    pub fn cell_at(&self, cell_pos: CellPos) -> Cell {
-        let land_height = self.land_height(cell_pos.rxy);
-        let cell_pt3 = self.spec.cell_center_center(cell_pos);
+    pub fn cell_at(&self, grid_point: GridPoint3) -> Cell {
+        let land_height = self.land_height(grid_point.rxy);
+        let cell_pt3 = self.spec.cell_center_center(grid_point);
         // TEMP: ...
         let cell_height = cell_pt3.coords.norm();
         let material = if cell_height < land_height {

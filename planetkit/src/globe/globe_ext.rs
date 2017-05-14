@@ -3,7 +3,7 @@
 
 use rand::Rng;
 
-use grid::{ GridPoint2, CellPos, PosInOwningRoot, IntCoord };
+use grid::{ GridPoint2, GridPoint3, PosInOwningRoot, IntCoord };
 use grid::random_column;
 use super::chunk::Material;
 use super::CursorMut;
@@ -16,7 +16,7 @@ impl Globe {
         column: GridPoint2,
         min_air_cells_above: IntCoord,
         max_distance_from_starting_point: IntCoord,
-    ) -> Option<CellPos> {
+    ) -> Option<GridPoint3> {
         // Use land height from world gen to approximate cell position where we might find land.
         let land_height = self.gen.land_height(column);
         let approx_cell_z = self.spec().approx_cell_z_from_radius(land_height);
@@ -39,10 +39,10 @@ impl Globe {
     /// entities, then you probably want to use the position one above the position returned by this function.
     pub fn find_dry_land(
         &mut self,
-        start_pos: CellPos,
+        start_pos: GridPoint3,
         min_air_cells_above: IntCoord,
         max_distance_from_starting_point: IntCoord,
-    ) -> Option<CellPos> {
+    ) -> Option<GridPoint3> {
         // Interleave searching up and down at the same time. Start the "down" search at the
         // given `start_pos`, and the "up" search one above it.
         let mut distance_from_start: IntCoord = 0;
@@ -102,7 +102,7 @@ impl Globe {
         min_air_cells_above: IntCoord,
         max_distance_from_starting_point: IntCoord,
         max_attempts: usize,
-    ) -> Option<CellPos> {
+    ) -> Option<GridPoint3> {
         let mut attempts_remaining = max_attempts;
         while attempts_remaining > 0 {
             let column = random_column(self.spec().root_resolution, rng);
@@ -128,9 +128,9 @@ impl Globe {
     // track down and destroy all uses of this.
     pub fn find_lowest_cell_containing(
         &mut self,
-        column: CellPos,
+        column: GridPoint3,
         material: Material
-    ) -> CellPos {
+    ) -> GridPoint3 {
         // Translate into owning root, then start at bedrock.
         let mut column = PosInOwningRoot::new(column, self.spec().root_resolution);
         column.set_z(0);

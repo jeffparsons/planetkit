@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use specs;
 
-use grid::{ CellPos, PosInOwningRoot, Neighbors };
+use grid::{ GridPoint3, PosInOwningRoot, Neighbors };
 use super::{ origin_of_chunk_owning, origin_of_chunk_in_same_root_containing };
 use super::ChunkOrigin;
 use super::chunk::{ Chunk, Cell };
@@ -138,12 +138,12 @@ impl Globe {
             }
 
             // Copy over each cell, one by one.
-            for target_cell_pos in &neighbor.shared_cells {
-                let source_cell_pos: CellPos = PosInOwningRoot::new(*target_cell_pos, self.spec.root_resolution).into();
+            for target_grid_point in &neighbor.shared_cells {
+                let source_grid_point: GridPoint3 = PosInOwningRoot::new(*target_grid_point, self.spec.root_resolution).into();
                 let source_cell =
-                    *source_chunk.cell(source_cell_pos);
+                    *source_chunk.cell(source_grid_point);
                 let target_cell =
-                    target_chunk.cell_mut(*target_cell_pos);
+                    target_chunk.cell_mut(*target_grid_point);
                 // Copy source -> target.
                 *target_cell = source_cell;
             }
@@ -173,7 +173,7 @@ impl Globe {
     }
 
     // NOTE: chunk returned probably won't _own_ `pos`.
-    pub fn origin_of_chunk_in_same_root_containing(&self, pos: CellPos) -> ChunkOrigin {
+    pub fn origin_of_chunk_in_same_root_containing(&self, pos: GridPoint3) -> ChunkOrigin {
         // Figure out what chunk this is in.
         origin_of_chunk_in_same_root_containing(pos, self.spec.root_resolution, self.spec.chunk_resolution)
     }
@@ -181,7 +181,7 @@ impl Globe {
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk (or something else affecting its visibility) has been modified
     /// since the view was last updated.
-    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos: CellPos) {
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos: GridPoint3) {
         // Translate into owning root.
         // TODO: wrapper types so we don't have to do
         // this sort of thing defensively!
@@ -281,13 +281,13 @@ impl Globe {
         for cell_z in origin.pos().z..(end_z + 1) {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
-                    let cell_pos = CellPos::new(
+                    let grid_point = GridPoint3::new(
                         origin.pos().root,
                         cell_x,
                         cell_y,
                         cell_z,
                     );
-                    let mut cell = self.gen.cell_at(cell_pos);
+                    let mut cell = self.gen.cell_at(grid_point);
                     // Temp hax?
                     let mut rng = rand::thread_rng();
                     cell.shade = 1.0 - 0.5 * rng.next_f32();
@@ -359,7 +359,7 @@ impl<'a> Globe {
 
     pub fn maybe_non_authoritative_cell(
         &'a self,
-        pos: CellPos,
+        pos: GridPoint3,
     ) -> &'a Cell {
         let chunk_origin = self.origin_of_chunk_in_same_root_containing(pos);
         let chunk = self.chunks.get(&chunk_origin)

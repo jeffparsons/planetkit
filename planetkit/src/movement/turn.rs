@@ -1,4 +1,4 @@
-use ::grid::{ IntCoord, CellPos, Dir };
+use ::grid::{ IntCoord, GridPoint3, Dir };
 
 use super::transform::*;
 use super::util::*;
@@ -50,7 +50,7 @@ impl TurnDir {
 
 /// See `turn_by_one_hex_edge`.
 pub fn turn_left_by_one_hex_edge(
-    pos: &mut CellPos,
+    pos: &mut GridPoint3,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
 ) -> Result<(), ()> {
@@ -64,7 +64,7 @@ pub fn turn_left_by_one_hex_edge(
 
 /// See `turn_by_one_hex_edge`.
 pub fn turn_right_by_one_hex_edge(
-    pos: &mut CellPos,
+    pos: &mut GridPoint3,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
 ) -> Result<(), ()> {
@@ -90,7 +90,7 @@ pub fn turn_right_by_one_hex_edge(
 ///
 /// Both these cases will panic in debug mode.
 pub fn turn_by_one_hex_edge(
-    pos: &mut CellPos,
+    pos: &mut GridPoint3,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
     turn_dir: TurnDir,
@@ -134,7 +134,7 @@ pub fn turn_by_one_hex_edge(
 /// represent an immediately adjacent cell _if `pos` were if in a hexagon_
 /// (which is not necessarily so).
 fn maybe_rebase_on_adjacent_root_following_rotation(
-    pos: &mut CellPos,
+    pos: &mut GridPoint3,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
 ) {
@@ -203,7 +203,7 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
 
 // Panics if we're not facing a valid direction for movement.
 pub fn turn_around_and_face_neighbor(
-    pos: &mut CellPos,
+    pos: &mut GridPoint3,
     dir: &mut Dir,
     resolution: [IntCoord; 2],
     last_turn_bias: super::TurnDir,

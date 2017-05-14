@@ -54,7 +54,7 @@ impl PhysicsSystem {
         }
 
         // Move down by one cell.
-        cd.set_cell_pos(under_pos);
+        cd.set_grid_point(under_pos);
         // REVISIT: += ?
         cd.seconds_until_next_fall = self.seconds_between_falls;
         trace!(self.log, "Fell under force of gravity"; "new_pos" => format!("{:?}", cd.pos()));

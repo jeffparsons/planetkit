@@ -3,14 +3,14 @@ use rand::Rng;
 mod root;
 mod grid_point2;
 pub mod cell_shape;
-mod cell_pos;
+mod grid_point3;
 mod neighbors;
 mod dir;
 
 // TODO: be selective in what you export; no wildcards!
 pub use self::root::*;
 pub use self::grid_point2::GridPoint2;
-pub use self::cell_pos::*;
+pub use self::grid_point3::*;
 pub use self::neighbors::*;
 pub use self::dir::*;
 

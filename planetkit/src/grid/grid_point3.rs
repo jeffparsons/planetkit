@@ -4,14 +4,14 @@ use super::{ IntCoord, GridPoint2, Root, RootIndex };
 
 // TODO: rename to GridPoint3
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
-pub struct CellPos {
+pub struct GridPoint3 {
     pub rxy: GridPoint2,
     pub z: IntCoord,
 }
 
-impl CellPos {
-    pub fn new(root: Root, x: IntCoord, y: IntCoord, z: IntCoord) -> CellPos {
-        CellPos {
+impl GridPoint3 {
+    pub fn new(root: Root, x: IntCoord, y: IntCoord, z: IntCoord) -> GridPoint3 {
+        GridPoint3 {
             rxy: GridPoint2::new(root, x, y),
             z: z,
         }
@@ -50,11 +50,11 @@ impl CellPos {
 /// resolutions.
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct PosInOwningRoot {
-    pos: CellPos,
+    pos: GridPoint3,
 }
 
-impl Into<CellPos> for PosInOwningRoot {
-    fn into(self) -> CellPos {
+impl Into<GridPoint3> for PosInOwningRoot {
+    fn into(self) -> GridPoint3 {
         self.pos
     }
 }
@@ -68,7 +68,7 @@ impl PosInOwningRoot {
     //
     // Behaviour is undefined (nonsense result or panic)
     // if `pos` lies beyond the edges of its root.
-    pub fn new(pos: CellPos, resolution: [IntCoord; 2]) -> PosInOwningRoot {
+    pub fn new(pos: GridPoint3, resolution: [IntCoord; 2]) -> PosInOwningRoot {
         debug_assert!(pos.z >= 0);
 
         // Here is the pattern of which root a cell belongs to.
@@ -107,7 +107,7 @@ impl PosInOwningRoot {
         // Special cases for north and south poles
         let pos_in_owning_root = if pos.x == 0 && pos.y == 0 {
             // North pole
-            CellPos::new(
+            GridPoint3::new(
                 // First root owns north pole.
                 0.into(),
                 0,
@@ -116,7 +116,7 @@ impl PosInOwningRoot {
             )
         } else if pos.x == end_x && pos.y == end_y {
             // South pole
-            CellPos::new(
+            GridPoint3::new(
                 // Last root owns south pole.
                 4.into(),
                 end_x,
@@ -126,7 +126,7 @@ impl PosInOwningRoot {
         } else if pos.y == 0 {
             // Roots don't own their north-west edge;
             // translate to next root's north-east edge.
-            CellPos::new(
+            GridPoint3::new(
                 pos.root.next_west(),
                 0,
                 pos.x,
@@ -135,7 +135,7 @@ impl PosInOwningRoot {
         } else if pos.x == end_x && pos.y < half_y {
             // Roots don't own their mid-west edge;
             // translate to the next root's mid-east edge.
-            CellPos::new(
+            GridPoint3::new(
                 pos.root.next_west(),
                 0,
                 half_y + pos.y,
@@ -144,7 +144,7 @@ impl PosInOwningRoot {
         } else if pos.x == end_x {
             // Roots don't own their south-west edge;
             // translate to the next root's south-east edge.
-            CellPos::new(
+            GridPoint3::new(
                 pos.root.next_west(),
                 pos.y - half_y,
                 end_y,
@@ -171,14 +171,14 @@ impl PosInOwningRoot {
 }
 
 impl<'a> PosInOwningRoot {
-    pub fn pos(&'a self) -> &'a CellPos {
+    pub fn pos(&'a self) -> &'a GridPoint3 {
         &self.pos
     }
 }
 
 // Evil tricks to allow access to GridPoint2 fields from `self.rxy`
 // as if they belong to `Self`.
-impl Deref for CellPos {
+impl Deref for GridPoint3 {
     type Target = GridPoint2;
 
     fn deref(&self) -> &GridPoint2 {
@@ -186,7 +186,7 @@ impl Deref for CellPos {
     }
 }
 
-impl DerefMut for CellPos {
+impl DerefMut for GridPoint3 {
     fn deref_mut(&mut self) -> &mut GridPoint2 {
         &mut self.rxy
     }
