@@ -1,4 +1,4 @@
-use ::grid::{ IntCoord, GridPoint3, Dir };
+use ::grid::{ GridCoord, GridPoint3, Dir };
 
 use super::transform::*;
 use super::turn::turn_around_and_face_neighbor;
@@ -21,7 +21,7 @@ use super::util::*;
 pub fn step_forward_and_face_neighbor(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     last_turn_bias: &mut super::TurnDir,
 ) -> Result<(), ()> {
     move_forward(pos, dir, resolution)?;
@@ -55,7 +55,7 @@ pub fn step_forward_and_face_neighbor(
 pub fn step_backward_and_face_neighbor(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     last_turn_bias: &mut super::TurnDir,
 ) -> Result<(), ()> {
     // Turn around.
@@ -96,7 +96,7 @@ pub fn step_backward_and_face_neighbor(
 pub fn move_forward(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
     debug_assert_pos_within_root(pos, resolution);
 
@@ -136,7 +136,7 @@ pub fn move_forward(
 fn maybe_rebase_on_adjacent_root_following_movement(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) {
     // We only might need to re-base if we're on the boundary of two root quads.
     if !is_on_root_edge(pos, resolution) {

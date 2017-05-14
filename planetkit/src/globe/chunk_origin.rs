@@ -1,4 +1,4 @@
-use grid::{ IntCoord, GridPoint3 };
+use grid::{ GridCoord, GridPoint3 };
 
 /// Wrapper type around a `Pos` that is known to express
 /// a valid chunk origin.
@@ -24,7 +24,7 @@ impl ChunkOrigin {
     // # Panics
     //
     // Panics if `pos` is not a valid chunk origin.
-    pub fn new(pos: GridPoint3, root_resolution: [IntCoord; 2], chunk_resolution: [IntCoord; 3]) -> ChunkOrigin {
+    pub fn new(pos: GridPoint3, root_resolution: [GridCoord; 2], chunk_resolution: [GridCoord; 3]) -> ChunkOrigin {
         // Make sure `pos` is within bounds.
         assert!(pos.x >= 0);
         assert!(pos.y >= 0);

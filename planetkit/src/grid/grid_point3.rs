@@ -1,16 +1,16 @@
 use std::ops::{ Deref, DerefMut };
 
-use super::{ IntCoord, GridPoint2, Root, RootIndex };
+use super::{ GridCoord, GridPoint2, Root, RootIndex };
 
 // TODO: rename to GridPoint3
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct GridPoint3 {
     pub rxy: GridPoint2,
-    pub z: IntCoord,
+    pub z: GridCoord,
 }
 
 impl GridPoint3 {
-    pub fn new(root: Root, x: IntCoord, y: IntCoord, z: IntCoord) -> GridPoint3 {
+    pub fn new(root: Root, x: GridCoord, y: GridCoord, z: GridCoord) -> GridPoint3 {
         GridPoint3 {
             rxy: GridPoint2::new(root, x, y),
             z: z,
@@ -23,19 +23,19 @@ impl GridPoint3 {
         new_point
     }
 
-    pub fn with_x(&self, new_x: IntCoord) -> Self {
+    pub fn with_x(&self, new_x: GridCoord) -> Self {
         let mut new_point = *self;
         new_point.rxy.x = new_x;
         new_point
     }
 
-    pub fn with_y(&self, new_y: IntCoord) -> Self {
+    pub fn with_y(&self, new_y: GridCoord) -> Self {
         let mut new_point = *self;
         new_point.rxy.y = new_y;
         new_point
     }
 
-    pub fn with_z(&self, new_z: IntCoord) -> Self {
+    pub fn with_z(&self, new_z: GridCoord) -> Self {
         let mut new_point = *self;
         new_point.z = new_z;
         new_point
@@ -68,7 +68,7 @@ impl PosInOwningRoot {
     //
     // Behaviour is undefined (nonsense result or panic)
     // if `pos` lies beyond the edges of its root.
-    pub fn new(pos: GridPoint3, resolution: [IntCoord; 2]) -> PosInOwningRoot {
+    pub fn new(pos: GridPoint3, resolution: [GridCoord; 2]) -> PosInOwningRoot {
         debug_assert!(pos.z >= 0);
 
         // Here is the pattern of which root a cell belongs to.
@@ -165,7 +165,7 @@ impl PosInOwningRoot {
     ///
     /// Note that this is the one safe axis to operate
     /// on without knowing the globe resolution.
-    pub fn set_z(&mut self, new_z: IntCoord) {
+    pub fn set_z(&mut self, new_z: GridCoord) {
         self.pos.z = new_z;
     }
 }

@@ -74,8 +74,8 @@ pub mod benches {
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
         use render::Vertex;
 
-        const ROOT_RESOLUTION: [IntCoord; 2] = [32, 64];
-        const CHUNK_RESOLUTION: [IntCoord; 3] = [16, 16, 4];
+        const ROOT_RESOLUTION: [GridCoord; 2] = [32, 64];
+        const CHUNK_RESOLUTION: [GridCoord; 3] = [16, 16, 4];
 
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));

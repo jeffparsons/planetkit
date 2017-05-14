@@ -1,6 +1,6 @@
 use na;
 
-use grid::{ IntCoord, GridPoint3, Dir };
+use grid::{ GridCoord, GridPoint3, Dir };
 use grid::cell_shape::NEIGHBOR_OFFSETS;
 
 use super::triangles::*;
@@ -39,7 +39,7 @@ pub fn adjacent_pos_in_dir(
 pub fn transform_into_exit_triangle(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     exit: &Exit,
 ) {
     let exit_tri = &TRIANGLES[exit.triangle_index];
@@ -56,7 +56,7 @@ pub fn transform_into_exit_triangle(
 /// Consider `triangle_on_pos_with_closest_mid_axis` instead?
 pub fn closest_triangle_to_point(
     pos: &GridPoint3,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) -> &'static Triangle {
     // First we filter down to those where
     // pos lies between the triangle's x-axis and y-axis.
@@ -79,7 +79,7 @@ pub fn closest_triangle_to_point(
     };
 
     // Pick the closest triangle.
-    type Pos2 = na::Point2<IntCoord>;
+    type Pos2 = na::Point2<GridCoord>;
     let pos2 = Pos2::new(pos.x, pos.y);
     candidate_triangles.iter().min_by_key(|triangle| {
         // Both parts of the apex are expressed in terms of x-dimension.
@@ -101,7 +101,7 @@ pub fn closest_triangle_to_point(
 pub fn triangle_on_pos_with_closest_mid_axis(
     pos: &GridPoint3,
     dir: &Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) -> &'static Triangle {
     // If `pos` sits on a pentagon and we're re-basing, then that probably
     // means we're turning. Because we're on a pentagon, it's important that
@@ -109,7 +109,7 @@ pub fn triangle_on_pos_with_closest_mid_axis(
     // so that we don't accidentally re-base into a neighbouring quad unnecessarily.
     // (We try to maintain stability within a given quad in general, and there's a
     // bunch of logic around here in particular that assumes that.)
-    type Pos2 = na::Point2<IntCoord>;
+    type Pos2 = na::Point2<GridCoord>;
     let pos2 = Pos2::new(pos.x, pos.y);
     TRIANGLES.iter()
         .filter(|triangle| {
@@ -135,7 +135,7 @@ pub fn triangle_on_pos_with_closest_mid_axis(
         }).expect("There should have been 1-3 triangles; did you call this with a non-pentagon pos?")
 }
 
-pub fn is_pentagon(pos: &GridPoint3, resolution: [IntCoord; 2]) -> bool {
+pub fn is_pentagon(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
     pos.x == 0 && pos.y == 0 ||
     pos.x == 0 && pos.y == resolution[0] ||
     pos.x == 0 && pos.y == resolution[1] ||
@@ -144,7 +144,7 @@ pub fn is_pentagon(pos: &GridPoint3, resolution: [IntCoord; 2]) -> bool {
     pos.x == resolution[0] && pos.y == resolution[1]
 }
 
-pub fn is_on_root_edge(pos: &GridPoint3, resolution: [IntCoord; 2]) -> bool {
+pub fn is_on_root_edge(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
     pos.x == 0 ||
     pos.y == 0 ||
     pos.x == resolution[0] ||
@@ -153,7 +153,7 @@ pub fn is_on_root_edge(pos: &GridPoint3, resolution: [IntCoord; 2]) -> bool {
 
 pub fn debug_assert_pos_within_root(
     pos: &mut GridPoint3,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) {
     debug_assert!(
         pos.x >= 0 &&

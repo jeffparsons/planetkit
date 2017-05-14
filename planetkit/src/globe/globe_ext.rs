@@ -3,7 +3,7 @@
 
 use rand::Rng;
 
-use grid::{ GridPoint2, GridPoint3, PosInOwningRoot, IntCoord };
+use grid::{ GridPoint2, GridPoint3, PosInOwningRoot, GridCoord };
 use grid::random_column;
 use super::chunk::Material;
 use super::CursorMut;
@@ -14,8 +14,8 @@ impl Globe {
     pub fn find_surface_dry_land(
         &mut self,
         column: GridPoint2,
-        min_air_cells_above: IntCoord,
-        max_distance_from_starting_point: IntCoord,
+        min_air_cells_above: GridCoord,
+        max_distance_from_starting_point: GridCoord,
     ) -> Option<GridPoint3> {
         // Use land height from world gen to approximate cell position where we might find land.
         let land_height = self.gen.land_height(column);
@@ -40,12 +40,12 @@ impl Globe {
     pub fn find_dry_land(
         &mut self,
         start_pos: GridPoint3,
-        min_air_cells_above: IntCoord,
-        max_distance_from_starting_point: IntCoord,
+        min_air_cells_above: GridCoord,
+        max_distance_from_starting_point: GridCoord,
     ) -> Option<GridPoint3> {
         // Interleave searching up and down at the same time. Start the "down" search at the
         // given `start_pos`, and the "up" search one above it.
-        let mut distance_from_start: IntCoord = 0;
+        let mut distance_from_start: GridCoord = 0;
         let mut down_pos = start_pos;
         let mut up_pos = start_pos;
         up_pos.z += 1;
@@ -99,8 +99,8 @@ impl Globe {
     pub fn air_above_random_surface_dry_land<R: Rng>(
         &mut self,
         rng: &mut R,
-        min_air_cells_above: IntCoord,
-        max_distance_from_starting_point: IntCoord,
+        min_air_cells_above: GridCoord,
+        max_distance_from_starting_point: GridCoord,
         max_attempts: usize,
     ) -> Option<GridPoint3> {
         let mut attempts_remaining = max_attempts;

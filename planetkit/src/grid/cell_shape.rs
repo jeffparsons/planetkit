@@ -3,7 +3,7 @@
 //! are analogous to circular sectors, and are used in rendering the edges and
 //! corners of chunks where a full hexagon will not fit.
 
-use super::IntCoord;
+use super::GridCoord;
 
 // We can imagine a hexagon laid out on a quad
 // that wraps in both directions, such that its
@@ -244,7 +244,7 @@ pub const SOUTH_EAST_PORTION: CellShape = CellShape {
 //
 //              x
 //              ↓
-pub static NEIGHBOR_OFFSETS: [(IntCoord, IntCoord); 6] = [
+pub static NEIGHBOR_OFFSETS: [(GridCoord, GridCoord); 6] = [
     (  1,  0 ),
     (  0,  1 ),
     ( -1,  1 ),

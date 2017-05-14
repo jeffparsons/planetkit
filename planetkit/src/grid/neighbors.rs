@@ -1,7 +1,7 @@
 use std::iter::Chain;
 use std::slice;
 use super::{
-    IntCoord,
+    GridCoord,
     GridPoint3,
     PosInOwningRoot,
     Dir,
@@ -19,7 +19,7 @@ pub struct Neighbors {
 /// Iterator over the cells sharing an interface with a given `pos`.
 /// Doesn't include diagonal neighbors, e.g., one across and one down.
 impl Neighbors {
-    pub fn new(pos: GridPoint3, resolution: [IntCoord; 2]) -> Neighbors {
+    pub fn new(pos: GridPoint3, resolution: [GridCoord; 2]) -> Neighbors {
         let above_and_below = AboveAndBelow::new(pos);
         let is_away_from_root_edges =
             pos.x > 0 &&
@@ -66,14 +66,14 @@ enum NeighborsImpl {
 /// Iterator over the cells sharing an interface with a given `pos`.
 /// Doesn't include diagonal neighbors, e.g., one across and one down.
 struct SlowGeneralEdgeNeighbors {
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     origin: GridPoint3,
     first_neighbor: Option<GridPoint3>,
     current_dir: Dir,
 }
 
 impl SlowGeneralEdgeNeighbors {
-    pub fn new(mut pos: GridPoint3, resolution: [IntCoord; 2]) -> SlowGeneralEdgeNeighbors {
+    pub fn new(mut pos: GridPoint3, resolution: [GridCoord; 2]) -> SlowGeneralEdgeNeighbors {
         // Pick a direction that's valid for `pos`.
         // To do this, first express the position in its owning root...
         pos = PosInOwningRoot::new(pos, resolution).into();
@@ -131,7 +131,7 @@ impl Iterator for SlowGeneralEdgeNeighbors {
 /// Behaviour is undefined if this is not true.
 struct FastIntraRootNeighbors {
     origin: GridPoint3,
-    offsets: slice::Iter<'static, (IntCoord, IntCoord)>,
+    offsets: slice::Iter<'static, (GridCoord, GridCoord)>,
 }
 
 impl FastIntraRootNeighbors {

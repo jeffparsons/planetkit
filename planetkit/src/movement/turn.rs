@@ -1,4 +1,4 @@
-use ::grid::{ IntCoord, GridPoint3, Dir };
+use ::grid::{ GridCoord, GridPoint3, Dir };
 
 use super::transform::*;
 use super::util::*;
@@ -52,7 +52,7 @@ impl TurnDir {
 pub fn turn_left_by_one_hex_edge(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
     turn_by_one_hex_edge(
         pos,
@@ -66,7 +66,7 @@ pub fn turn_left_by_one_hex_edge(
 pub fn turn_right_by_one_hex_edge(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
     turn_by_one_hex_edge(
         pos,
@@ -92,7 +92,7 @@ pub fn turn_right_by_one_hex_edge(
 pub fn turn_by_one_hex_edge(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     turn_dir: TurnDir,
 ) -> Result<(), ()> {
     debug_assert_pos_within_root(pos, resolution);
@@ -136,7 +136,7 @@ pub fn turn_by_one_hex_edge(
 fn maybe_rebase_on_adjacent_root_following_rotation(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
 ) {
     // We only might need to re-base if we're on the boundary of two root quads.
     if !is_on_root_edge(pos, resolution) {
@@ -205,7 +205,7 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
 pub fn turn_around_and_face_neighbor(
     pos: &mut GridPoint3,
     dir: &mut Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     last_turn_bias: super::TurnDir,
 ) {
     if is_pentagon(pos, resolution) {

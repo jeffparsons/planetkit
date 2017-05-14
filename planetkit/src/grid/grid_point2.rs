@@ -1,15 +1,15 @@
-use super::{ IntCoord, Root, RootIndex };
+use super::{ GridCoord, Root, RootIndex };
 use super::GridPoint3;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct GridPoint2 {
     pub root: Root,
-    pub x: IntCoord,
-    pub y: IntCoord,
+    pub x: GridCoord,
+    pub y: GridCoord,
 }
 
 impl GridPoint2 {
-    pub fn new(root: Root, x: IntCoord, y: IntCoord) -> GridPoint2 {
+    pub fn new(root: Root, x: GridCoord, y: GridCoord) -> GridPoint2 {
         GridPoint2 {
             root: root,
             x: x,
@@ -23,19 +23,19 @@ impl GridPoint2 {
         new_point
     }
 
-    pub fn with_x(&self, new_x: IntCoord) -> Self {
+    pub fn with_x(&self, new_x: GridCoord) -> Self {
         let mut new_point = *self;
         new_point.x = new_x;
         new_point
     }
 
-    pub fn with_y(&self, new_y: IntCoord) -> Self {
+    pub fn with_y(&self, new_y: GridCoord) -> Self {
         let mut new_point = *self;
         new_point.y = new_y;
         new_point
     }
 
-    pub fn with_z(&self, z: IntCoord) -> GridPoint3 {
+    pub fn with_z(&self, z: GridCoord) -> GridPoint3 {
         GridPoint3::new(self.root, self.x, self.y, z)
     }
 }

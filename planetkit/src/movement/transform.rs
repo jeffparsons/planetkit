@@ -4,22 +4,22 @@
 
 use na;
 
-use grid::{ IntCoord, GridPoint3, Dir };
+use grid::{ GridCoord, GridPoint3, Dir };
 use grid::cell_shape::NEIGHBOR_OFFSETS;
 use super::triangles::*;
 
 // Use nalgebra for some local transformations.
 // We are ignoring z-axis completely because this kid of movement
 // is only in (x, y).
-type Pos2 = na::Point2<IntCoord>;
-type PosMat2 = na::Matrix2<IntCoord>;
+type Pos2 = na::Point2<GridCoord>;
+type PosMat2 = na::Matrix2<GridCoord>;
 
 /// Transform `pos` and `dir` as specified relative to a given triangles apex,
 /// to be relative to the world, or equivalently to triangle 0 at the north pole.
 pub fn local_to_world(
     pos: GridPoint3,
     dir: Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     tri: &Triangle,
 ) -> (GridPoint3, Dir) {
     // Compute rotation `dir` relative to world.
@@ -54,7 +54,7 @@ pub fn local_to_world(
 pub fn world_to_local(
     pos: GridPoint3,
     dir: Dir,
-    resolution: [IntCoord; 2],
+    resolution: [GridCoord; 2],
     tri: &Triangle,
 ) -> (GridPoint3, Dir) {
     // Both parts of the apex are expressed in terms of x-dimension.

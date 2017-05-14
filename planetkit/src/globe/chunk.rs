@@ -1,5 +1,5 @@
 use specs;
-use grid::{ IntCoord, GridPoint3, PosInOwningRoot };
+use grid::{ GridCoord, GridPoint3, PosInOwningRoot };
 use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
 
@@ -29,7 +29,7 @@ pub struct Cell {
 // They seem to have a pretty good grasp on these things. :)
 pub struct Chunk {
     pub origin: ChunkOrigin,
-    pub chunk_resolution: [IntCoord; 3],
+    pub chunk_resolution: [GridCoord; 3],
     // Sorted by (z, y, x).
     pub cells: Vec<Cell>,
     pub view_entity: Option<specs::Entity>,
@@ -67,8 +67,8 @@ impl Chunk {
     pub fn new(
         origin: ChunkOrigin,
         cells: Vec<Cell>,
-        root_resolution: [IntCoord; 2],
-        chunk_resolution: [IntCoord; 3],
+        root_resolution: [GridCoord; 2],
+        chunk_resolution: [GridCoord; 3],
     ) -> Chunk {
         Chunk {
             origin: origin,
@@ -92,8 +92,8 @@ impl Chunk {
 
     fn list_authoritative_neighbors(
         origin: ChunkOrigin,
-        root_resolution: [IntCoord; 2],
-        chunk_resolution: [IntCoord; 3],
+        root_resolution: [GridCoord; 2],
+        chunk_resolution: [GridCoord; 3],
     ) -> Vec<Neighbor> {
         // Map neighbor chunk origin to neighbors for efficient lookup
         // during construction.
@@ -193,8 +193,8 @@ impl Chunk {
 
     fn list_accessible_chunks(
         origin: ChunkOrigin,
-        root_resolution: [IntCoord; 2],
-        chunk_resolution: [IntCoord; 3],
+        root_resolution: [GridCoord; 2],
+        chunk_resolution: [GridCoord; 3],
     ) -> Vec<ChunkOrigin> {
         // Keep track of which chunk origins we've seen.
         use std::collections::HashSet;

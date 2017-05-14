@@ -28,7 +28,7 @@ pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::{ Cursor, CursorMut };
 pub use self::chunk_origin::*;
 
-use grid::{ IntCoord, GridPoint3, Root, PosInOwningRoot };
+use grid::{ GridCoord, GridPoint3, Root, PosInOwningRoot };
 
 // TODO: move project into icosahedron module.
 
@@ -194,8 +194,8 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
 /// the position at all may be returned.
 pub fn origin_of_chunk_in_same_root_containing(
     pos: GridPoint3,
-    root_resolution: [IntCoord; 2],
-    chunk_resolution: [IntCoord; 3],
+    root_resolution: [GridCoord; 2],
+    chunk_resolution: [GridCoord; 3],
 ) -> ChunkOrigin {
     // Calculate x-position of a containing chunk.
     let end_x = root_resolution[0];
@@ -234,8 +234,8 @@ pub fn origin_of_chunk_in_same_root_containing(
 
 pub fn origin_of_chunk_owning(
     pos_in_owning_root: PosInOwningRoot,
-    root_resolution: [IntCoord; 2],
-    chunk_resolution: [IntCoord; 3],
+    root_resolution: [GridCoord; 2],
+    chunk_resolution: [GridCoord; 3],
 ) -> ChunkOrigin {
     let pos: GridPoint3 = pos_in_owning_root.into();
 

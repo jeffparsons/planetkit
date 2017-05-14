@@ -45,11 +45,11 @@
 // This may all look pretty hairy (and it is) but it's also fairly
 // easy to thoroughly test; see `test.rs`.
 
-use ::grid::{ IntCoord, DirIndex, RootIndex };
+use ::grid::{ GridCoord, DirIndex, RootIndex };
 
 pub struct Triangle {
     // Position in root in terms of x-resolutions.
-    pub apex: [IntCoord; 2],
+    pub apex: [GridCoord; 2],
     // Direction of x-axis.
     // TODO: also redundantly store x and y vectors
     // to avoid excessive computation at run time?

@@ -1,6 +1,6 @@
 use types::*;
 
-use grid::{ IntCoord, GridPoint2, GridPoint3 };
+use grid::{ GridCoord, GridPoint2, GridPoint3 };
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.
@@ -25,8 +25,8 @@ pub struct Spec {
     // These are the full width/height/depth of a given root quad or chunk's voxmap;
     // i.e. not an exponent. Only chunks specify a depth resolution because the
     // world can have unbounded total depth.
-    pub root_resolution: [IntCoord; 2],
-    pub chunk_resolution: [IntCoord; 3],
+    pub root_resolution: [GridCoord; 2],
+    pub chunk_resolution: [GridCoord; 3],
 }
 
 impl Spec {
@@ -74,7 +74,7 @@ impl Spec {
         true
     }
 
-    pub fn chunks_per_root_side(&self) -> [IntCoord; 2] {
+    pub fn chunks_per_root_side(&self) -> [GridCoord; 2] {
         // Assume chunk resolution divides perfectly into root resolution.
         [
             self.root_resolution[0] / self.chunk_resolution[0],
@@ -132,7 +132,7 @@ impl Spec {
     }
 
     // TODO: test me.
-    pub fn approx_cell_z_from_radius(&self, radius: f64) -> IntCoord {
-        ((radius - self.floor_radius) / self.block_height) as IntCoord
+    pub fn approx_cell_z_from_radius(&self, radius: f64) -> GridCoord {
+        ((radius - self.floor_radius) / self.block_height) as GridCoord
     }
 }
