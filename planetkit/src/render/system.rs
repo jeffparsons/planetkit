@@ -20,7 +20,7 @@ use ::types::*;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
 
 pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
-    log: Logger,
+    _log: Logger,
     // TODO: multiple PSOs
     pso: gfx::PipelineState<R, pipe::Meta>,
     mesh_repo: Arc<Mutex<MeshRepository<R>>>,
@@ -61,7 +61,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             output_color: output_color,
             output_stencil: output_stencil,
             projection: projection,
-            log: log,
+            _log: log,
             mesh_repo: mesh_repo,
         }
     }
@@ -110,8 +110,8 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             }
 
             // Visual might not have its mesh created yet.
-            let mesh_handle = match visual.mesh_handle() {
-                Some(mesh_handle) => mesh_handle,
+            let mesh_pointer = match visual.mesh_pointer() {
+                Some(mesh_pointer) => mesh_pointer,
                 None => continue,
             };
 
@@ -157,14 +157,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
                 *projection
             );
 
-            let mesh = match mesh_repo.get_mut(mesh_handle) {
-                Some(mesh) => mesh,
-                None => {
-                    error!(self.log, "Visual refers to nonexistent mesh; can't proceed!");
-                    continue;
-                },
-            };
-
+            let mesh = mesh_repo.get_mut(mesh_pointer);
             mesh.data_mut().u_model_view_proj = model_view_projection;
             encoder.draw(
                 mesh.slice(),

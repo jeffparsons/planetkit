@@ -230,6 +230,7 @@ impl App {
                 continue;
             }
             let proto_mesh = visual.proto_mesh.clone().expect("Just ensured this above...");
+            // Realize the mesh and hand it off to the mesh repository.
             let mesh = Mesh::new(
                 &mut self.factory,
                 proto_mesh.vertexes.clone(),
@@ -237,16 +238,17 @@ impl App {
                 self.output_color.clone(),
                 self.output_stencil.clone(),
             );
-            if let Some(existing_mesh_handle) = visual.mesh_handle() {
-                // We're replacing an existing mesh that got dirty.
-                mesh_repo.replace_mesh(existing_mesh_handle, mesh);
-            } else {
-                // We're realizing this mesh for the first time.
-                let mesh_handle = mesh_repo.add_mesh(mesh);
-                visual.set_mesh_handle(mesh_handle);
-            }
+            let mesh_pointer = mesh_repo.add_mesh(mesh);
+            // We may or may not be replacing a pointer to another mesh here;
+            // if we are, then the old mesh (assuming it isn't being used for anything else)
+            // will be discarded.
+            visual.set_mesh_pointer(mesh_pointer);
             visual.proto_mesh = None;
         }
+        // REVISIT: I'm guessing the underlying `Storage::sync_pending` API will change in future;
+        // keep an eye on it.
+        // TODO: log (low prio) before and after collecting, how many meshes there are?
+        mesh_repo.collect_garbage();
     }
 
     pub fn add_input_adapter(&mut self, adapter: Box<InputAdapter>) {

@@ -1,20 +1,18 @@
+use std::any;
+
 use gfx;
 use slog::Logger;
+use froggy;
 
 use super::Vertex;
 use super::mesh::Mesh;
 
-#[derive(Copy, Clone, Debug)]
-pub struct MeshHandle {
-    index: usize,
-}
-
-impl MeshHandle {
-    fn new(index: usize) -> MeshHandle {
-        MeshHandle {
-            index: index,
-        }
-    }
+// Hide the concrete type of the `Mesh` (specifically the graphics backend)
+// by use of `Any`. TODO: there has GOT to be a better way to do this. All I really
+// want is to be able to make a `Pointer` to a trait that `Mesh` implements,
+// and use that to access the `Storage` of the specific type.
+pub struct MeshWrapper {
+    mesh: Box<any::Any + Send + Sync + 'static>,
 }
 
 /// `gfx::Factory` is not `Send`, so we can't send that around
@@ -24,9 +22,7 @@ impl MeshHandle {
 /// also owns the factory. See `create` below for more.
 pub struct MeshRepository<R: gfx::Resources> {
     log: Logger,
-    // Meshes can be removed, leaving a gap.
-    // TODO: reconsider storage?
-    meshes: Vec<Option<Mesh<R>>>,
+    mesh_storage: froggy::Storage<MeshWrapper>,
     default_output_color_buffer: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
     default_output_stencil_buffer: gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
 }
@@ -38,7 +34,7 @@ impl<R: gfx::Resources> MeshRepository<R> {
         parent_log: &Logger,
     ) -> MeshRepository<R> {
         MeshRepository {
-            meshes: Vec::new(),
+            mesh_storage: froggy::Storage::new(),
             default_output_color_buffer: default_output_color_buffer,
             default_output_stencil_buffer: default_output_stencil_buffer,
             log: parent_log.new(o!()),
@@ -50,7 +46,7 @@ impl<R: gfx::Resources> MeshRepository<R> {
         factory: &mut F,
         vertexes: Vec<Vertex>,
         triangle_vertex_indexes: Vec<u32>,
-    ) -> MeshHandle {
+    ) -> froggy::Pointer<MeshWrapper> {
         let mesh = Mesh::new(
             factory,
             vertexes,
@@ -61,20 +57,26 @@ impl<R: gfx::Resources> MeshRepository<R> {
         self.add_mesh(mesh)
     }
 
-    pub fn add_mesh(&mut self, mesh: Mesh<R>) -> MeshHandle {
+    pub fn add_mesh(&mut self, mesh: Mesh<R>) -> froggy::Pointer<MeshWrapper> {
         trace!(self.log, "Adding mesh");
-        self.meshes.push(mesh.into());
-        MeshHandle::new(self.meshes.len() - 1)
+        self.mesh_storage.create(MeshWrapper {
+            mesh: Box::new(mesh)
+        })
     }
 
-    pub fn replace_mesh(&mut self, mesh_handle: MeshHandle, mesh: Mesh<R>) {
-        trace!(self.log, "Replacing mesh {}", format!("{:?}", mesh_handle));
-        self.meshes[mesh_handle.index] = mesh.into();
+    /// Destroy any unused meshes by asking the `froggy::Storage` to catch
+    /// up on its internal bookkeeping.
+    pub fn collect_garbage(&mut self) {
+        self.mesh_storage.sync_pending()
     }
 }
 
 impl<'a, R: gfx::Resources> MeshRepository<R> {
-    pub fn get_mut(&'a mut self, mesh_handle: MeshHandle) -> Option<&'a mut Mesh<R>>{
-        self.meshes[mesh_handle.index].as_mut()
+    pub fn get_mut(&'a mut self, mesh_pointer: &froggy::Pointer<MeshWrapper>) -> &'a mut Mesh<R>{
+        let mesh_wrapper = &mut self.mesh_storage[&mesh_pointer];
+        let any_mesh_with_extra_constraints = &mut *mesh_wrapper.mesh;
+        let any_mesh = any_mesh_with_extra_constraints as &mut any::Any;
+        any_mesh.downcast_mut::<Mesh<R>>()
+            .expect("Unless we're mixing graphics backends, this should be impossible.")
     }
 }
