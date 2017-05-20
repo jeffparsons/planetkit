@@ -102,16 +102,29 @@ impl Chunk {
 
         // For every cell, if its owning chunk is not this chunk,
         // then add it to the list that we might need to copy from.
-        let end_x = origin.pos().x + chunk_resolution[0];
-        let end_y = origin.pos().y + chunk_resolution[1];
+        let start_x = origin.pos().x;
+        let start_y = origin.pos().y;
+        let start_z = origin.pos().z;
+        let end_x = start_x + chunk_resolution[0];
+        let end_y = start_y + chunk_resolution[1];
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
-        let end_z = origin.pos().z + chunk_resolution[2] - 1;
+        let end_z = start_z + chunk_resolution[2] - 1;
         // Iterating over _all_ cells is a dumb slow way to do this,
         // but we don't do it very often. So... meh. :)
         for cell_z in origin.pos().z..(end_z + 1) {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
+                    // Don't bother checking the rest if this cell isn't on the edge of the chunk.
+                    // TODO: is this actually quicker than not checking?
+                    let interior_cell =
+                        cell_x > start_x && cell_x < end_x &&
+                        cell_y > start_y && cell_y < end_y &&
+                        cell_z > start_z && cell_z < end_z;
+                    if interior_cell {
+                        continue;
+                    }
+
                     let other_pos = GridPoint3::new(
                         origin.pos().root,
                         cell_x,

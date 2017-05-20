@@ -247,7 +247,6 @@ impl App {
         }
         // REVISIT: I'm guessing the underlying `Storage::sync_pending` API will change in future;
         // keep an eye on it.
-        // TODO: log (low prio) before and after collecting, how many meshes there are?
         mesh_repo.collect_garbage();
     }
 
