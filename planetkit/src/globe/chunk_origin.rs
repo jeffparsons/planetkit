@@ -24,6 +24,8 @@ impl ChunkOrigin {
     // # Panics
     //
     // Panics if `pos` is not a valid chunk origin.
+    //
+    // TODO: replace these with debug_asserts and drop the promise of a panic above?
     pub fn new(pos: GridPoint3, root_resolution: [GridCoord; 2], chunk_resolution: [GridCoord; 3]) -> ChunkOrigin {
         // Make sure `pos` is within bounds.
         assert!(pos.x >= 0);

@@ -12,6 +12,7 @@ mod chunk_view_system;
 mod chunk_system;
 mod cursor;
 mod chunk_origin;
+mod iters;
 
 #[cfg(test)]
 mod tests;
@@ -27,6 +28,7 @@ pub use self::chunk_view_system::*;
 pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::{ Cursor, CursorMut };
 pub use self::chunk_origin::*;
+pub use self::iters::*;
 
 use grid::{ GridCoord, GridPoint3, Root, PosInOwningRoot };
 
