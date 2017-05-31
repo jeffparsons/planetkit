@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ops::{ Deref, DerefMut };
 
 use super::{ GridCoord, GridPoint2, Root, RootIndex };
@@ -42,7 +43,7 @@ impl GridPoint3 {
     }
 }
 
-/// Wrapper type around a `Pos` that is known to be expressed
+/// Wrapper type around a `GridPoint3` that is known to be expressed
 /// in its owning root quad.
 ///
 /// Note that this does not save you from accidentally using
@@ -190,4 +191,24 @@ impl DerefMut for GridPoint3 {
     fn deref_mut(&mut self) -> &mut GridPoint2 {
         &mut self.rxy
     }
+}
+
+/// Compare by root, z, y, then x.
+///
+/// Sorting points by this will be cache-friendly when indexing into,
+/// e.g., `Chunk`s, which order their elements by z (coarsest) to x (finest).
+pub fn semi_arbitrary_compare(a: &GridPoint3, b: &GridPoint3) -> Ordering {
+    let cmp_root = a.root.index.cmp(&b.root.index);
+    if cmp_root != Ordering::Equal {
+        return cmp_root;
+    }
+    let cmp_z = a.z.cmp(&b.z);
+    if cmp_z != Ordering::Equal {
+        return cmp_z;
+    }
+    let cmp_y = a.y.cmp(&b.y);
+    if cmp_y != Ordering::Equal {
+        return cmp_y;
+    }
+    a.x.cmp(&b.x)
 }

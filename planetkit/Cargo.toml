@@ -38,6 +38,7 @@ itertools = "0.6.0"
 # At time of writing, only used for tests.
 approx = "0.1.1"
 froggy = "0.3.0"
+arrayvec = "0.3.23"
 
 [build-dependencies]
 rustc_version = "0.2.1"

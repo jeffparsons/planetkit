@@ -33,6 +33,15 @@ impl From<RootIndex> for Root {
     }
 }
 
+// Occasionally useful around the place when we need to iterate over all roots.
+pub static ROOTS: [Root; 5] = [
+    Root { index: 0 },
+    Root { index: 1 },
+    Root { index: 2 },
+    Root { index: 3 },
+    Root { index: 4 },
+];
+
 #[cfg(test)]
 mod tests {
     use super::Root;

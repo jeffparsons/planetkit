@@ -67,6 +67,7 @@ extern crate itertools;
 #[macro_use]
 extern crate approx;
 extern crate froggy;
+extern crate arrayvec;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
