@@ -1,6 +1,9 @@
 use grid::{ GridCoord, GridPoint3 };
 use super::ChunkOrigin;
 
+// TODO: rename this file; probably neater to have smaller files
+// rather than having multiple non-trivial iterators together.
+
 // TODO: none of the names in here really properly describe
 // what they're referring to.
 

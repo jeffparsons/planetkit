@@ -13,6 +13,7 @@ mod chunk_system;
 mod cursor;
 mod chunk_origin;
 mod iters;
+mod chunk_shared_points;
 
 #[cfg(test)]
 mod tests;
@@ -29,6 +30,7 @@ pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::{ Cursor, CursorMut };
 pub use self::chunk_origin::*;
 pub use self::iters::*;
+pub use self::chunk_shared_points::ChunkSharedPoints;
 
 use grid::{ GridCoord, GridPoint3, Root, PosInOwningRoot };
 

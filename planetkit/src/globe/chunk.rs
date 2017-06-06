@@ -98,63 +98,34 @@ impl Chunk {
         // Map neighbor chunk origin to neighbors for efficient lookup
         // during construction.
         use std::collections::HashMap;
+        use globe::ChunkSharedPoints;
         let mut neighbors_by_origin = HashMap::<ChunkOrigin, Neighbor>::new();
 
         // For every cell, if its owning chunk is not this chunk,
         // then add it to the list that we might need to copy from.
-        let start_x = origin.pos().x;
-        let start_y = origin.pos().y;
-        let start_z = origin.pos().z;
-        let end_x = start_x + chunk_resolution[0];
-        let end_y = start_y + chunk_resolution[1];
-        // Chunks don't share cells in the z-direction,
-        // but do in the x- and y-directions.
-        let end_z = start_z + chunk_resolution[2] - 1;
-        // Iterating over _all_ cells is a dumb slow way to do this,
-        // but we don't do it very often. So... meh. :)
-        for cell_z in origin.pos().z..(end_z + 1) {
-            for cell_y in origin.pos().y..(end_y + 1) {
-                for cell_x in origin.pos().x..(end_x + 1) {
-                    // Don't bother checking the rest if this cell isn't on the edge of the chunk.
-                    // TODO: is this actually quicker than not checking?
-                    let interior_cell =
-                        cell_x > start_x && cell_x < end_x &&
-                        cell_y > start_y && cell_y < end_y &&
-                        cell_z > start_z && cell_z < end_z;
-                    if interior_cell {
-                        continue;
-                    }
-
-                    let other_pos = GridPoint3::new(
-                        origin.pos().root,
-                        cell_x,
-                        cell_y,
-                        cell_z,
-                    );
-
-                    // Find what chunk this belongs to.
-                    let other_pos_in_owning_root = PosInOwningRoot::new(
-                        other_pos, root_resolution
-                    );
-                    let other_pos_chunk_origin = origin_of_chunk_owning(other_pos_in_owning_root, root_resolution, chunk_resolution);
-                    if other_pos_chunk_origin == origin {
-                        // We own this cell; nothing to do.
-                        continue;
-                    }
-
-                    // We don't own this cell; ensure there's a record for the neighboring
-                    // chunk that it belongs to, and add it to the list of relevant cells.
-                    let mut neighbor = neighbors_by_origin
-                        .entry(other_pos_chunk_origin)
-                        .or_insert(Neighbor {
-                            origin: other_pos_chunk_origin,
-                            // We've never pulled from this neighbour.
-                            last_known_version: 0,
-                            shared_cells: Vec::new(),
-                        });
-                    neighbor.shared_cells.push(other_pos);
-                }
+        let shared_points = ChunkSharedPoints::new(origin, chunk_resolution);
+        for point in shared_points {
+            // Find what chunk this belongs to.
+            let other_pos_in_owning_root = PosInOwningRoot::new(
+                point, root_resolution
+            );
+            let other_pos_chunk_origin = origin_of_chunk_owning(other_pos_in_owning_root, root_resolution, chunk_resolution);
+            if other_pos_chunk_origin == origin {
+                // We own this cell; nothing to do.
+                continue;
             }
+
+            // We don't own this cell; ensure there's a record for the neighboring
+            // chunk that it belongs to, and add it to the list of relevant cells.
+            let mut neighbor = neighbors_by_origin
+                .entry(other_pos_chunk_origin)
+                .or_insert(Neighbor {
+                    origin: other_pos_chunk_origin,
+                    // We've never pulled from this neighbour.
+                    last_known_version: 0,
+                    shared_cells: Vec::new(),
+                });
+            neighbor.shared_cells.push(point);
         }
 
         // We'll usually just want to iterate over these. No need to store
