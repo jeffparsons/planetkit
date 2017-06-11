@@ -415,6 +415,8 @@ impl Iterator for InteriorPoints {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use grid::semi_arbitrary_compare;
     use super::*;
 
@@ -632,5 +634,33 @@ mod tests {
             // Same point as given
             GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 3, y: 5 }, z: 77 },
         ]);
+    }
+
+    #[test]
+    fn all_equivalent_points_symmetric() {
+        const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
+        for xy in iproduct!(
+            0..(ROOT_RESOLUTION[0] + 1),
+            0..(ROOT_RESOLUTION[1] + 1)
+        ) {
+            let (x, y) = xy;
+            let point = GridPoint3::new(
+                // Arbitrary root
+                4.into(),
+                x,
+                y,
+                // Arbitrary z-coordinate
+                77,
+            );
+            let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
+            let equivalent_points: HashSet<GridPoint3> = points_iter.collect();
+            // Make sure that the set of points equivalent to _this_ point is the same
+            // as the set we just found.
+            for point2 in &equivalent_points {
+                let points_iter2 = EquivalentPoints::new(*point2, ROOT_RESOLUTION);
+                let equivalent_points2: HashSet<GridPoint3> = points_iter2.collect();
+                assert_eq!(equivalent_points, equivalent_points2);
+            }
+        }
     }
 }

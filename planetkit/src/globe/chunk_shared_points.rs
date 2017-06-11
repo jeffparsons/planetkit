@@ -75,6 +75,7 @@ impl Iterator for ChunkSharedPoints {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use super::*;
 
     #[test]
@@ -98,5 +99,37 @@ mod tests {
         // the middle of non-shared cells.
         assert_eq!(shared_points.len(), 9*9*64 - 7*7*64);
         // TODO: better assertions?
+    }
+
+    #[test]
+    fn all_shared_points_are_in_same_chunk() {
+        use globe::origin_of_chunk_in_same_root_containing;
+
+        const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
+        const CHUNK_RESOLUTION: [GridCoord; 3] = [8, 8, 64];
+        let chunk_origin = ChunkOrigin::new(
+            GridPoint3::new(
+                // Arbitrary; just to make sure it flows throught to the chunk origin returned
+                4.into(),
+                8,
+                8,
+                192,
+            ),
+            ROOT_RESOLUTION,
+            CHUNK_RESOLUTION,
+        );
+        let origins_of_shared_points_iter = ChunkSharedPoints::new(chunk_origin, CHUNK_RESOLUTION).map(|point| {
+            origin_of_chunk_in_same_root_containing(point, ROOT_RESOLUTION, CHUNK_RESOLUTION)
+        });
+        let origins: HashSet<ChunkOrigin> = origins_of_shared_points_iter.collect();
+        for origin in &origins {
+            assert_eq!(origin.pos().root.index, 4);
+            assert!(origin.pos().x >= chunk_origin.pos().x);
+            assert!(origin.pos().x <= chunk_origin.pos().x + CHUNK_RESOLUTION[0]);
+            assert!(origin.pos().y >= chunk_origin.pos().y);
+            assert!(origin.pos().y <= chunk_origin.pos().y + CHUNK_RESOLUTION[1]);
+            assert!(origin.pos().z >= chunk_origin.pos().z);
+            assert!(origin.pos().z < chunk_origin.pos().z + CHUNK_RESOLUTION[2]);
+        }
     }
 }

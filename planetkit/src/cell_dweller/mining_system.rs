@@ -86,6 +86,8 @@ impl MiningSystem {
         cd: &mut CellDweller,
         globe: &mut Globe,
     ) {
+        use globe::is_point_on_chunk_edge;
+
         // Only allow picking stuff up if you're sitting above solid ground.
         // (Or, rather, the stuff we consider to be solid for now,
         // which is anything other than air.)
@@ -136,20 +138,14 @@ impl MiningSystem {
             globe.authoritative_cell_mut(
                 new_pos_in_owning_root
             ).material = Material::Air;
-            // Bump the version of the chunk containing this cell.
-            // TODO: this lacks subtlety. Neighbors only actually
-            // care about edge chunks, so do you need multiple
-            // notions of version? Or _only_ have something like "edge_cells_version"
-            // for now?
-            globe.increment_chunk_version_for_cell(new_pos_in_owning_root);
-            // Propagate change to neighbouring chunks.
-            // TODO: we reaaaally need a better interface for mutating chunk data
-            // to make sure this happens automatically.
-            //
-            // TODO: also this is _stupidly_ slow hacks!
-            // Like... _really_ bad. Fixing the interface to cell data
-            // is now a high priority.
-            globe.copy_all_authoritative_cells();
+            // Some extra stuff is only relevant if the cell is on the edge of its chunk.
+            if is_point_on_chunk_edge(*new_pos_in_owning_root.pos(), globe.spec().chunk_resolution) {
+                // Bump version of owned shared cells.
+                globe.increment_chunk_owned_edge_version_for_cell(new_pos_in_owning_root);
+                // Propagate change to neighbouring chunks.
+                let chunk_origin = globe.origin_of_chunk_owning(new_pos_in_owning_root);
+                globe.push_shared_cells_for_chunk(chunk_origin);
+            }
             // Mark the view for the containing chunk and those containing each cell surrounding
             // it as being dirty. (This cell might affect the visibility of cells in those chunks.)
             // TODO: different API where you commit to changing a cell

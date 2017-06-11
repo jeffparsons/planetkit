@@ -2,6 +2,7 @@ use specs;
 use grid::{ GridCoord, GridPoint3, PosInOwningRoot };
 use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
+use globe::chunk_pair::PointPair;
 
 #[derive(PartialEq, Eq, Copy, Clone)]
 pub enum Material {
@@ -33,16 +34,21 @@ pub struct Chunk {
     // Sorted by (z, y, x).
     pub cells: Vec<Cell>,
     pub view_entity: Option<specs::Entity>,
-    // Incremented whenever authoritative data in this chunk is updated.
+    // Incremented whenever authoritative data in this chunk that is shared with other chunks is updated.
     // This way even if a neighboring chunk was not loaded when we update this chunk,
     // we can detect later that it is out-of-date.
     //
     // The first version is 1, so we can use 0 to represent "no last known version"
     // of our neighboring chunks.
-    pub version: u64,
-    // Neighbors that are the source of truth for some of the cells on
-    // the border of this chunk.
-    pub authoritative_neighbors: Vec<Neighbor>,
+    pub owned_edge_version: u64,
+    // Neighbors that are the source of truth for some of the cells on the border of this chunk.
+    //
+    // TODO: when we switch to froggy storage, wrap both of these in a struct that
+    // stores a weak pointer to where we think the chunk might be loaded,
+    // so that we don't need to look it up in a hash map.
+    pub upstream_neighbors: Vec<UpstreamNeighbor>,
+    // Neighbors that share some cells on the border of this chunk but don't own them.
+    pub downstream_neighbors: Vec<DownstreamNeighbor>,
     pub is_view_dirty: bool,
     // Chunks that are directly accessible from the given chunk via a single,
     // step between cells, including this chunk itself.
@@ -70,67 +76,121 @@ impl Chunk {
         root_resolution: [GridCoord; 2],
         chunk_resolution: [GridCoord; 3],
     ) -> Chunk {
-        Chunk {
+        let mut chunk = Chunk {
             origin: origin,
             cells: cells,
             chunk_resolution: chunk_resolution,
             view_entity: None,
-            version: 1,
-            authoritative_neighbors: Self::list_authoritative_neighbors(
-                origin,
-                root_resolution,
-                chunk_resolution
-            ),
+            owned_edge_version: 1,
+            upstream_neighbors: Vec::new(),
+            downstream_neighbors: Vec::new(),
             is_view_dirty: true,
             accessible_chunks: Self::list_accessible_chunks(
                 origin,
                 root_resolution,
                 chunk_resolution,
             ),
-        }
+        };
+        chunk.populate_neighboring_chunks(root_resolution);
+        chunk
     }
 
-    fn list_authoritative_neighbors(
-        origin: ChunkOrigin,
-        root_resolution: [GridCoord; 2],
-        chunk_resolution: [GridCoord; 3],
-    ) -> Vec<Neighbor> {
-        // Map neighbor chunk origin to neighbors for efficient lookup
-        // during construction.
+    /// Find and store the origins of all upstream and downstream neighbor chunks.
+    ///
+    /// Panics if called more than once; it is for initialization only.
+    fn populate_neighboring_chunks(&mut self, root_resolution: [GridCoord; 2]) {
+        use grid::EquivalentPoints;
+        use grid::semi_arbitrary_compare;
+        use globe::ChunksInSameRootContainingPoint;
+
+        if self.upstream_neighbors.len() > 0 || self.downstream_neighbors.len() > 0 {
+            panic!("Tried to initialize chunk multiple times.");
+        }
+
+        // Map neighbor chunk origins to neighbors for easy lookup during construction.
         use std::collections::HashMap;
         use globe::ChunkSharedPoints;
-        let mut neighbors_by_origin = HashMap::<ChunkOrigin, Neighbor>::new();
+        let mut upstream_neighbors_by_origin = HashMap::<ChunkOrigin, UpstreamNeighbor>::new();
+        let mut downstream_neighbors_by_origin = HashMap::<ChunkOrigin, DownstreamNeighbor>::new();
 
-        // For every cell, if its owning chunk is not this chunk,
-        // then add it to the list that we might need to copy from.
-        let shared_points = ChunkSharedPoints::new(origin, chunk_resolution);
-        for point in shared_points {
+        // For every point on the edge of this chunk, find all the chunks that contain it,
+        // taking note that some of those might be in other roots if the point is on the edge of a root.
+        // Then, depending on whether or not we own the point, add it to a downstream neighbor
+        // or an upstream neighbor.
+        let shared_points = ChunkSharedPoints::new(self.origin, self.chunk_resolution);
+        for our_point in shared_points {
             // Find what chunk this belongs to.
-            let other_pos_in_owning_root = PosInOwningRoot::new(
-                point, root_resolution
-            );
-            let other_pos_chunk_origin = origin_of_chunk_owning(other_pos_in_owning_root, root_resolution, chunk_resolution);
-            if other_pos_chunk_origin == origin {
-                // We own this cell; nothing to do.
-                continue;
-            }
+            let our_point_in_owning_root = PosInOwningRoot::new(our_point, root_resolution);
+            let owning_chunk_origin = origin_of_chunk_owning(our_point_in_owning_root, root_resolution, self.chunk_resolution);
+            let we_own_this_point = owning_chunk_origin == self.origin;
 
-            // We don't own this cell; ensure there's a record for the neighboring
-            // chunk that it belongs to, and add it to the list of relevant cells.
-            let mut neighbor = neighbors_by_origin
-                .entry(other_pos_chunk_origin)
-                .or_insert(Neighbor {
-                    origin: other_pos_chunk_origin,
-                    // We've never pulled from this neighbour.
-                    last_known_version: 0,
-                    shared_cells: Vec::new(),
-                });
-            neighbor.shared_cells.push(point);
+            // TODO: wrap this up as an `AllChunksContainingPoint` iterator.
+            // TODO: this is perfect as an "easy"-tagged github issue. Maybe try carving some of these off.
+            let equivalent_points = EquivalentPoints::new(our_point, root_resolution);
+            for equivalent_point in equivalent_points {
+                let containing_chunks = ChunksInSameRootContainingPoint::new(equivalent_point, root_resolution, self.chunk_resolution);
+                for chunk_origin in containing_chunks {
+                    if chunk_origin == self.origin {
+                        // We're looking at the same chunk; we'll never need to copy to/from self!
+                        continue;
+                    }
+
+                    if we_own_this_point {
+                        // We own the cell; ensure there's a record for the downstream chunk,
+                        // and then add the pair of representations of the same point to the list
+                        // of cells that need to be synced.
+                        let mut downstream_neighbor = downstream_neighbors_by_origin
+                            .entry(chunk_origin)
+                            .or_insert(DownstreamNeighbor {
+                                origin: chunk_origin,
+                                shared_cells: Vec::new(),
+                            });
+                        downstream_neighbor.shared_cells.push(PointPair {
+                            source: our_point_in_owning_root,
+                            sink: equivalent_point,
+                        });
+                    } else if owning_chunk_origin == chunk_origin {
+                        // The other chunk owns the cell; ensure there's a record for the upstream chunk,
+                        // and then add the pair of representations of the same point to the list
+                        // of cells that need to be synced.
+                        let mut upstream_neighbor = upstream_neighbors_by_origin
+                            .entry(chunk_origin)
+                            .or_insert(UpstreamNeighbor {
+                                origin: chunk_origin,
+                                shared_cells: Vec::new(),
+                            });
+                        let equivalent_point_in_owning_root = PosInOwningRoot::new(equivalent_point, root_resolution);
+                        upstream_neighbor.shared_cells.push(PointPair {
+                            source: equivalent_point_in_owning_root,
+                            sink: our_point,
+                        });
+                    }
+                }
+            }
         }
 
         // We'll usually just want to iterate over these. No need to store
         // as a hash map beyond building it.
-        neighbors_by_origin.values().cloned().collect()
+        //
+        // Sort the points inside these for cache-friendliness.
+        self.upstream_neighbors = upstream_neighbors_by_origin.values().cloned().collect();
+        for upstream_neighbor in &mut self.upstream_neighbors {
+            upstream_neighbor.shared_cells.sort_by(|point_pair_a, point_pair_b| {
+                // Comparing by source points should give us some tiny cache locality benefit.
+                // So would sorting by sink points, but hopefully better one sorted than neither.
+                // TODO: check whether this helps at all.
+                semi_arbitrary_compare(point_pair_a.source.pos(), &point_pair_b.source.pos())
+            });
+        }
+        self.downstream_neighbors = downstream_neighbors_by_origin.values().cloned().collect();
+        for downstream_neighbor in &mut self.downstream_neighbors {
+            downstream_neighbor.shared_cells.sort_by(|point_pair_a, point_pair_b| {
+                // Comparing by sink points should give us some tiny cache locality benefit.
+                // So would sorting by source points, but hopefully better one sorted than neither.
+                // TODO: check whether this helps at all.
+                semi_arbitrary_compare(&point_pair_a.sink, &point_pair_b.sink)
+            });
+        }
     }
 
     // Panics or returns nonsense if given coordinates of a cell we don't have data for.
@@ -245,12 +305,17 @@ impl<'a> Chunk {
 }
 
 #[derive(Clone)]
-pub struct Neighbor {
-    // TODO: visibility
-
+pub struct UpstreamNeighbor {
+    // TODO: visibility? pub(::globe)?
     pub origin: ChunkOrigin,
-    pub last_known_version: u64,
-    // List of positions owned by the neighbor (source),
-    // but specified in the root of the primary (target) chunk.
-    pub shared_cells: Vec<GridPoint3>,
+    // List of positions owned by the neighbor (source), specified in both source and sink.
+    pub shared_cells: Vec<PointPair>,
+}
+
+#[derive(Clone)]
+pub struct DownstreamNeighbor {
+    // TODO: visibility? pub(::globe)?
+    pub origin: ChunkOrigin,
+    // List of positions owned by this chunk (source), specified in both source and sink.
+    pub shared_cells: Vec<PointPair>,
 }

@@ -8,6 +8,7 @@ use super::ChunkOrigin;
 use super::chunk::{ Chunk, Cell };
 use super::spec::Spec;
 use super::gen::Gen;
+use super::chunk_pair::{ ChunkPairOrigins, ChunkPair };
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -24,6 +25,9 @@ pub struct Globe {
     // But maybe you can put that off? Or maybe that's an entirely
     // different type of Globe-oid?
     chunks: HashMap<ChunkOrigin, Chunk>,
+    // Track which chunks are up-to-date with authoritative data for cells
+    // they share with a neighbor.
+    chunk_pairs: HashMap<ChunkPairOrigins, ChunkPair>,
 }
 
 // Allowing sibling modules to reach into semi-private parts
@@ -49,6 +53,7 @@ impl Globe {
             spec: spec,
             gen: Gen::new(spec),
             chunks: HashMap::new(),
+            chunk_pairs: HashMap::new(),
         }
     }
 
@@ -75,56 +80,26 @@ impl Globe {
         self.spec
     }
 
-    // TODO: there's no way this should be public.
-    // Replace with a better interface for mutating cell content
-    // that automatically ensures that all neighbouring chunks
-    // get updated, etc.
-    pub fn copy_all_authoritative_cells(&mut self) {
-        // Oh god, this is so horrible. Please forgive this
-        // temporary hack until I figure out what I'm actually
-        // doing with this. I want to destroy the whole interface,
-        // so I'm not going to bother making this good for now.
-        //
-        // TODO: burn it with fire
-        let all_chunk_origins: Vec<ChunkOrigin> = self.chunks
-            .values()
-            .map(|chunk| chunk.origin)
-            .collect();
-        for chunk_origin in all_chunk_origins {
-            self.maybe_copy_authoritative_cells(chunk_origin);
-        }
-    }
-
-    fn maybe_copy_authoritative_cells(&mut self, target_chunk_origin: ChunkOrigin) {
-        // BEWARE: MULTIPLE HACKS BELOW to get around borrowck. There has to be
+    /// Copy shared cells owned by a chunk for any loaded downstream chunks
+    /// that have an outdated copy.
+    ///
+    /// Panics if the given chunk is not loaded.
+    pub fn push_shared_cells_for_chunk(&mut self, source_chunk_origin: ChunkOrigin) {
+        // BEWARE: HACKS BELOW to get around borrowck. There has to be
         // a better way around this!
 
-        // Temporarily remove the target chunk from the globe,
-        // so that we can simultaneously write to it and read from
-        // a bunch of other chunks.
+        // Temporarily remove the source chunk from the globe, so that we can simultaneously
+        // read from it and write to a bunch of other chunks.
         //
         // TODO: at very least avoid this most of the time by doing a read-only pass over
-        // all neighbours and bailing out if we're completely up-to-date.
-        let mut target_chunk = match self.chunks.remove(&target_chunk_origin) {
-            None => {
-                // No worries; the chunk isn't loaded. Do nothing.
-                return;
-            },
-            Some(target_chunk) => target_chunk,
-        };
+        // all neighbours and bailing out if they're completely up-to-date.
+        let source_chunk = self.chunks.remove(&source_chunk_origin)
+            .expect("Tried to push shared cells for a chunk that isn't loaded.");
 
-        // Temporarily remove list of neighbours from target chunk
-        // so that we can simultaneously read from it and update
-        // the chunk's data.
-        let mut neighbors = Vec::<super::chunk::Neighbor>::new();
-        use std::mem::swap;
-        swap(&mut neighbors, &mut target_chunk.authoritative_neighbors);
-
-        // For each of this chunk's neighbors, see if we have up-to-date
-        // copies of the data we share with that neighbor. Otherwise,
-        // copy it over.
-        for neighbor in &mut neighbors {
-            let source_chunk = match self.chunks.get(&neighbor.origin) {
+        // For each of this chunk's downstream neighbors, see if it has up-to-date
+        // copies of the data we share with that neighbor. Otherwise, copy it over.
+        for downstream_neighbor in &source_chunk.downstream_neighbors {
+            let sink_chunk = match self.chunks.get_mut(&downstream_neighbor.origin) {
                 None => {
                     // No worries; the chunk isn't loaded. Do nothing.
                     continue;
@@ -132,40 +107,104 @@ impl Globe {
                 Some(chunk) => chunk,
             };
 
-            if neighbor.last_known_version == source_chunk.version {
-                // We're already up-to-date with this neighbor's data; skip.
+            // Look it up to see if it is already up-to-date.
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: source_chunk.origin,
+                sink: sink_chunk.origin,
+            };
+            let chunk_pair = self.chunk_pairs.get_mut(&chunk_pair_origins)
+                .expect("Chunk pair for chunk should have been present.");
+            if chunk_pair.last_upstream_edge_version_known_downstream == source_chunk.owned_edge_version {
+                // Sink chunk is already up-to-date; move on to next neighbor.
                 continue;
             }
 
-            // Copy over each cell, one by one.
-            for target_grid_point in &neighbor.shared_cells {
-                let source_grid_point: GridPoint3 = PosInOwningRoot::new(*target_grid_point, self.spec.root_resolution).into();
-                let source_cell =
-                    *source_chunk.cell(source_grid_point);
-                let target_cell =
-                    target_chunk.cell_mut(*target_grid_point);
+            // Copy over each cell, one-by-one.
+            for point_pair in &chunk_pair.point_pairs {
+                let source_cell = *source_chunk.cell(point_pair.source.into());
+                let target_cell = sink_chunk.cell_mut(point_pair.sink);
                 // Copy source -> target.
                 *target_cell = source_cell;
             }
 
-            // We're now up-to-date with the neighbor.
-            neighbor.last_known_version = source_chunk.version;
+            // Downstream chunk now has most recent changes from upstream.
+            chunk_pair.last_upstream_edge_version_known_downstream = source_chunk.owned_edge_version;
 
             // If we got this far, then it means we needed to update something.
-            // So mark this chunk as having its view out-of-date.
-            //
-            // TODO: this all lacks subtlety; we only actually need to update the
-            // destination chunk's data if the dirty cell was on the edge of
-            // the chunk. This needs some thought on a good interface for mutating
-            // chunks that doesn't allow oopsing this...
-            target_chunk.mark_view_as_dirty();
+            // So mark the downstream chunk as having its view out-of-date.
+            sink_chunk.mark_view_as_dirty();
         }
 
-        // Put the list of neighbors back into the chunk.
-        swap(&mut neighbors, &mut target_chunk.authoritative_neighbors);
+        // Put the source chunk back into the world!
+        self.chunks.insert(source_chunk_origin, source_chunk);
+    }
 
-        // Put the target chunk back into the world!
-        self.chunks.insert(target_chunk_origin, target_chunk);
+    /// Copy shared cells not owned by a chunk from any loaded upstream chunks
+    /// that have a more current copy.
+    ///
+    /// Panics if the given chunk is not loaded.
+    pub fn pull_shared_cells_for_chunk(&mut self, sink_chunk_origin: ChunkOrigin) {
+        // BEWARE: HACKS BELOW to get around borrowck. There has to be
+        // a better way around this!
+
+        // Temporarily remove the sink chunk from the globe, so that we can simultaneously
+        // write to it and read from a bunch of other chunks.
+        //
+        // TODO: at very least avoid this most of the time by doing a read-only pass over
+        // all neighbours and bailing out if we're completely up-to-date.
+        let mut sink_chunk = self.chunks.remove(&sink_chunk_origin)
+            .expect("Tried to pull shared cells for a chunk that isn't loaded.");
+
+        // Temporarily remove list of neighbours from sink chunk so that we can
+        // both read from it and update the chunk's data.
+        let mut upstream_neighbors = Vec::<super::chunk::UpstreamNeighbor>::new();
+        use std::mem::swap;
+        swap(&mut upstream_neighbors, &mut sink_chunk.upstream_neighbors);
+
+        // For each of this chunk's upstream neighbors, see if it has a newer copy of the data
+        // we share with that neighbor. Otherwise, copy it into the sink chunk.
+        for upstream_neighbor in &upstream_neighbors {
+            let source_chunk = match self.chunks.get_mut(&upstream_neighbor.origin) {
+                None => {
+                    // No worries; the chunk isn't loaded. Do nothing.
+                    continue;
+                },
+                Some(chunk) => chunk,
+            };
+
+            // Look it up to see if it has any newer data.
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: source_chunk.origin,
+                sink: sink_chunk.origin,
+            };
+            let chunk_pair = self.chunk_pairs.get_mut(&chunk_pair_origins)
+                .expect("Chunk pair for chunk should have been present.");
+            if chunk_pair.last_upstream_edge_version_known_downstream == source_chunk.owned_edge_version {
+                // Sink chunk is already up-to-date; move on to next neighbor.
+                continue;
+            }
+
+            // Copy over each cell, one-by-one.
+            for point_pair in &chunk_pair.point_pairs {
+                let source_cell = *source_chunk.cell(point_pair.source.into());
+                let target_cell = sink_chunk.cell_mut(point_pair.sink);
+                // Copy source -> target.
+                *target_cell = source_cell;
+            }
+
+            // Downstream chunk now has most recent changes from upstream.
+            chunk_pair.last_upstream_edge_version_known_downstream = source_chunk.owned_edge_version;
+
+            // If we got this far, then it means we needed to update something.
+            // So mark the downstream chunk as having its view out-of-date.
+            sink_chunk.mark_view_as_dirty();
+        }
+
+        // Put the list of neighbors back into the sink chunk.
+        swap(&mut upstream_neighbors, &mut sink_chunk.upstream_neighbors);
+
+        // Put the sink chunk back into the world!
+        self.chunks.insert(sink_chunk_origin, sink_chunk);
     }
 
     pub fn origin_of_chunk_owning(&self, pos: PosInOwningRoot) -> ChunkOrigin {
@@ -203,6 +242,8 @@ impl Globe {
         );
         // Gah, filthy hacks. This is to get around not having a way to query for
         // "all chunks containing this cell".
+        //
+        // TODO: replace now that you DO have that. See other comment about `AllChunksContainingPoint`.
         let mut cells_in_dirty_chunks: Vec<PosInOwningRoot> = Vec::new();
         for dirty_cell in dirty_cells {
             cells_in_dirty_chunks.extend(
@@ -219,15 +260,11 @@ impl Globe {
         }
     }
 
-    // TODO: this all lacks subtlety; we only actually need to update the
-    // destination chunk's data if the dirty cell was on the edge of
-    // the chunk. This needs some thought on a good interface for mutating
-    // chunks that doesn't allow oopsing this...
-    pub fn increment_chunk_version_for_cell(&mut self, pos: PosInOwningRoot) {
+    pub fn increment_chunk_owned_edge_version_for_cell(&mut self, pos: PosInOwningRoot) {
         let chunk_origin = self.origin_of_chunk_owning(pos.into());
         let chunk = self.chunks.get_mut(&chunk_origin)
             .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
-        chunk.version += 1;
+        chunk.owned_edge_version += 1;
     }
 
     /// Add the given chunk to the globe.
@@ -243,6 +280,8 @@ impl Globe {
         // if you try to load a chunk for the wrong globe even if they have
         // the same resolution.
 
+        self.ensure_all_chunk_pairs_present_for(&chunk);
+
         let chunk_origin = chunk.origin;
         if self.chunks.insert(chunk_origin, chunk).is_some() {
             panic!("There was already a chunk loaded at the same origin!");
@@ -255,8 +294,10 @@ impl Globe {
     ///
     /// Panics if there was no chunk loaded at the given chunk origin.
     pub fn remove_chunk(&mut self, chunk_origin: ChunkOrigin) -> Chunk {
-        self.chunks.remove(&chunk_origin)
-            .expect("Attempted to remove a chunk that was not loaded")
+        let chunk = self.chunks.remove(&chunk_origin)
+            .expect("Attempted to remove a chunk that was not loaded");
+        self.remove_all_chunk_pairs_for(&chunk);
+        chunk
     }
 
     // TODO: consider moving `load_or_build_chunk`, `ensure_chunk_present`,
@@ -323,10 +364,64 @@ impl Globe {
         }
         self.load_or_build_chunk(chunk_origin);
 
-        // TODO: slow, oh gods, don't do this.
-        // But for now, it will at least correctly copy in/out
-        // any authoritative cells.
-        self.copy_all_authoritative_cells();
+        // Make sure this chunk has up-to-date data for edge cells that it doesn't own.
+        self.pull_shared_cells_for_chunk(chunk_origin);
+
+        // Make sure that neighboring chunks have up-to-date data for edge cells owned
+        // by this chunk.
+        self.push_shared_cells_for_chunk(chunk_origin);
+    }
+
+    /// Make sure we are tracking the currency of shared data in all chunks
+    /// upstream or downstream of this chunk.
+    fn ensure_all_chunk_pairs_present_for(&mut self, chunk: &Chunk) {
+        use globe::chunk_pair::{ ChunkPairOrigins, ChunkPair };
+        // Copy cached upstream and downstream neighbors from
+        // chunks rather than re-computing them for each pair now.
+        for upstream_neighbor in &chunk.upstream_neighbors {
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: upstream_neighbor.origin,
+                sink: chunk.origin,
+            };
+            self.chunk_pairs.entry(chunk_pair_origins)
+                .or_insert(ChunkPair {
+                    point_pairs: upstream_neighbor.shared_cells.clone(),
+                    last_upstream_edge_version_known_downstream: 0,
+                });
+        }
+        for downstream_neighbor in &chunk.downstream_neighbors {
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: chunk.origin,
+                sink: downstream_neighbor.origin,
+            };
+            self.chunk_pairs.entry(chunk_pair_origins)
+                .or_insert(ChunkPair {
+                    point_pairs: downstream_neighbor.shared_cells.clone(),
+                    last_upstream_edge_version_known_downstream: 0,
+                });
+        }
+    }
+
+    /// Clean up any chunk pairs where either the source or sink is this chunk.
+    fn remove_all_chunk_pairs_for(&mut self, chunk: &Chunk) {
+        // TODO: HashMap::retain was stabilised in Rust 1.18;
+        // replace this as soon as you update.
+        for upstream_neighbor in &chunk.upstream_neighbors {
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: upstream_neighbor.origin,
+                sink: chunk.origin,
+            };
+            // Note that chunk pair will only be present if _both_ chunks it refers to were loaded.
+            self.chunk_pairs.remove(&chunk_pair_origins);
+        }
+        for downstream_neighbor in &chunk.downstream_neighbors {
+            let chunk_pair_origins = ChunkPairOrigins {
+                source: chunk.origin,
+                sink: downstream_neighbor.origin,
+            };
+            // Note that chunk pair will only be present if _both_ chunks it refers to were loaded.
+            self.chunk_pairs.remove(&chunk_pair_origins);
+        }
     }
 }
 

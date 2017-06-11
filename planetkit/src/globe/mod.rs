@@ -14,6 +14,7 @@ mod cursor;
 mod chunk_origin;
 mod iters;
 mod chunk_shared_points;
+mod chunk_pair;
 
 #[cfg(test)]
 mod tests;
@@ -292,4 +293,19 @@ pub fn origin_of_chunk_owning(
             chunk_resolution,
         )
     }
+}
+
+pub fn is_point_on_chunk_edge(
+    point: GridPoint3,
+    chunk_resolution: [GridCoord; 3],
+) -> bool {
+    (point.x % chunk_resolution[0]) == point.x
+    ||
+    (point.y % chunk_resolution[1]) == point.y
+    ||
+    (point.z % chunk_resolution[2]) == point.z
+    ||
+    // Last z-coordinate of cell is _just before_ the next multiple
+    // of chunk z-resolution.
+    ((point.z + 1) % chunk_resolution[2]) == (point.z + 1)
 }
