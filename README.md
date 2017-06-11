@@ -1,5 +1,11 @@
 # PlanetKit
 
+[![Build status][bi]][bl]
+
+[bi]: https://travis-ci.org/jeffparsons/planetkit.svg?branch=master
+[bl]: https://travis-ci.org/jeffparsons/planetkit
+
+
 Colorful blobs that might one day resemble planets.
 
 ![Screenshot](https://raw.githubusercontent.com/jeffparsons/planetkit/master/screenshot.png)
