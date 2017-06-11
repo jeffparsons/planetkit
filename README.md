@@ -1,9 +1,12 @@
 # PlanetKit
 
-[![Build status][bi]][bl]
+[![Travis CI build status][bi]][bl] [![AppVeyor build status][ai]][al]
 
 [bi]: https://travis-ci.org/jeffparsons/planetkit.svg?branch=master
 [bl]: https://travis-ci.org/jeffparsons/planetkit
+
+[ai]: https://ci.appveyor.com/api/projects/status/vfk0w163ojw8nmdv/branch/master?svg=true
+[al]: https://ci.appveyor.com/project/jeffparsons/planetkit/branch/master
 
 
 Colorful blobs that might one day resemble planets.
