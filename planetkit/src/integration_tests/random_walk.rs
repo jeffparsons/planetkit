@@ -137,7 +137,7 @@ fn random_walk() {
     use grid::GridPoint3;
 
     let mut walker = Walker::new();
-    walker.tick_lots(10000);
+    walker.tick_lots(1000);
 
     // Walking should have taken us away from the origin.
     let guy_entity = walker.guy_entity;
