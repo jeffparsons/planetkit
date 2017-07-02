@@ -59,6 +59,7 @@ extern crate nalgebra as na;
 extern crate slog;
 extern crate slog_term;
 extern crate slog_async;
+extern crate shred;
 extern crate specs;
 extern crate num_traits;
 #[macro_use]
@@ -82,14 +83,10 @@ pub mod render;
 pub mod simple;
 pub mod cell_dweller;
 pub mod movement;
-pub mod system_priority;
 pub mod camera;
 
 mod spatial;
 pub use spatial::Spatial;
-
-mod system;
-pub use system::System;
 
 #[cfg(test)]
 mod integration_tests;

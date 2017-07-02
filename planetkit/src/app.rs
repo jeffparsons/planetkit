@@ -26,7 +26,8 @@ fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
 pub struct App {
     t: TimeDelta,
     log: Logger,
-    planner: specs::Planner<TimeDelta>,
+    world: specs::World,
+    dispatcher: specs::Dispatcher<'static, 'static>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
     input_adapters: Vec<Box<InputAdapter>>,
     // TEMP: Share with rendering system until the rendering system
@@ -40,7 +41,13 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(parent_log: &Logger, window: &mut PistonWindow) -> App {
+    // Add all your systems before passing the dispatcher in.
+    pub fn new(
+        parent_log: &Logger,
+        window: &mut PistonWindow,
+        world: specs:: World,
+        dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
+    ) -> App {
         use camera_controllers::{
             FirstPersonSettings,
             FirstPerson,
@@ -107,20 +114,16 @@ impl App {
             mesh_repo_ptr.clone(),
         );
 
-        // Create SPECS world and, system execution planner
-        // for it with two threads.
-        //
-        // This manages execution of all game systems,
-        // i.e. the interaction between sets of components.
-        let world = specs::World::new();
-
-        let mut planner = specs::Planner::new(world);
-        planner.add_system(render_sys, "render", 50);
+        let dispatcher_builder = dispatcher_builder
+            // Wait for unknown systems to finish before rendering.
+            .add_barrier()
+            .add(render_sys, "render", &[]);
 
         App {
             t: 0.0,
             log: log,
-            planner: planner,
+            world: world,
+            dispatcher: dispatcher_builder.build(),
             encoder_channel: device_encoder_channel,
             input_adapters: Vec::new(),
             projection: projection,
@@ -130,18 +133,6 @@ impl App {
             output_stencil: window.output_stencil.clone(),
             mesh_repo: mesh_repo_ptr,
         }
-    }
-
-    /// Add a system created by the given function.
-    ///
-    /// The function will be provided with essential inputs, like a `slog::Logger`,
-    /// `specs::World`, etc.
-    pub fn add_system<S: 'static + ::System<TimeDelta>, F>(&mut self, create_system: F)
-        where F: Fn(&Logger) -> (S, &'static str, i32)
-    {
-        let (mut system, name, priority) = create_system(&self.log);
-        system.init(self.planner().mut_world());
-        self.planner.add_system(system, name, priority);
     }
 
     pub fn run(&mut self, mut window: &mut PistonWindow) {
@@ -200,7 +191,10 @@ impl App {
 
     fn update(&mut self, args: &UpdateArgs) {
         self.t += args.dt;
-        self.planner.dispatch(args.dt);
+
+        self.world.write_resource::<TimeDeltaResource>().0 = args.dt;
+        self.dispatcher.dispatch(&mut self.world.res);
+        self.world.maintain();
 
         self.realize_proto_meshes();
     }
@@ -212,14 +206,11 @@ impl App {
     // the whole disgusting thing and find a better way
     // to work around the root problem.
     fn realize_proto_meshes(&mut self) {
-        use specs::Gate;
-
         // NOTE: it is essential that we lock the world first.
         // Otherwise we could dead-lock against, e.g., the render
         // system while it's trying to lock the mesh repository.
-        let world = self.planner.mut_world();
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
-        let mut visuals = world.write::<Visual>().pass();
+        let mut visuals = self.world.write::<Visual>();
         use specs::Join;
         for visual in (&mut visuals).join() {
             // Even if there's a realized mesh already, the presence of
@@ -256,7 +247,7 @@ impl App {
 }
 
 impl<'a> App {
-    pub fn planner(&'a mut self) -> &'a mut specs::Planner<TimeDelta> {
-        &mut self.planner
+    pub fn world_mut(&'a mut self) -> &'a mut specs::World {
+        &mut self.world
     }
 }

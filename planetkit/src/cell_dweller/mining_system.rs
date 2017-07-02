@@ -1,9 +1,9 @@
 use std::sync::mpsc;
 use specs;
+use specs::{ WriteStorage, Fetch };
 use slog::Logger;
 use piston::input::Input;
 
-use types::*;
 use super::{ CellDweller, ActiveCellDweller };
 use ::movement::*;
 use grid::PosInOwningRoot;
@@ -159,16 +159,16 @@ impl MiningSystem {
     }
 }
 
-impl specs::System<TimeDelta> for MiningSystem {
-    fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
+impl<'a> specs::System<'a> for MiningSystem {
+    type SystemData = (
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Globe>,
+        Fetch<'a, ActiveCellDweller>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
-        let (mut cell_dwellers, mut globes, active_cell_dweller_resource) = arg.fetch(|w|
-            (
-                w.write::<CellDweller>(),
-                w.write::<Globe>(),
-                w.read_resource::<ActiveCellDweller>(),
-            )
-        );
+        let (mut cell_dwellers, mut globes, active_cell_dweller_resource) = data;
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
             None => return,

@@ -1,8 +1,7 @@
-use pk;
 use specs;
+use specs::FetchMut;
 use slog::Logger;
 
-use pk::types::*;
 use super::game_state::{ GameState, LevelOutcome };
 
 /// System to drive the top-level state machine for level and game state.
@@ -18,19 +17,13 @@ impl GameSystem {
     }
 }
 
-impl pk::System<TimeDelta> for GameSystem {
-    fn init(&mut self, world: &mut specs::World) {
-        GameState::ensure_registered(world);
-    }
-}
+impl<'a> specs::System<'a> for GameSystem {
+    type SystemData = (
+        FetchMut<'a, GameState>,
+    );
 
-impl specs::System<TimeDelta> for GameSystem {
-    fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
-        let (mut game_state,) = arg.fetch(|w|
-            (
-                w.write_resource::<GameState>(),
-            )
-        );
+    fn run(&mut self, data: Self::SystemData) {
+        let (mut game_state,) = data;
         // TEMP: instant-win!
         match game_state.current_level.level_outcome {
             LevelOutcome::Pending => {

@@ -1,7 +1,7 @@
-use std::ops::{ Deref, DerefMut };
-
 use na;
 use specs;
+use specs::{ WriteStorage, Fetch };
+use specs::Entities;
 use slog::Logger;
 
 use types::*;
@@ -29,16 +29,14 @@ impl ChunkViewSystem {
         }
     }
 
-    fn build_chunk_geometry<
-        A: Deref<Target = specs::Allocator>,
-        Gd: DerefMut<Target = specs::MaskedStorage<Globe>>,
-        Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
-        Cd: Deref<Target = specs::MaskedStorage<ChunkView>>,
-    >(
+    fn build_chunk_geometry<'a>(
         &mut self,
-        mut globes: specs::Storage<Globe, A, Gd>,
-        mut visuals: specs::Storage<Visual, A, Vd>,
-        chunk_views: specs::Storage<ChunkView, A, Cd>,
+        mut globes: specs::WriteStorage<'a, Globe>,
+        mut visuals: specs::WriteStorage<'a, Visual>,
+        // TODO: Parameterise over ReadStorage/WriteStorage when we don't care?
+        // TODO: I made `MaybeMutStorage` for `SpatialStorage`, so just pluck
+        // that out somewhere public and use that.
+        chunk_views: specs::WriteStorage<'a, ChunkView>,
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.
@@ -136,24 +134,19 @@ impl ChunkViewSystem {
         }
     }
 
-    pub fn remove_views_for_dead_chunks<
-        A: Deref<Target = specs::Allocator>,
-        Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
-        Cd: DerefMut<Target = specs::MaskedStorage<ChunkView>>,
-    >(
+    pub fn remove_views_for_dead_chunks<'a>(
         &mut self,
-        run_arg: &specs::RunArg,
+        entities: &Entities<'a>,
         globe: &mut Globe,
         globe_entity: specs::Entity,
-        entities: &specs::Entities,
-        visuals: &mut specs::Storage<Visual, A, Vd>,
-        chunk_views: &mut specs::Storage<ChunkView, A, Cd>,
+        visuals: &mut specs::WriteStorage<'a, Visual>,
+        chunk_views: &mut specs::WriteStorage<'a, ChunkView>,
     ) {
         use specs::Join;
 
         let mut entities_to_remove: Vec<specs::Entity> = Vec::new();
 
-        for (chunk_view, chunk_view_ent) in (&*chunk_views, &*entities).join() {
+        for (chunk_view, chunk_view_ent) in (&*chunk_views, &**entities).join() {
             // Ignore chunks not belonging to this globe.
             if chunk_view.globe_entity != globe_entity {
                 continue;
@@ -183,23 +176,23 @@ impl ChunkViewSystem {
             // the entity itself up for deletion.
             visuals.remove(chunk_view_ent);
             chunk_views.remove(chunk_view_ent);
-            run_arg.delete(chunk_view_ent);
+            entities.delete(chunk_view_ent);
+
+            // TODO: maintain? Do we need to do that here?
+            // Or are these entities immediately inaccessible?
+            // (I'm unclear on when it's necessary / exactly what it does.)
+
         }
     }
 
-    pub fn ensure_chunk_view_entities<
-        A: Deref<Target = specs::Allocator>,
-        Cd: DerefMut<Target = specs::MaskedStorage<ChunkView>>,
-        Vd: DerefMut<Target = specs::MaskedStorage<Visual>>,
-        Sd: DerefMut<Target = specs::MaskedStorage<Spatial>>,
-    >(
+    pub fn ensure_chunk_view_entities<'a>(
         &mut self,
-        run_arg: &specs::RunArg,
+        entities: &Entities<'a>,
         globe: &mut Globe,
         globe_entity: specs::Entity,
-        chunk_views: &mut specs::Storage<ChunkView, A, Cd>,
-        visuals: &mut specs::Storage<Visual, A, Vd>,
-        spatials: &mut specs::Storage<Spatial, A, Sd>,
+        chunk_views: &mut specs::WriteStorage<'a, ChunkView>,
+        visuals: &mut specs::WriteStorage<'a, Visual>,
+        spatials: &mut specs::WriteStorage<'a, Spatial>,
     ) {
         use globe::globe::GlobeGuts;
         let globe_spec = globe.spec();
@@ -220,7 +213,9 @@ impl ChunkViewSystem {
             // We'll fill it in later.
             let empty_visual = ::render::Visual::new_empty();
             // TODO: Use `create_later_build`, now that it exists?
-            let new_ent = run_arg.create_pure();
+            // Updated TODO: figure out what the new API is for that.
+            let new_ent = entities.create();
+            // TODO: run `maintain`? When do we have to do that?
             chunk.view_entity = Some(new_ent);
             chunk_views.insert(new_ent, chunk_view);
             visuals.insert(new_ent, empty_visual);
@@ -229,27 +224,28 @@ impl ChunkViewSystem {
     }
 }
 
-impl specs::System<TimeDelta> for ChunkViewSystem {
-    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
-        self.seconds_since_last_geometry_creation += dt;
+impl<'a> specs::System<'a> for ChunkViewSystem {
+    type SystemData = (
+        Entities<'a>,
+        Fetch<'a, TimeDeltaResource>,
+        WriteStorage<'a, Globe>,
+        WriteStorage<'a, Visual>,
+        WriteStorage<'a, Spatial>,
+        WriteStorage<'a, ChunkView>,
+    );
 
+    fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (entities, mut globes, mut visuals, mut spatials, mut chunk_views) =
-            arg.fetch(|w| (
-                w.entities(),
-                w.write::<Globe>(),
-                w.write::<Visual>(),
-                w.write::<Spatial>(),
-                w.write::<ChunkView>(),
-            ));
+        let (entities, dt, mut globes, mut visuals, mut spatials, mut chunk_views) = data;
+
+        self.seconds_since_last_geometry_creation += dt.0;
 
         // Destroy views for any chunks that are no longer loaded.
-        for (globe, globe_entity) in (&mut globes, &entities).join() {
+        for (globe, globe_entity) in (&mut globes, &*entities).join() {
             self.remove_views_for_dead_chunks(
-                &arg,
+                &entities,
                 globe,
                 globe_entity,
-                &entities,
                 &mut visuals,
                 &mut chunk_views,
             );
@@ -264,7 +260,7 @@ impl specs::System<TimeDelta> for ChunkViewSystem {
             // have 1000 chunks loaded, and only render 200 of them
             // on this client.
             self.ensure_chunk_view_entities(
-                &arg,
+                &entities,
                 globe,
                 globe_entity,
                 &mut chunk_views,

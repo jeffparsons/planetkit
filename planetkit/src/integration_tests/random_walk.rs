@@ -3,7 +3,6 @@ use std::sync::mpsc;
 use slog;
 use globe;
 use specs;
-use specs::Gate;
 use cell_dweller;
 use types::*;
 
@@ -11,7 +10,8 @@ use types::*;
 // and some custom systems to drive the tests.
 struct Walker {
     movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
-    planner: specs::Planner<TimeDelta>,
+    world: specs::World,
+    dispatcher: specs::Dispatcher<'static, 'static>,
     guy_entity: specs::Entity,
 }
 
@@ -29,9 +29,10 @@ impl Walker {
         world.register::<::Spatial>();
         world.register::<::globe::Globe>();
 
-        // Create systems.
-        use ::system_priority as prio;
+        // Initialize common resources.
+        world.add_resource(TimeDeltaResource(0.0));
 
+        // Create systems.
         let chunk_sys = globe::ChunkSystem::new(
             &root_log,
         );
@@ -52,18 +53,19 @@ impl Walker {
             0.1, // Seconds between falls
         );
 
-        // Hand the world off to a Specs `Planner`.
-        let mut planner = specs::Planner::new(world);
-        planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
-        planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
-        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
+        // Make a dispatcher and add all our systems.
+        let dispatcher = specs::DispatcherBuilder::new()
+            .add(movement_sys, "cd_movement", &[])
+            .add(physics_sys, "cd_physics", &[])
+            .add(chunk_sys, "chunk", &[])
+            .build();
 
         // Use an Earth-scale globe to make it likely we're constantly
         // visiting new chunks.
         let globe = globe::Globe::new_earth_scale_example();
         // First add the globe to the world so we can get a handle on its entity.
         let globe_spec = globe.spec();
-        let globe_entity = planner.mut_world().create_now()
+        let globe_entity = world.create_entity()
             .with(globe)
             .build();
 
@@ -72,16 +74,13 @@ impl Walker {
         use globe::chunk::Material;
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
-            let mut globes = planner
-                .mut_world()
-                .write::<globe::Globe>()
-                .pass();
+            let mut globes = world.write::<globe::Globe>();
             let mut globe = globes
                 .get_mut(globe_entity)
                 .expect("Uh oh, where did our Globe go?");
             globe.find_lowest_cell_containing(guy_pos, Material::Air)
         };
-        let guy_entity = planner.mut_world().create_now()
+        let guy_entity = world.create_entity()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
                 Dir::default(),
@@ -91,12 +90,13 @@ impl Walker {
             .with(::Spatial::new_root())
             .build();
         // Set our new character as the currently controlled cell dweller.
-        planner.mut_world().write_resource::<cell_dweller::ActiveCellDweller>().pass().maybe_entity =
+        world.write_resource::<cell_dweller::ActiveCellDweller>().maybe_entity =
             Some(guy_entity);
 
         Walker {
             movement_input_sender: movement_input_sender,
-            planner: planner,
+            world: world,
+            dispatcher: dispatcher,
             guy_entity: guy_entity,
         }
     }
@@ -127,7 +127,9 @@ impl Walker {
                 self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap();
             }
 
-            self.planner.dispatch(0.1);
+            self.world.write_resource::<TimeDeltaResource>().0 = 0.1;
+            self.dispatcher.dispatch(&mut self.world.res);
+            self.world.maintain();
         }
     }
 }
@@ -141,8 +143,7 @@ fn random_walk() {
 
     // Walking should have taken us away from the origin.
     let guy_entity = walker.guy_entity;
-    let world = walker.planner.mut_world();
-    let cd_storage = world.read::<::cell_dweller::CellDweller>().pass();
+    let cd_storage = walker.world.read::<::cell_dweller::CellDweller>();
     let cd = cd_storage.get(guy_entity).unwrap();
     assert_ne!(cd.pos, GridPoint3::default());
 }

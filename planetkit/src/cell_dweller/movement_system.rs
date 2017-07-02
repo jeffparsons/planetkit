@@ -1,5 +1,6 @@
 use std::sync::mpsc;
 use specs;
+use specs::{ ReadStorage, WriteStorage, Fetch };
 use slog::Logger;
 use piston::input::Input;
 
@@ -165,17 +166,18 @@ impl MovementSystem {
     }
 }
 
-impl specs::System<TimeDelta> for MovementSystem {
-    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
+impl<'a> specs::System<'a> for MovementSystem {
+    type SystemData = (
+        Fetch<'a, TimeDeltaResource>,
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Spatial>,
+        ReadStorage<'a, Globe>,
+        Fetch<'a, ActiveCellDweller>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
-        let (mut cell_dwellers, mut spatials, globes, active_cell_dweller_resource) = arg.fetch(|w|
-            (
-                w.write::<CellDweller>(),
-                w.write::<Spatial>(),
-                w.read::<Globe>(),
-                w.read_resource::<ActiveCellDweller>(),
-            )
-        );
+        let (dt, mut cell_dwellers, mut spatials, globes, active_cell_dweller_resource) = data;
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
             None => return,
@@ -201,7 +203,7 @@ impl specs::System<TimeDelta> for MovementSystem {
 
         // Count down until we're allowed to move next.
         if cd.seconds_until_next_move > 0.0 {
-            cd.seconds_until_next_move = (cd.seconds_until_next_move - dt).max(0.0);
+            cd.seconds_until_next_move = (cd.seconds_until_next_move - dt.0).max(0.0);
         }
         let still_waiting_to_move = cd.seconds_until_next_move > 0.0;
         // We can only step if forward XOR backward.
@@ -223,7 +225,7 @@ impl specs::System<TimeDelta> for MovementSystem {
 
         // Count down until we're allowed to turn next.
         if cd.seconds_until_next_turn > 0.0 {
-            cd.seconds_until_next_turn = (cd.seconds_until_next_turn - dt).max(0.0);
+            cd.seconds_until_next_turn = (cd.seconds_until_next_turn - dt.0).max(0.0);
         }
         let still_waiting_to_turn = cd.seconds_until_next_turn > 0.0;
         if !still_waiting_to_turn {

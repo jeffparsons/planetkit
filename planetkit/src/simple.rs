@@ -14,13 +14,31 @@ use globe;
 use cell_dweller;
 use render;
 
+pub fn noop_create_systems<'a, 'b>(
+    _logger: &slog::Logger,
+    _world: &mut specs::World,
+    dispatcher_builder: specs::DispatcherBuilder<'a, 'b>
+) -> specs::DispatcherBuilder<'a, 'b> {
+    // No-op; just pass the DispatcherBuilder back.
+    dispatcher_builder
+}
+
+pub trait CreateSystemsFn<'a, 'b>
+    : Fn(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b> {}
+
+impl<'a, 'b, F> CreateSystemsFn<'a, 'b> for F
+    where F: Fn(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b>
+{ }
+
 /// Create a new simple PlanetKit app and window.
 ///
 /// Uses all default settings, logs to standard output, and registers most
 /// of the systems you're likely to want to use.
-pub fn new_empty() -> (app::App, PistonWindow) {
+///
+/// The given function `create_systems` will be called with references
+/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
+pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (app::App, PistonWindow) {
     use slog::Drain;
-    use super::system_priority as prio;
 
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
@@ -29,66 +47,76 @@ pub fn new_empty() -> (app::App, PistonWindow) {
     let log = root_log;
 
     let mut window = window::make_window(&log);
-    let mut app = app::App::new(&log, &mut window);
 
     // Set up input adapters.
     use cell_dweller;
     let (movement_input_sender, movement_input_receiver) = mpsc::channel();
     let movement_input_adapter = cell_dweller::MovementInputAdapter::new(movement_input_sender);
-    app.add_input_adapter(Box::new(movement_input_adapter));
 
     let (mining_input_sender, mining_input_receiver) = mpsc::channel();
     let mining_input_adapter = cell_dweller::MiningInputAdapter::new(mining_input_sender);
+
+    // Create world and register all component types.
+    let mut world = specs::World::new();
+    world.register::<::cell_dweller::CellDweller>();
+    world.register::<::render::Visual>();
+    world.register::<::Spatial>();
+    world.register::<::globe::Globe>();
+    world.register::<::globe::ChunkView>();
+
+    // Initialize common resources.
+    world.add_resource(TimeDeltaResource(0.0));
+
+    // Initialize all systems.
+    // TODO: split out system initialization into helper functions.
+
+    let mut movement_sys = cell_dweller::MovementSystem::new(
+        movement_input_receiver,
+        &log,
+    );
+    movement_sys.init(&mut world);
+
+    let mut mining_sys = cell_dweller::MiningSystem::new(
+        mining_input_receiver,
+        &log,
+    );
+    mining_sys.init(&mut world);
+
+    let physics_sys = cell_dweller::PhysicsSystem::new(
+        &log,
+        0.1, // Seconds between falls
+    );
+
+    use globe;
+    let chunk_sys = globe::ChunkSystem::new(
+        &log,
+    );
+
+    let chunk_view_sys = globe::ChunkViewSystem::new(
+        &log,
+        0.05, // Seconds between geometry creation
+    );
+
+    // TODO: export some default names and priorities for these...
+    let dispatcher_builder = specs::DispatcherBuilder::new()
+        // Try to get stuff most directly linked to input done first
+        // to avoid another frame of lag.
+        .add(movement_sys, "cd_movement", &[])
+        .add(mining_sys, "cd_mining", &["cd_movement"])
+        .add_barrier()
+        .add(physics_sys, "physics", &[])
+        .add(chunk_sys, "chunk", &[])
+        // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
+        // to be able to run it in parallel.
+        .add(chunk_view_sys, "chunk_view", &[]);
+
+    // Run any user-provided system creation code.
+    let dispatcher_builder = create_systems(&log, &mut world, dispatcher_builder);
+
+    // Hand dispatcher off to a new App.
+    let mut app = app::App::new(&log, &mut window, world, dispatcher_builder);
+    app.add_input_adapter(Box::new(movement_input_adapter));
     app.add_input_adapter(Box::new(mining_input_adapter));
-
-    {
-        let planner = app.planner();
-
-        {
-            // Register all component types.
-            let world = planner.mut_world();
-            world.register::<::cell_dweller::CellDweller>();
-            world.register::<::render::Visual>();
-            world.register::<::Spatial>();
-            world.register::<::globe::Globe>();
-            world.register::<::globe::ChunkView>();
-        }
-
-        // Initialize all systems.
-        // TODO: split out system initialization into helper functions.
-
-        let mut movement_sys = cell_dweller::MovementSystem::new(
-            movement_input_receiver,
-            &log,
-        );
-        movement_sys.init(planner.mut_world());
-        planner.add_system(movement_sys, "cd_movement", prio::CD_MOVEMENT);
-
-        let mut mining_sys = cell_dweller::MiningSystem::new(
-            mining_input_receiver,
-            &log,
-        );
-        mining_sys.init(planner.mut_world());
-        planner.add_system(mining_sys, "cd_mining", prio::CD_MINING);
-
-        let physics_sys = cell_dweller::PhysicsSystem::new(
-            &log,
-            0.1, // Seconds between falls
-        );
-        planner.add_system(physics_sys, "cd_physics", prio::CD_PHYSICS);
-
-        use globe;
-        let chunk_sys = globe::ChunkSystem::new(
-            &log,
-        );
-        planner.add_system(chunk_sys, "chunk", prio::CHUNK);
-
-        let chunk_view_sys = globe::ChunkViewSystem::new(
-            &log,
-            0.05, // Seconds between geometry creation
-        );
-        planner.add_system(chunk_view_sys, "chunk_view", prio::CHUNK_VIEW);
-    }
 
     (app, window)
 }
@@ -97,11 +125,14 @@ pub fn new_empty() -> (app::App, PistonWindow) {
 ///
 /// Creates a world using `new_empty` then populates it with some entities.
 /// Hack first, ask questions later.
-pub fn new_populated() -> (app::App, PistonWindow) {
-    let (mut app, window) = new_empty();
+///
+/// The given function `create_systems` will be called with references
+/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
+pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (app::App, PistonWindow) {
+    let (mut app, window) = new_empty(create_systems);
     // Populate the world.
     {
-        let world = app.planner().mut_world();
+        let world = app.world_mut();
         let globe_entity = create_simple_globe_now(world);
         let player_character_entity = create_simple_player_character_now(world, globe_entity);
         create_simple_chase_camera_now(world, player_character_entity);
@@ -111,7 +142,7 @@ pub fn new_populated() -> (app::App, PistonWindow) {
 
 pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
     let globe = globe::Globe::new_earth_scale_example();
-    world.create_now()
+    world.create_entity()
         .with(globe)
         .with(::Spatial::new_root())
         .build()
@@ -119,12 +150,11 @@ pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
 
 pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity: specs::Entity) -> specs::Entity {
     use rand::{ XorShiftRng, SeedableRng };
-    use specs::Gate;
 
     // Find a suitable spawn point for the player character at the globe surface.
     use grid::Dir;
     let (globe_spec, player_character_pos) = {
-        let mut globe_storage = world.write::<globe::Globe>().pass();
+        let mut globe_storage = world.write::<globe::Globe>();
         let globe = globe_storage.get_mut(globe_entity)
             .expect("Uh oh, it looks like our Globe went missing.");
         let globe_spec = globe.spec();
@@ -145,7 +175,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
     let mut player_character_visual = render::Visual::new_empty();
     player_character_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let player_character_entity = world.create_now()
+    let player_character_entity = world.create_entity()
         .with(cell_dweller::CellDweller::new(
             player_character_pos,
             Dir::default(),
@@ -158,7 +188,7 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
         .with(::Spatial::new(globe_entity, Iso3::identity()))
         .build();
     // Set our new character as the currently controlled cell dweller.
-    world.write_resource::<cell_dweller::ActiveCellDweller>().pass().maybe_entity =
+    world.write_resource::<cell_dweller::ActiveCellDweller>().maybe_entity =
         Some(player_character_entity);
     player_character_entity
 }
@@ -168,7 +198,7 @@ pub fn create_simple_chase_camera_now(world: &mut specs::World, player_character
     let eye = Pt3::new(0.0, 4.0, -6.0);
     let target = Pt3::origin();
     let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
-    let camera_entity = world.create_now()
+    let camera_entity = world.create_entity()
         .with(::Spatial::new(player_character_entity, camera_transform))
         .build();
     use ::camera::DefaultCamera;

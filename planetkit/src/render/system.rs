@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::{ Arc, Mutex };
 use gfx;
 use gfx::Primitive;
@@ -6,6 +5,8 @@ use gfx::state::Rasterizer;
 use vecmath;
 use camera_controllers;
 use specs;
+use specs::Entities;
+use specs::{ ReadStorage, Fetch };
 use slog::Logger;
 
 use super::default_pipeline::pipe;
@@ -14,7 +15,7 @@ use super::EncoderChannel;
 use super::Visual;
 use super::MeshRepository;
 use ::Spatial;
-use ::types::*;
+use ::camera::DefaultCamera;
 
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
@@ -67,16 +68,11 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     }
 
     // Abstract over `specs` storage types with `A`, and `D`.
-    fn draw<
-        A: Deref<Target = specs::Allocator>,
-        Vd: Deref<Target = specs::MaskedStorage<Visual>>,
-        Sd: Deref<Target = specs::MaskedStorage<Spatial>>,
-    >(
+    fn draw<'a>(
         &mut self,
-        _dt: TimeDelta,
-        entities: specs::Entities,
-        visuals: specs::Storage<Visual, A, Vd>,
-        spatials: specs::Storage<Spatial, A, Sd>,
+        entities: &specs::Entities<'a>,
+        visuals: &specs::ReadStorage<'a, Visual>,
+        spatials: &specs::ReadStorage<'a, Spatial>,
         camera: specs::Entity,
     ) {
         // TODO: Systems are currently run on the main thread,
@@ -100,7 +96,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         // Try to draw all visuals.
         use specs::Join;
-        for (entity, visual) in (&entities, &visuals).join() {
+        for (entity, visual) in (&**entities, visuals).join() {
             use ::spatial::SpatialStorage;
 
             // Don't try to draw things that aren't in the same
@@ -170,21 +166,20 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     }
 }
 
-impl<R, C> specs::System<TimeDelta> for System<R, C> where
+impl<'a, R, C> specs::System<'a> for System<R, C> where
 R: 'static + gfx::Resources,
 C: 'static + gfx::CommandBuffer<R> + Send,
 {
-    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
-        use ::camera::DefaultCamera;
-        let (entities, visuals, spatials, default_camera) = arg.fetch(|w|
-            (
-                w.entities(),
-                w.read::<Visual>(),
-                w.read::<Spatial>(),
-                w.read_resource::<DefaultCamera>(),
-            ),
-        );
-        self.draw(dt, entities, visuals, spatials, default_camera.camera_entity);
+    type SystemData = (
+        Entities<'a>,
+        Fetch<'a, DefaultCamera>,
+        ReadStorage<'a, Visual>,
+        ReadStorage<'a, Spatial>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, default_camera, visuals, spatials) = data;
+        self.draw(&entities, &visuals, &spatials, default_camera.camera_entity);
 
         // TODO: implement own "extrapolated time" concept or similar
         // to decide how often we should actually be trying to render?

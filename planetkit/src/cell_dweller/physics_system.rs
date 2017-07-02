@@ -1,4 +1,5 @@
 use specs;
+use specs::{ ReadStorage, WriteStorage, Fetch };
 use slog::Logger;
 
 use types::*;
@@ -61,12 +62,17 @@ impl PhysicsSystem {
     }
 }
 
-impl specs::System<TimeDelta> for PhysicsSystem {
-    fn run(&mut self, arg: specs::RunArg, dt: TimeDelta) {
+impl<'a> specs::System<'a> for PhysicsSystem {
+    type SystemData = (
+        Fetch<'a, TimeDeltaResource>,
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Spatial>,
+        ReadStorage<'a, Globe>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (mut cell_dwellers, mut spatials, globes) = arg.fetch(|w|
-            (w.write::<CellDweller>(), w.write::<Spatial>(), w.read::<Globe>())
-        );
+        let (dt, mut cell_dwellers, mut spatials, globes) = data;
         for (cd, spatial) in (&mut cell_dwellers, &mut spatials).join() {
             // Get the associated globe, complaining loudly if we fail.
             let globe_entity = match cd.globe_entity {
@@ -84,7 +90,7 @@ impl specs::System<TimeDelta> for PhysicsSystem {
                 },
             };
 
-            self.maybe_fall(cd, globe, dt);
+            self.maybe_fall(cd, globe, dt.0);
 
             // Update real-space coordinates if necessary.
             // TODO: do this in a separate system; it needs to be done before

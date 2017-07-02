@@ -1,6 +1,4 @@
-use std::ops::Deref;
-
-use specs::{ self, Entity };
+use specs::{ self, Entity, ReadStorage, WriteStorage };
 
 use super::types::*;
 
@@ -64,10 +62,35 @@ pub trait SpatialStorage {
     ) -> Iso3;
 }
 
-impl<
-    A: Deref<Target = specs::Allocator>,
-    Sd: Deref<Target = specs::MaskedStorage<Spatial>>,
-> SpatialStorage for specs::Storage<Spatial, A, Sd> {
+// This is a gross hack to abstract over mutability of storages,
+// because `specs::MaskedStorage` was made private in Specs 0.9.
+//
+// TODO: It's hard to argue that `specs::MaskedStorage` should remain in the
+// public interface just for my needs, but maybe there's a case for a trait
+// like this one existing in Specs. Create an issue to discuss...
+pub trait MaybeMutStorage<'a, T> {
+    fn get(&self, e: Entity) -> Option<&T>;
+}
+
+impl<'a, T> MaybeMutStorage<'a, T> for ReadStorage<'a, T>
+    where T: specs::Component
+{
+    fn get(&self, e: Entity) -> Option<&T> {
+        (self as &ReadStorage<T>).get(e)
+    }
+}
+
+impl<'a, T> MaybeMutStorage<'a, T> for WriteStorage<'a, T>
+    where T: specs::Component
+{
+    fn get(&self, e: Entity) -> Option<&T> {
+        (self as &WriteStorage<T>).get(e)
+    }
+}
+
+impl<'e, S> SpatialStorage for S
+    where S: MaybeMutStorage<'e, Spatial>,
+{
     fn depth_of(&self, entity: Entity) -> i32 {
         let spatial = self.get(entity)
             .expect("Given entity doesn't have a Spatial");
@@ -177,7 +200,6 @@ impl<
 #[cfg(test)]
 mod tests {
     use specs;
-    use specs::Gate;
     use na;
 
     use super::*;
@@ -202,7 +224,7 @@ mod tests {
             let mut world = specs::World::new();
             world.register::<Spatial>();
 
-            let sun = world.create_now()
+            let sun = world.create_entity()
                 .with(Spatial::new_root())
                 .build();
 
@@ -210,7 +232,7 @@ mod tests {
                 Vec3::new(1000.0, 2000.0, 0.0),
                 na::zero(),
             );
-            let earth = world.create_now()
+            let earth = world.create_entity()
                 .with(Spatial::new(sun, earth_transform))
                 .build();
 
@@ -218,7 +240,7 @@ mod tests {
                 Vec3::new(300.0, 400.0, 0.0),
                 na::zero(),
             );
-            let moon = world.create_now()
+            let moon = world.create_entity()
                 .with(Spatial::new(earth, moon_transform))
                 .build();
 
@@ -226,7 +248,7 @@ mod tests {
             let target = Pt3::origin();
             // Look straight down at Earth.
             let polar_satellite_transform = Iso3::look_at_rh(&eye, &target, &Vec3::y());
-            let polar_satellite = world.create_now()
+            let polar_satellite = world.create_entity()
                 .with(Spatial::new(earth, polar_satellite_transform))
                 .build();
 
@@ -243,7 +265,7 @@ mod tests {
     #[test]
     fn pos_relative_to_parent() {
         let ss = SolarSystem::new();
-        let spatials = ss.world.read::<Spatial>().pass();
+        let spatials = ss.world.read::<Spatial>();
 
         let earth_from_sun = spatials.a_relative_to_b(ss.earth, ss.sun);
         assert_relative_eq!(
@@ -261,7 +283,7 @@ mod tests {
     #[test]
     fn pos_relative_to_grandparent() {
         let ss = SolarSystem::new();
-        let spatials = ss.world.read::<Spatial>().pass();
+        let spatials = ss.world.read::<Spatial>();
 
         let moon_from_sun = spatials.a_relative_to_b(ss.moon, ss.sun);
         assert_relative_eq!(
@@ -279,7 +301,7 @@ mod tests {
     #[test]
     fn pos_accounting_for_orientation_relative_to_parent() {
         let ss = SolarSystem::new();
-        let mut spatials = ss.world.write::<Spatial>().pass();
+        let mut spatials = ss.world.write::<Spatial>();
 
         let earth_from_polar_satellite = spatials.a_relative_to_b(ss.earth, ss.polar_satellite);
         assert_relative_eq!(

@@ -1,9 +1,8 @@
-use std::ops::{ Deref, DerefMut };
-
 use specs;
+use specs::{ ReadStorage, WriteStorage };
+use specs::Entities;
 use slog::Logger;
 
-use types::*;
 use grid::PosInOwningRoot;
 use super::{ Globe, ChunkOrigin };
 use cell_dweller::CellDweller;
@@ -41,14 +40,11 @@ impl ChunkSystem {
         }
     }
 
-    fn unload_excess_chunks_if_necessary<
-        A: Deref<Target = specs::Allocator>,
-        Cd: Deref<Target = specs::MaskedStorage<CellDweller>>,
-    >(
+    fn unload_excess_chunks_if_necessary<'a>(
         &mut self,
         globe: &mut Globe,
         globe_entity: specs::Entity,
-        cds: &specs::Storage<CellDweller, A, Cd>,
+        cds: &specs::ReadStorage<'a, CellDweller>,
     ) {
         use super::globe::GlobeGuts;
 
@@ -100,13 +96,10 @@ impl ChunkSystem {
         }
     }
 
-    fn ensure_essential_chunks_for_cell_dweller_present<
-        A: Deref<Target = specs::Allocator>,
-        Gd: DerefMut<Target = specs::MaskedStorage<Globe>>,
-    >(
+    fn ensure_essential_chunks_for_cell_dweller_present<'a>(
         &mut self,
         cd: &CellDweller,
-        globes: &mut specs::Storage<Globe, A, Gd>,
+        globes: &mut specs::WriteStorage<'a, Globe>,
     ) {
         if let Some(globe_entity) = cd.globe_entity {
             // Get the associated globe, complaining loudly if we fail.
@@ -163,18 +156,23 @@ impl ChunkSystem {
     }
 }
 
-impl specs::System<TimeDelta> for ChunkSystem {
-    fn run(&mut self, arg: specs::RunArg, _dt: TimeDelta) {
+impl<'a> specs::System<'a> for ChunkSystem {
+    type SystemData = (
+        Entities<'a>,
+        WriteStorage<'a, Globe>,
+        ReadStorage<'a, CellDweller>,
+    );
+
+    fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (mut globes, cds, entities) = arg.fetch(|w| {
-            (w.write::<Globe>(), w.read::<CellDweller>(), w.entities())
-        });
+
+        let (entities, mut globes, cds) = data;
 
         // If we have too many chunks loaded, then unload some of them.
-        for (mut globe, globe_entity) in (&mut globes, &entities).join() {
+        for (mut globe, globe_entity) in (&mut globes, &*entities).join() {
             self.unload_excess_chunks_if_necessary(&mut globe, globe_entity, &cds);
         }
-
+        // Make sure the chunks under/near the player are present.
         for cd in cds.join() {
             self.ensure_essential_chunks_for_cell_dweller_present(cd, &mut globes);
         }

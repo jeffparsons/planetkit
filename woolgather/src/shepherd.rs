@@ -10,11 +10,10 @@ use pk::cell_dweller;
 /// that have strayed from his flock and fallen into holes.
 pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> specs::Entity {
     use rand::{ XorShiftRng, SeedableRng };
-    use specs::Gate;
 
     // Find a suitable spawn point for the player character at the globe surface.
     let (globe_spec, shepherd_pos) = {
-        let mut globe_storage = world.write::<globe::Globe>().pass();
+        let mut globe_storage = world.write::<globe::Globe>();
         let globe = globe_storage.get_mut(globe_entity)
             .expect("Uh oh, it looks like our Globe went missing.");
         let globe_spec = globe.spec();
@@ -35,7 +34,7 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
     let mut shepherd_visual = render::Visual::new_empty();
     shepherd_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let shepherd_entity = world.create_now()
+    let shepherd_entity = world.create_entity()
         .with(cell_dweller::CellDweller::new(
             shepherd_pos,
             grid::Dir::default(),
