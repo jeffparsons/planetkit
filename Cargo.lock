@@ -496,6 +496,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kaboom"
+version = "0.0.1"
+dependencies = [
+ "planetkit 0.0.1",
+ "rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shred 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slog 2.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "specs 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
