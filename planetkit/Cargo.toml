@@ -40,6 +40,8 @@ itertools = "0.6.0"
 approx = "0.1.1"
 froggy = "0.3.0"
 arrayvec = "0.3.23"
+futures = "0.1.14"
+tokio-core = "0.1.8"
 
 [build-dependencies]
 rustc_version = "0.2.1"

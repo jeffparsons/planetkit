@@ -25,8 +25,11 @@ fn add_systems(
     GameState::ensure_registered(world);
 
     let game_system = game_system::GameSystem::new(logger);
+    let network_system = pk::network::System::new(logger);
+
     dispatcher_builder
         .add(game_system, "woolgather_game", &[])
+        .add(network_system, "network", &[])
 }
 
 fn create_entities(world: &mut specs::World) {

@@ -69,6 +69,9 @@ extern crate itertools;
 extern crate approx;
 extern crate froggy;
 extern crate arrayvec;
+extern crate futures;
+#[macro_use]
+extern crate tokio_core;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
@@ -84,6 +87,7 @@ pub mod simple;
 pub mod cell_dweller;
 pub mod movement;
 pub mod camera;
+pub mod network;
 
 mod spatial;
 pub use spatial::Spatial;
