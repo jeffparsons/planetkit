@@ -8,6 +8,7 @@ extern crate slog;
 mod fighter;
 mod game_state;
 mod game_system;
+mod planet;
 
 fn main() {
     let (mut app, mut window) = pk::simple::new_empty(add_systems);
@@ -33,7 +34,7 @@ fn create_entities(world: &mut specs::World) {
 
     // Create the globe first, because we'll need it to figure out where
     // to place the player character.
-    let globe_entity = pk::simple::create_simple_globe_now(world);
+    let globe_entity = planet::create_now(world);
 
     // Create the player character.
     let fighter_entity = fighter::create_now(world, globe_entity);
