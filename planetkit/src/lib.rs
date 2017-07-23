@@ -72,6 +72,10 @@ extern crate arrayvec;
 extern crate futures;
 #[macro_use]
 extern crate tokio_core;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
