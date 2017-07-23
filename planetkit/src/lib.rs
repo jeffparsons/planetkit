@@ -90,7 +90,7 @@ pub mod simple;
 pub mod cell_dweller;
 pub mod movement;
 pub mod camera;
-pub mod network;
+pub mod net;
 
 mod spatial;
 pub use spatial::Spatial;
