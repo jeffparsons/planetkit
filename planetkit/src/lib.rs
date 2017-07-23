@@ -70,7 +70,6 @@ extern crate approx;
 extern crate froggy;
 extern crate arrayvec;
 extern crate futures;
-#[macro_use]
 extern crate tokio_core;
 #[macro_use]
 extern crate serde_derive;

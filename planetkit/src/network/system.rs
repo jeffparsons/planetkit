@@ -1,9 +1,8 @@
-use std;
 use std::io;
 use std::net::SocketAddr;
 
-use futures::{self, Future, Poll};
-use tokio_core::net::{UdpSocket, UdpCodec, UdpFramed};
+use futures;
+use tokio_core::net::{UdpSocket, UdpCodec};
 use specs;
 use slog::Logger;
 use serde_json;
@@ -31,17 +30,15 @@ impl UdpCodec for Codec {
     type Out = Message;
 
     fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<Message> {
-        println!("json for Message::Hello: {}", serde_json::to_string(&Message::Hello).unwrap());
-
         serde_json::from_slice(buf).map_err(|error| {
             // TODO: don't warn here; trace here with details unless we can wrap
             // them up in an error to log below.
-            warn!(self.log, "Got a bad message from peer"; "message" => format!("{:?}", buf), "error" => format!("{:?}", error));
+            warn!(self.log, "Got a bad message from peer"; "peer_addr" => format!("{:?}", src), "message" => format!("{:?}", buf), "error" => format!("{:?}", error));
             io::Error::new(io::ErrorKind::Other, error)
         })
     }
 
-    fn encode(&mut self, message: Message, buf: &mut Vec<u8>) -> SocketAddr {
+    fn encode(&mut self, _message: Message, _buf: &mut Vec<u8>) -> SocketAddr {
         panic!("Not implemented");
     }
 }
@@ -95,7 +92,7 @@ impl<'a> specs::System<'a> for System {
     type SystemData = (
     );
 
-    fn run(&mut self, data: Self::SystemData) {
+    fn run(&mut self, _data: Self::SystemData) {
         // ...
     }
 }
