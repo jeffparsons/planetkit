@@ -8,6 +8,7 @@ const SF: f64 = 0.52573111211913360602566908484787660728549793224334178152893552
 // REVISIT: consider precalculating these numbers instead of basing them on the values above.
 const A: f64 = SF;
 const B: f64 = PHI * SF;
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub const VERTICES: [[f64; 3]; 12] = [
     [ 0.0,  A,    B  ],
     [ 0.0, -A,    B  ],
@@ -25,6 +26,7 @@ pub const VERTICES: [[f64; 3]; 12] = [
 
 // TODO: describe the very specific and deliberate
 // order that these faces are in.
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub const FACES: [[usize; 3]; 20] = [
     [ 0,  1,  8  ],
     [ 7,  8,  1  ],
