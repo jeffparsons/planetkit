@@ -4,7 +4,7 @@
 
 use na;
 
-use grid::{ GridCoord, GridPoint3, Dir };
+use grid::{GridCoord, GridPoint3, Dir};
 use grid::cell_shape::NEIGHBOR_OFFSETS;
 use super::triangles::*;
 
@@ -28,8 +28,10 @@ pub fn local_to_world(
     let x_edge_index = (x_dir / 2) as usize;
     let y_edge_index = (y_dir / 2) as usize;
     let transform_to_world = PosMat2::new(
-        NEIGHBOR_OFFSETS[x_edge_index].0, NEIGHBOR_OFFSETS[y_edge_index].0,
-        NEIGHBOR_OFFSETS[x_edge_index].1, NEIGHBOR_OFFSETS[y_edge_index].1,
+        NEIGHBOR_OFFSETS[x_edge_index].0,
+        NEIGHBOR_OFFSETS[y_edge_index].0,
+        NEIGHBOR_OFFSETS[x_edge_index].1,
+        NEIGHBOR_OFFSETS[y_edge_index].1,
     );
 
     // Apply transform.
@@ -74,8 +76,10 @@ pub fn world_to_local(
     // Fortunately this made me realise the determinant of our axis pairs is
     // always equal to 1, so we can save ourselves a bit of calculation here.
     let transform_to_local = PosMat2::new(
-        NEIGHBOR_OFFSETS[y_edge_index].1, -NEIGHBOR_OFFSETS[y_edge_index].0,
-        -NEIGHBOR_OFFSETS[x_edge_index].1, NEIGHBOR_OFFSETS[x_edge_index].0,
+        NEIGHBOR_OFFSETS[y_edge_index].1,
+        -NEIGHBOR_OFFSETS[y_edge_index].0,
+        -NEIGHBOR_OFFSETS[x_edge_index].1,
+        NEIGHBOR_OFFSETS[x_edge_index].0,
     );
 
     // Apply transform.
@@ -91,7 +95,7 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ::grid::{ GridPoint3, Dir };
+    use grid::{GridPoint3, Dir};
 
     const RESOLUTION: [i64; 2] = [32, 64];
 
@@ -125,19 +129,14 @@ mod tests {
     #[test]
     fn world_to_tri_4() {
         // Transform from just below northern tropic, facing north-west.
-        let pos = GridPoint3::default()
-            .with_x(2)
-            .with_y(RESOLUTION[1] / 2 - 1);
+        let pos = GridPoint3::default().with_x(2).with_y(
+            RESOLUTION[1] / 2 - 1,
+        );
         let dir = Dir::new(8);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
         // Should now be just below north pole, facing west.
-        assert_eq!(
-            GridPoint3::default()
-                .with_x(1)
-                .with_y(1),
-            new_pos
-        );
+        assert_eq!(GridPoint3::default().with_x(1).with_y(1), new_pos);
         assert_eq!(Dir::new(10), new_dir);
     }
 
@@ -145,18 +144,16 @@ mod tests {
     fn tri_4_to_world() {
         // Transform from just below north pole, facing west.
 
-        let pos = GridPoint3::default()
-                .with_x(1)
-                .with_y(1);
+        let pos = GridPoint3::default().with_x(1).with_y(1);
         let dir = Dir::new(10);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = local_to_world(pos, dir, RESOLUTION, tri);
 
         // Should now be just below northern tropic, facing north-west.
         assert_eq!(
-            GridPoint3::default()
-            .with_x(2)
-            .with_y(RESOLUTION[1] / 2 - 1),
+            GridPoint3::default().with_x(2).with_y(
+                RESOLUTION[1] / 2 - 1,
+            ),
             new_pos
         );
         assert_eq!(Dir::new(8), new_dir);

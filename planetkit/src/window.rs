@@ -12,10 +12,7 @@ pub fn make_window(log: &Logger) -> PistonWindow {
 
     // Create an Glutin window.
     info!(log, "Creating main window");
-    let mut window: PistonWindow = WindowSettings::new(
-        "planetkit",
-        [800, 600]
-    )
+    let mut window: PistonWindow = WindowSettings::new("planetkit", [800, 600])
         .opengl(opengl)
         .exit_on_esc(true)
         .build()

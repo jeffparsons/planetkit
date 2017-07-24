@@ -11,16 +11,12 @@ pub struct GameSystem {
 
 impl GameSystem {
     pub fn new(parent_log: &Logger) -> GameSystem {
-        GameSystem {
-            logger: parent_log.new(o!("system" => "game")),
-        }
+        GameSystem { logger: parent_log.new(o!("system" => "game")) }
     }
 }
 
 impl<'a> specs::System<'a> for GameSystem {
-    type SystemData = (
-        FetchMut<'a, GameState>,
-    );
+    type SystemData = (FetchMut<'a, GameState>,);
 
     fn run(&mut self, data: Self::SystemData) {
         let (mut game_state,) = data;

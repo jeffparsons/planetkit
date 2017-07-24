@@ -7,9 +7,7 @@ pub struct Dir {
 
 impl Dir {
     pub fn new(index: DirIndex) -> Dir {
-        Dir {
-            index: index
-        }
+        Dir { index: index }
     }
 
     /// Returns `true` if `self` points toward an immediately

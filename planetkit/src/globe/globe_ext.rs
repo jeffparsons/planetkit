@@ -3,7 +3,7 @@
 
 use rand::Rng;
 
-use grid::{ GridPoint2, GridPoint3, PosInOwningRoot, GridCoord };
+use grid::{GridPoint2, GridPoint3, PosInOwningRoot, GridCoord};
 use grid::random_column;
 use super::chunk::Material;
 use super::CursorMut;
@@ -63,7 +63,9 @@ impl Globe {
                 cursor.ensure_chunk_present();
                 {
                     // Non-lexical lifetimes SVP.
-                    let cell = cursor.cell().expect("We just ensured the chunk is present, but apparently it's not. Kaboom!");
+                    let cell = cursor.cell().expect(
+                        "We just ensured the chunk is present, but apparently it's not. Kaboom!",
+                    );
                     if cell.material != Material::Dirt {
                         continue;
                     }
@@ -74,7 +76,9 @@ impl Globe {
                     hopefully_air_pos.z = hopefully_air_pos.z + 1;
                     cursor.set_pos(hopefully_air_pos);
                     cursor.ensure_chunk_present();
-                    let cell = cursor.cell().expect("We just ensured the chunk is present, but apparently it's not. Kaboom!");
+                    let cell = cursor.cell().expect(
+                        "We just ensured the chunk is present, but apparently it's not. Kaboom!",
+                    );
                     if cell.material != Material::Air {
                         continue 'candidate_land;
                     }
@@ -106,7 +110,11 @@ impl Globe {
         let mut attempts_remaining = max_attempts;
         while attempts_remaining > 0 {
             let column = random_column(self.spec().root_resolution, rng);
-            let maybe_pos = self.find_surface_dry_land(column, min_air_cells_above, max_distance_from_starting_point);
+            let maybe_pos = self.find_surface_dry_land(
+                column,
+                min_air_cells_above,
+                max_distance_from_starting_point,
+            );
             if let Some(mut pos) = maybe_pos {
                 // We want the air above the land we found.
                 pos.z += 1;
@@ -129,7 +137,7 @@ impl Globe {
     pub fn find_lowest_cell_containing(
         &mut self,
         column: GridPoint3,
-        material: Material
+        material: Material,
     ) -> GridPoint3 {
         // Translate into owning root, then start at bedrock.
         let mut column = PosInOwningRoot::new(column, self.spec().root_resolution);
@@ -152,7 +160,9 @@ impl Globe {
             cursor.ensure_chunk_present();
             {
                 let pos = cursor.pos();
-                let cell = cursor.cell().expect("We just ensured the chunk is present, but apparently it's not. Kaboom!");
+                let cell = cursor.cell().expect(
+                    "We just ensured the chunk is present, but apparently it's not. Kaboom!",
+                );
                 if cell.material == material {
                     // Yay, we found it!
                     return pos.into();

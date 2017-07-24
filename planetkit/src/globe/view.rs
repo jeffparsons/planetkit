@@ -4,9 +4,9 @@ use grid::GridPoint3;
 use grid::cell_shape;
 use super::spec::Spec;
 use super::{Globe, Cursor, ChunkOrigin};
-use super::chunk::{ Material };
-use ::types::Pt3;
-use ::render;
+use super::chunk::Material;
+use types::Pt3;
+use render;
 
 // TODO: between this and "draw" we now have some confusing names.
 // Shuffle this code into something that implies it's just about
@@ -59,7 +59,7 @@ impl View {
         globe: &Globe,
         origin: ChunkOrigin,
         vertex_data: &mut Vec<render::Vertex>,
-        index_data: &mut Vec<u32>
+        index_data: &mut Vec<u32>,
     ) {
         trace!(self.log, "Building chunk geometry"; "origin" => format!("{:?}", origin));
 
@@ -79,17 +79,12 @@ impl View {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
                     // Use cell center as first vertex of each triangle.
-                    let grid_point = GridPoint3::new(
-                        origin.pos().root,
-                        cell_x,
-                        cell_y,
-                        cell_z,
-                    );
+                    let grid_point = GridPoint3::new(origin.pos().root, cell_x, cell_y, cell_z);
 
                     cursor.set_pos(grid_point);
 
                     if self.cull_cell(&cursor) {
-                       continue;
+                        continue;
                     }
 
                     let mut cell_color = {
@@ -100,10 +95,10 @@ impl View {
                         // TEMP: Randomly mutate cell color to make it easier to see edges.
                         let mut inner_cell_color = if cell.material == Material::Dirt {
                             // Grassy green
-                            [ 0.0, 0.4, 0.0 ]
+                            [0.0, 0.4, 0.0]
                         } else if cell.material == Material::Water {
                             // Ocean blue
-                            [ 0.0, 0.1, 0.7 ]
+                            [0.0, 0.1, 0.7]
                         } else {
                             // Don't draw air or anything else we don't understand.
                             continue;
@@ -147,7 +142,8 @@ impl View {
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos
+                            self.spec.cell_top_vertex(grid_point, *offset) -
+                                chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -155,11 +151,13 @@ impl View {
                     // Emit triangles for the top of the cell. All triangles
                     // will contain the first vertex, plus two others.
                     for i in 1..(offsets.len() as u32 - 1) {
-                        index_data.extend_from_slice(&[
-                            first_top_vertex_index,
-                            first_top_vertex_index + i,
-                            first_top_vertex_index + i + 1,
-                        ]);
+                        index_data.extend_from_slice(
+                            &[
+                                first_top_vertex_index,
+                                first_top_vertex_index + i,
+                                first_top_vertex_index + i + 1,
+                            ],
+                        );
                     }
 
                     // Emit each top vertex of whatever shape we're using for this cell
@@ -168,11 +166,11 @@ impl View {
                     for mut color_channel in &mut cell_color {
                         *color_channel *= 0.9;
                     }
-                    let first_side_top_vertex_index = first_top_vertex_index
-                        + offsets.len() as u32;
+                    let first_side_top_vertex_index = first_top_vertex_index + offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos
+                            self.spec.cell_top_vertex(grid_point, *offset) -
+                                chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -182,11 +180,12 @@ impl View {
                     for mut color_channel in &mut cell_color {
                         *color_channel *= 0.5;
                     }
-                    let first_side_bottom_vertex_index = first_side_top_vertex_index
-                        + offsets.len() as u32;
+                    let first_side_bottom_vertex_index = first_side_top_vertex_index +
+                        offsets.len() as u32;
                     for offset in offsets.iter() {
                         let vertex_pt3 = Pt3::from_coordinates(
-                            self.spec.cell_bottom_vertex(grid_point, *offset) - chunk_origin_pos
+                            self.spec.cell_bottom_vertex(grid_point, *offset) -
+                                chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
                     }
@@ -198,10 +197,7 @@ impl View {
                         let b_i = first_side_bottom_vertex_index + ab_i;
                         let c_i = first_side_bottom_vertex_index + cd_i;
                         let d_i = first_side_top_vertex_index + cd_i;
-                        index_data.extend_from_slice(&[
-                            a_i, b_i, d_i,
-                            d_i, b_i, c_i,
-                        ]);
+                        index_data.extend_from_slice(&[a_i, b_i, d_i, d_i, b_i, c_i]);
                     }
                 }
             }

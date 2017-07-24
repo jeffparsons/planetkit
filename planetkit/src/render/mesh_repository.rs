@@ -59,9 +59,9 @@ impl<R: gfx::Resources> MeshRepository<R> {
 
     pub fn add_mesh(&mut self, mesh: Mesh<R>) -> froggy::Pointer<MeshWrapper> {
         trace!(self.log, "Adding mesh");
-        self.mesh_storage.create(MeshWrapper {
-            mesh: Box::new(mesh)
-        })
+        self.mesh_storage.create(
+            MeshWrapper { mesh: Box::new(mesh) },
+        )
     }
 
     /// Destroy any unused meshes by asking the `froggy::Storage` to catch
@@ -72,11 +72,12 @@ impl<R: gfx::Resources> MeshRepository<R> {
 }
 
 impl<'a, R: gfx::Resources> MeshRepository<R> {
-    pub fn get_mut(&'a mut self, mesh_pointer: &froggy::Pointer<MeshWrapper>) -> &'a mut Mesh<R>{
+    pub fn get_mut(&'a mut self, mesh_pointer: &froggy::Pointer<MeshWrapper>) -> &'a mut Mesh<R> {
         let mesh_wrapper = &mut self.mesh_storage[&mesh_pointer];
         let any_mesh_with_extra_constraints = &mut *mesh_wrapper.mesh;
         let any_mesh = any_mesh_with_extra_constraints as &mut any::Any;
-        any_mesh.downcast_mut::<Mesh<R>>()
-            .expect("Unless we're mixing graphics backends, this should be impossible.")
+        any_mesh.downcast_mut::<Mesh<R>>().expect(
+            "Unless we're mixing graphics backends, this should be impossible.",
+        )
     }
 }

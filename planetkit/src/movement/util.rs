@@ -1,6 +1,6 @@
 use na;
 
-use grid::{ GridCoord, GridPoint3, Dir };
+use grid::{GridCoord, GridPoint3, Dir};
 use grid::cell_shape::NEIGHBOR_OFFSETS;
 
 use super::triangles::*;
@@ -13,10 +13,7 @@ use super::transform::*;
 /// Returns an error if `dir` does not point to a direction that would
 /// represent an immediately adjacent cell if in a hexagon. (Movement
 /// toward vertices is undefined.)
-pub fn adjacent_pos_in_dir(
-    pos: GridPoint3,
-    dir: Dir,
-) -> Result<GridPoint3, ()> {
+pub fn adjacent_pos_in_dir(pos: GridPoint3, dir: Dir) -> Result<GridPoint3, ()> {
     if !dir.points_at_hex_edge() {
         return Err(());
     }
@@ -26,12 +23,7 @@ pub fn adjacent_pos_in_dir(
     // points at edge 0.
     let edge_index = (dir.index / 2) as usize;
     let (dx, dy) = NEIGHBOR_OFFSETS[edge_index];
-    Ok(GridPoint3::new(
-        pos.root,
-        pos.x + dx,
-        pos.y + dy,
-        pos.z,
-    ))
+    Ok(GridPoint3::new(pos.root, pos.x + dx, pos.y + dy, pos.z))
 }
 
 // Transform (x, y, dir) back to local coordinates near where we started,
@@ -81,13 +73,18 @@ pub fn closest_triangle_to_point(
     // Pick the closest triangle.
     type Pos2 = na::Point2<GridCoord>;
     let pos2 = Pos2::new(pos.x, pos.y);
-    candidate_triangles.iter().min_by_key(|triangle| {
-        // Both parts of the apex are expressed in terms of x-dimension.
-        let apex = Pos2::new(triangle.apex[0], triangle.apex[1]) * resolution[0];
-        let apex_to_pos = (pos2 - apex).abs();
-        // Hex distance from apex to pos
-        apex_to_pos.x + apex_to_pos.y
-    }).expect("There should have been exactly three items; this shouldn't be possible!")
+    candidate_triangles
+        .iter()
+        .min_by_key(|triangle| {
+            // Both parts of the apex are expressed in terms of x-dimension.
+            let apex = Pos2::new(triangle.apex[0], triangle.apex[1]) * resolution[0];
+            let apex_to_pos = (pos2 - apex).abs();
+            // Hex distance from apex to pos
+            apex_to_pos.x + apex_to_pos.y
+        })
+        .expect(
+            "There should have been exactly three items; this shouldn't be possible!",
+        )
 }
 
 /// For whatever 1-3 triangles `pos` is sitting atop, find the one
@@ -111,7 +108,8 @@ pub fn triangle_on_pos_with_closest_mid_axis(
     // bunch of logic around here in particular that assumes that.)
     type Pos2 = na::Point2<GridCoord>;
     let pos2 = Pos2::new(pos.x, pos.y);
-    TRIANGLES.iter()
+    TRIANGLES
+        .iter()
         .filter(|triangle| {
             // There will be between one and three triangles that
             // we are exactly on top of.

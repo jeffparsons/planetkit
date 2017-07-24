@@ -1,9 +1,9 @@
 use specs;
 
-use ::types::*;
-use grid::{ GridPoint3, Dir };
+use types::*;
+use grid::{GridPoint3, Dir};
 use globe::Spec;
-use ::movement::*;
+use movement::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
@@ -25,7 +25,12 @@ pub struct CellDweller {
 }
 
 impl CellDweller {
-    pub fn new(pos: GridPoint3, dir: Dir, globe_spec: Spec, globe_entity: Option<specs::Entity>) -> CellDweller {
+    pub fn new(
+        pos: GridPoint3,
+        dir: Dir,
+        globe_spec: Spec,
+        globe_entity: Option<specs::Entity>,
+    ) -> CellDweller {
         CellDweller {
             pos: pos,
             dir: dir,
@@ -47,10 +52,7 @@ impl CellDweller {
         self.pos
     }
 
-    pub fn set_grid_point(
-        &mut self,
-        new_pos: GridPoint3,
-    ) {
+    pub fn set_grid_point(&mut self, new_pos: GridPoint3) {
         self.pos = new_pos;
         self.is_real_space_transform_dirty = true;
     }

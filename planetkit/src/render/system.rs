@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::{Arc, Mutex};
 use gfx;
 use gfx::Primitive;
 use gfx::state::Rasterizer;
@@ -6,7 +6,7 @@ use vecmath;
 use camera_controllers;
 use specs;
 use specs::Entities;
-use specs::{ ReadStorage, Fetch };
+use specs::{ReadStorage, Fetch};
 use slog::Logger;
 
 use super::default_pipeline::pipe;
@@ -14,8 +14,8 @@ use super::mesh::MeshGuts;
 use super::EncoderChannel;
 use super::Visual;
 use super::MeshRepository;
-use ::Spatial;
-use ::camera::DefaultCamera;
+use Spatial;
+use camera::DefaultCamera;
 
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
@@ -49,12 +49,14 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
         let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
         let program = factory.link_program(vs_bytes, ps_bytes).unwrap();
-        let pso = factory.create_pipeline_from_program(
-            &program,
-            Primitive::TriangleList,
-            Rasterizer::new_fill().with_cull_back(),
-            pipe::new()
-        ).unwrap();
+        let pso = factory
+            .create_pipeline_from_program(
+                &program,
+                Primitive::TriangleList,
+                Rasterizer::new_fill().with_cull_back(),
+                pipe::new(),
+            )
+            .unwrap();
 
         System {
             pso: pso,
@@ -84,7 +86,9 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         let mut encoder = match self.encoder_channel.receiver.try_recv() {
             Ok(encoder) => encoder,
             Err(TryRecvError::Empty) => return,
-            Err(TryRecvError::Disconnected) => panic!("Device owner hung up. That wasn't supposed to happen!"),
+            Err(TryRecvError::Disconnected) => {
+                panic!("Device owner hung up. That wasn't supposed to happen!")
+            }
         };
 
         const CLEAR_COLOR: [f32; 4] = [0.3, 0.3, 0.3, 1.0];
@@ -97,7 +101,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         // Try to draw all visuals.
         use specs::Join;
         for (entity, visual) in (&**entities, visuals).join() {
-            use ::spatial::SpatialStorage;
+            use spatial::SpatialStorage;
 
             // Don't try to draw things that aren't in the same
             // spatial tree as the camera.
@@ -112,16 +116,13 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             };
 
             // Transform spatial relative to camera.
-            let camera_relative_transform = spatials.a_relative_to_b(
-                entity,
-                camera,
-            );
+            let camera_relative_transform = spatials.a_relative_to_b(entity, camera);
 
             // TODO: cache the model matrix separately per Visual
             // if there's a common ancestor that stays the same
             // for a while.
             use na;
-            use na::{ Isometry3, Point3, Vector3 };
+            use na::{Isometry3, Point3, Vector3};
             let model: Isometry3<f32> = na::convert(camera_relative_transform);
 
             // Turn the camera's model transform into a view matrix.
@@ -150,32 +151,27 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             let model_view_projection = camera_controllers::model_view_projection(
                 model_for_camera_controllers,
                 vecmath::mat4_id(),
-                *projection
+                *projection,
             );
 
             let mesh = mesh_repo.get_mut(mesh_pointer);
             mesh.data_mut().u_model_view_proj = model_view_projection;
-            encoder.draw(
-                mesh.slice(),
-                &self.pso,
-                mesh.data(),
-            );
+            encoder.draw(mesh.slice(), &self.pso, mesh.data());
         }
 
         self.encoder_channel.sender.send(encoder).unwrap();
     }
 }
 
-impl<'a, R, C> specs::System<'a> for System<R, C> where
-R: 'static + gfx::Resources,
-C: 'static + gfx::CommandBuffer<R> + Send,
+impl<'a, R, C> specs::System<'a> for System<R, C>
+where
+    R: 'static + gfx::Resources,
+    C: 'static + gfx::CommandBuffer<R> + Send,
 {
-    type SystemData = (
-        Entities<'a>,
-        Fetch<'a, DefaultCamera>,
-        ReadStorage<'a, Visual>,
-        ReadStorage<'a, Spatial>,
-    );
+    type SystemData = (Entities<'a>,
+     Fetch<'a, DefaultCamera>,
+     ReadStorage<'a, Visual>,
+     ReadStorage<'a, Spatial>);
 
     fn run(&mut self, data: Self::SystemData) {
         let (entities, default_camera, visuals, spatials) = data;

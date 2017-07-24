@@ -28,12 +28,12 @@ pub use self::view::*;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
 pub use self::chunk_system::ChunkSystem;
-pub use self::cursor::{ Cursor, CursorMut };
+pub use self::cursor::{Cursor, CursorMut};
 pub use self::chunk_origin::*;
 pub use self::iters::*;
 pub use self::chunk_shared_points::ChunkSharedPoints;
 
-use grid::{ GridCoord, GridPoint3, Root, PosInOwningRoot };
+use grid::{GridCoord, GridPoint3, Root, PosInOwningRoot};
 
 // TODO: move project into icosahedron module.
 
@@ -108,7 +108,7 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
     //              3_0
     //
     // TODO: cache all this stuff somewhere. It's tiny, and we'll use it heaps.
-    use self::icosahedron::{ FACES, VERTICES };
+    use self::icosahedron::{FACES, VERTICES};
     let triangle_indices = [
         root.index as usize * 4,
         root.index as usize * 4 + 1,
@@ -226,12 +226,7 @@ pub fn origin_of_chunk_in_same_root_containing(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
 
     ChunkOrigin::new(
-        GridPoint3::new(
-            pos.root,
-            chunk_origin_x,
-            chunk_origin_y,
-            chunk_origin_z,
-        ),
+        GridPoint3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
         root_resolution,
         chunk_resolution,
     )
@@ -255,24 +250,14 @@ pub fn origin_of_chunk_owning(
     if pos.x == 0 && pos.y == 0 {
         // Chunk at (0, 0) owns north pole.
         ChunkOrigin::new(
-            GridPoint3::new(
-                pos.root,
-                0,
-                0,
-                chunk_origin_z,
-            ),
+            GridPoint3::new(pos.root, 0, 0, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
     } else if pos.x == end_x && pos.y == end_y {
         // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
         ChunkOrigin::new(
-            GridPoint3::new(
-                pos.root,
-                last_chunk_x,
-                last_chunk_y,
-                chunk_origin_z,
-            ),
+            GridPoint3::new(pos.root, last_chunk_x, last_chunk_y, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
@@ -283,22 +268,14 @@ pub fn origin_of_chunk_owning(
         // Shift everything down by one in y-direction.
         let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
         ChunkOrigin::new(
-            GridPoint3::new(
-                pos.root,
-                chunk_origin_x,
-                chunk_origin_y,
-                chunk_origin_z,
-            ),
+            GridPoint3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
     }
 }
 
-pub fn is_point_on_chunk_edge(
-    point: GridPoint3,
-    chunk_resolution: [GridCoord; 3],
-) -> bool {
+pub fn is_point_on_chunk_edge(point: GridPoint3, chunk_resolution: [GridCoord; 3]) -> bool {
     (point.x % chunk_resolution[0]) == point.x
     ||
     (point.y % chunk_resolution[1]) == point.y

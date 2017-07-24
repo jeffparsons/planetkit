@@ -1,4 +1,4 @@
-use super::{ GridCoord, Root, RootIndex };
+use super::{GridCoord, Root, RootIndex};
 use super::GridPoint3;
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]

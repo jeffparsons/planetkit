@@ -33,15 +33,11 @@ impl Walker {
         world.add_resource(TimeDeltaResource(0.0));
 
         // Create systems.
-        let chunk_sys = globe::ChunkSystem::new(
-            &root_log,
-        );
+        let chunk_sys = globe::ChunkSystem::new(&root_log);
 
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-        let mut movement_sys = cell_dweller::MovementSystem::new(
-            movement_input_receiver,
-            &root_log,
-        );
+        let mut movement_sys =
+            cell_dweller::MovementSystem::new(movement_input_receiver, &root_log);
         movement_sys.init(&mut world);
         // Stop the player from getting stuck on cliffs; we want to test what
         // happens when they walk really aggressively all around the world, not what
@@ -65,22 +61,21 @@ impl Walker {
         let globe = globe::Globe::new_earth_scale_example();
         // First add the globe to the world so we can get a handle on its entity.
         let globe_spec = globe.spec();
-        let globe_entity = world.create_entity()
-            .with(globe)
-            .build();
+        let globe_entity = world.create_entity().with(globe).build();
 
         // Find globe surface and put player character on it.
-        use grid::{ GridPoint3, Dir };
+        use grid::{GridPoint3, Dir};
         use globe::chunk::Material;
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
             let mut globes = world.write::<globe::Globe>();
-            let mut globe = globes
-                .get_mut(globe_entity)
-                .expect("Uh oh, where did our Globe go?");
+            let mut globe = globes.get_mut(globe_entity).expect(
+                "Uh oh, where did our Globe go?",
+            );
             globe.find_lowest_cell_containing(guy_pos, Material::Air)
         };
-        let guy_entity = world.create_entity()
+        let guy_entity = world
+            .create_entity()
             .with(cell_dweller::CellDweller::new(
                 guy_pos,
                 Dir::default(),
@@ -90,8 +85,9 @@ impl Walker {
             .with(::Spatial::new_root())
             .build();
         // Set our new character as the currently controlled cell dweller.
-        world.write_resource::<cell_dweller::ActiveCellDweller>().maybe_entity =
-            Some(guy_entity);
+        world
+            .write_resource::<cell_dweller::ActiveCellDweller>()
+            .maybe_entity = Some(guy_entity);
 
         Walker {
             movement_input_sender: movement_input_sender,
@@ -105,7 +101,9 @@ impl Walker {
     pub fn tick_lots(&mut self, ticks: usize) {
         // Start our CellDweller moving forward indefinitely.
         use cell_dweller::MovementEvent;
-        self.movement_input_sender.send(MovementEvent::StepForward(true)).unwrap();
+        self.movement_input_sender
+            .send(MovementEvent::StepForward(true))
+            .unwrap();
 
         use rand;
         use rand::Rng;
@@ -115,16 +113,28 @@ impl Walker {
             let f: f32 = rng.gen();
             if f < 0.02 {
                 // Turn left.
-                self.movement_input_sender.send(MovementEvent::TurnLeft(true)).unwrap();
-                self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnLeft(true))
+                    .unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnRight(false))
+                    .unwrap();
             } else if f < 0.01 {
                 // Turn right.
-                self.movement_input_sender.send(MovementEvent::TurnLeft(false)).unwrap();
-                self.movement_input_sender.send(MovementEvent::TurnRight(true)).unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnLeft(false))
+                    .unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnRight(true))
+                    .unwrap();
             } else {
                 // Walk straight.
-                self.movement_input_sender.send(MovementEvent::TurnLeft(false)).unwrap();
-                self.movement_input_sender.send(MovementEvent::TurnRight(false)).unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnLeft(false))
+                    .unwrap();
+                self.movement_input_sender
+                    .send(MovementEvent::TurnRight(false))
+                    .unwrap();
             }
 
             self.world.write_resource::<TimeDeltaResource>().0 = 0.1;
@@ -166,8 +176,6 @@ pub mod benches {
     // forward in general and make interfaces _more elegant_.
     fn bench_random_walk(b: &mut Bencher) {
         let mut walker = Walker::new();
-        b.iter(|| {
-            walker.tick_lots(100);
-        });
+        b.iter(|| { walker.tick_lots(100); });
     }
 }

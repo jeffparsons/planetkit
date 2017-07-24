@@ -45,7 +45,7 @@
 // This may all look pretty hairy (and it is) but it's also fairly
 // easy to thoroughly test; see `test.rs`.
 
-use ::grid::{ GridCoord, DirIndex, RootIndex };
+use grid::{GridCoord, DirIndex, RootIndex};
 
 pub struct Triangle {
     // Position in root in terms of x-resolutions.
@@ -70,11 +70,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 0],
         x_dir: 0,
         exits: [
-            Exit { triangle_index: 0, root_offset: 0 },
-            Exit { triangle_index: 0, root_offset: 1 },
-            Exit { triangle_index: 0, root_offset: 2 },
-            Exit { triangle_index: 0, root_offset: 3 },
-            Exit { triangle_index: 0, root_offset: 4 },
+            Exit {
+                triangle_index: 0,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 0,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 0,
+                root_offset: 2,
+            },
+            Exit {
+                triangle_index: 0,
+                root_offset: 3,
+            },
+            Exit {
+                triangle_index: 0,
+                root_offset: 4,
+            },
         ],
     },
 
@@ -83,11 +98,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 0],
         x_dir: 4,
         exits: [
-            Exit { triangle_index: 1, root_offset: 0 },
-            Exit { triangle_index: 2, root_offset: 4 },
-            Exit { triangle_index: 4, root_offset: 4 },
-            Exit { triangle_index: 6, root_offset: 4 },
-            Exit { triangle_index: 5, root_offset: 0 },
+            Exit {
+                triangle_index: 1,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 2,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 4,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 6,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 5,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -96,11 +126,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 1],
         x_dir: 8,
         exits: [
-            Exit { triangle_index: 2, root_offset: 0 },
-            Exit { triangle_index: 4, root_offset: 0 },
-            Exit { triangle_index: 6, root_offset: 0 },
-            Exit { triangle_index: 5, root_offset: 1 },
-            Exit { triangle_index: 1, root_offset: 1 },
+            Exit {
+                triangle_index: 2,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 4,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 6,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 5,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 1,
+                root_offset: 1,
+            },
         ],
     },
 
@@ -109,11 +154,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 1],
         x_dir: 6,
         exits: [
-            Exit { triangle_index: 3, root_offset: 0 },
-            Exit { triangle_index: 8, root_offset: 4 },
-            Exit { triangle_index: 10, root_offset: 4 },
-            Exit { triangle_index: 11, root_offset: 0 },
-            Exit { triangle_index: 7, root_offset: 0 },
+            Exit {
+                triangle_index: 3,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 8,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 10,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 11,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 7,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -122,11 +182,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 1],
         x_dir: 10,
         exits: [
-            Exit { triangle_index: 4, root_offset: 0 },
-            Exit { triangle_index: 6, root_offset: 0 },
-            Exit { triangle_index: 5, root_offset: 1 },
-            Exit { triangle_index: 1, root_offset: 1 },
-            Exit { triangle_index: 2, root_offset: 0 },
+            Exit {
+                triangle_index: 4,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 6,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 5,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 1,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 2,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -135,11 +210,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 0],
         x_dir: 2,
         exits: [
-            Exit { triangle_index: 5, root_offset: 0 },
-            Exit { triangle_index: 1, root_offset: 0 },
-            Exit { triangle_index: 2, root_offset: 4 },
-            Exit { triangle_index: 4, root_offset: 4 },
-            Exit { triangle_index: 6, root_offset: 4 },
+            Exit {
+                triangle_index: 5,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 1,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 2,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 4,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 6,
+                root_offset: 4,
+            },
         ],
     },
 
@@ -148,11 +238,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 1],
         x_dir: 0,
         exits: [
-            Exit { triangle_index: 6, root_offset: 0 },
-            Exit { triangle_index: 5, root_offset: 1 },
-            Exit { triangle_index: 1, root_offset: 1 },
-            Exit { triangle_index: 2, root_offset: 0 },
-            Exit { triangle_index: 4, root_offset: 0 },
+            Exit {
+                triangle_index: 6,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 5,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 1,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 2,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 4,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -161,11 +266,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 1],
         x_dir: 4,
         exits: [
-            Exit { triangle_index: 7, root_offset: 0 },
-            Exit { triangle_index: 3, root_offset: 0 },
-            Exit { triangle_index: 8, root_offset: 4 },
-            Exit { triangle_index: 10, root_offset: 4 },
-            Exit { triangle_index: 11, root_offset: 0 },
+            Exit {
+                triangle_index: 7,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 3,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 8,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 10,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 11,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -174,11 +294,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 2],
         x_dir: 8,
         exits: [
-            Exit { triangle_index: 8, root_offset: 0 },
-            Exit { triangle_index: 10, root_offset: 0 },
-            Exit { triangle_index: 11, root_offset: 1 },
-            Exit { triangle_index: 7, root_offset: 1 },
-            Exit { triangle_index: 3, root_offset: 1 },
+            Exit {
+                triangle_index: 8,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 10,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 11,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 7,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 3,
+                root_offset: 1,
+            },
         ],
     },
 
@@ -187,11 +322,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 2],
         x_dir: 6,
         exits: [
-            Exit { triangle_index: 9, root_offset: 0 },
-            Exit { triangle_index: 9, root_offset: 4 },
-            Exit { triangle_index: 9, root_offset: 3 },
-            Exit { triangle_index: 9, root_offset: 2 },
-            Exit { triangle_index: 9, root_offset: 1 },
+            Exit {
+                triangle_index: 9,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 9,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 9,
+                root_offset: 3,
+            },
+            Exit {
+                triangle_index: 9,
+                root_offset: 2,
+            },
+            Exit {
+                triangle_index: 9,
+                root_offset: 1,
+            },
         ],
     },
 
@@ -200,11 +350,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [0, 2],
         x_dir: 10,
         exits: [
-            Exit { triangle_index: 10, root_offset: 0 },
-            Exit { triangle_index: 11, root_offset: 1 },
-            Exit { triangle_index: 7, root_offset: 1 },
-            Exit { triangle_index: 3, root_offset: 1 },
-            Exit { triangle_index: 8, root_offset: 0 },
+            Exit {
+                triangle_index: 10,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 11,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 7,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 3,
+                root_offset: 1,
+            },
+            Exit {
+                triangle_index: 8,
+                root_offset: 0,
+            },
         ],
     },
 
@@ -213,11 +378,26 @@ pub static TRIANGLES: [Triangle; 12] = [
         apex: [1, 1],
         x_dir: 2,
         exits: [
-            Exit { triangle_index: 11, root_offset: 0 },
-            Exit { triangle_index: 7, root_offset: 0 },
-            Exit { triangle_index: 3, root_offset: 0 },
-            Exit { triangle_index: 8, root_offset: 4 },
-            Exit { triangle_index: 10, root_offset: 4 },
+            Exit {
+                triangle_index: 11,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 7,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 3,
+                root_offset: 0,
+            },
+            Exit {
+                triangle_index: 8,
+                root_offset: 4,
+            },
+            Exit {
+                triangle_index: 10,
+                root_offset: 4,
+            },
         ],
     },
 ];

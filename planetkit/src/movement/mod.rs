@@ -14,19 +14,7 @@ mod tests;
 // while still exposing the "raw" ones for people who really want them.
 // Consider something like session types.
 
-pub use self::step::{
-    move_forward,
-    step_forward_and_face_neighbor,
-    step_backward_and_face_neighbor,
-};
-pub use self::turn::{
-    TurnDir,
-    turn_left_by_one_hex_edge,
-    turn_right_by_one_hex_edge,
-    turn_by_one_hex_edge,
-    turn_around_and_face_neighbor,
-};
-pub use self::util::{
-    adjacent_pos_in_dir,
-    is_pentagon,
-};
+pub use self::step::{move_forward, step_forward_and_face_neighbor, step_backward_and_face_neighbor};
+pub use self::turn::{TurnDir, turn_left_by_one_hex_edge, turn_right_by_one_hex_edge,
+                     turn_by_one_hex_edge, turn_around_and_face_neighbor};
+pub use self::util::{adjacent_pos_in_dir, is_pentagon};

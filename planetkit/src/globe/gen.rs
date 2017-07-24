@@ -1,8 +1,8 @@
 use noise;
 
-use grid::{ GridPoint2, GridPoint3 };
+use grid::{GridPoint2, GridPoint3};
 use super::spec::Spec;
-use super::chunk::{ Cell, Material };
+use super::chunk::{Cell, Material};
 
 // TODO: turn this into a component that we can slap onto a Globe
 // or other globe-oid (distant point?).
@@ -64,8 +64,7 @@ impl Gen {
         //
         // TODO: split out a proper world generator
         // that layers in lots of different kinds of noise etc.
-        let sea_level_pt3 = self.spec.cell_center_on_unit_sphere(column)
-            * self.spec.ocean_radius;
+        let sea_level_pt3 = self.spec.cell_center_on_unit_sphere(column) * self.spec.ocean_radius;
         // Vary a little bit around 1.0.
         let delta = self.terrain_noise.get([sea_level_pt3.x, sea_level_pt3.y, sea_level_pt3.z])
             * (self.spec.ocean_radius - self.spec.floor_radius)

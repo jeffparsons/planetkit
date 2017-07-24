@@ -1,6 +1,6 @@
 //! Tracking cells shared between neighboring chunks.
 
-use grid::{ GridPoint3, PosInOwningRoot };
+use grid::{GridPoint3, PosInOwningRoot};
 use super::ChunkOrigin;
 
 #[derive(Hash, PartialEq, Eq)]

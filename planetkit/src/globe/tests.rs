@@ -38,7 +38,7 @@ pub mod benches {
 
     use super::super::*;
 
-    use ::globe::GridPoint3;
+    use globe::GridPoint3;
 
     #[bench]
     // # History for picking the "middle of the vector" chunk.

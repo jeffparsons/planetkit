@@ -2,7 +2,7 @@ use std::slice;
 
 use arrayvec;
 
-use super::{ GridCoord, GridPoint2, GridPoint3, Root };
+use super::{GridCoord, GridPoint2, GridPoint3, Root};
 use super::ROOTS;
 
 // We need to handle 9 different cases:
@@ -46,9 +46,7 @@ pub struct EquivalentPoints {
 impl EquivalentPoints {
     pub fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> EquivalentPoints {
         if point.x == 0 && point.y == 0 {
-            EquivalentPoints {
-                iter: EquivalentPointsImpl::NorthPole(NorthPolePoints::new(point)),
-            }
+            EquivalentPoints { iter: EquivalentPointsImpl::NorthPole(NorthPolePoints::new(point)) }
         } else if point.x == root_resolution[0] && point.y == root_resolution[1] {
             EquivalentPoints {
                 iter: EquivalentPointsImpl::SouthPole(SouthPolePoints::new(point, root_resolution)),
@@ -64,24 +62,30 @@ impl EquivalentPoints {
             }
         } else if point.x == 0 && point.y >= root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::EastTropics(EastTropicsPoints::new(point, root_resolution)),
+                iter: EquivalentPointsImpl::EastTropics(
+                    EastTropicsPoints::new(point, root_resolution),
+                ),
             }
         } else if point.x == root_resolution[0] && point.y < root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::WestTropics(WestTropicsPoints::new(point, root_resolution)),
+                iter: EquivalentPointsImpl::WestTropics(
+                    WestTropicsPoints::new(point, root_resolution),
+                ),
             }
         } else if point.y == root_resolution[1] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::EastAntarctic(EastAntarcticPoints::new(point, root_resolution)),
+                iter: EquivalentPointsImpl::EastAntarctic(
+                    EastAntarcticPoints::new(point, root_resolution),
+                ),
             }
         } else if point.x == root_resolution[0] && point.y >= root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::WestAntarctic(WestAntarcticPoints::new(point, root_resolution)),
+                iter: EquivalentPointsImpl::WestAntarctic(
+                    WestAntarcticPoints::new(point, root_resolution),
+                ),
             }
         } else {
-            EquivalentPoints {
-                iter: EquivalentPointsImpl::Interior(InteriorPoints::new(point)),
-            }
+            EquivalentPoints { iter: EquivalentPointsImpl::Interior(InteriorPoints::new(point)) }
         }
     }
 }
@@ -198,9 +202,7 @@ impl EastArcticPoints {
             0,
             point.z,
         ));
-        EastArcticPoints {
-            points_iter: points.into_iter(),
-        }
+        EastArcticPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -232,9 +234,7 @@ impl WestArcticPoints {
             point.x,
             point.z,
         ));
-        WestArcticPoints {
-            points_iter: points.into_iter(),
-        }
+        WestArcticPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -267,9 +267,7 @@ impl EastTropicsPoints {
             point.y - root_resolution[0],
             point.z,
         ));
-        EastTropicsPoints {
-            points_iter: points.into_iter(),
-        }
+        EastTropicsPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -302,9 +300,7 @@ impl WestTropicsPoints {
             point.y + root_resolution[0],
             point.z,
         ));
-        WestTropicsPoints {
-            points_iter: points.into_iter(),
-        }
+        WestTropicsPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -337,9 +333,7 @@ impl EastAntarcticPoints {
             point.x + root_resolution[0],
             point.z,
         ));
-        EastAntarcticPoints {
-            points_iter: points.into_iter(),
-        }
+        EastAntarcticPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -372,9 +366,7 @@ impl WestAntarcticPoints {
             root_resolution[1],
             point.z,
         ));
-        WestAntarcticPoints {
-            points_iter: points.into_iter(),
-        }
+        WestAntarcticPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -399,9 +391,7 @@ impl InteriorPoints {
         use arrayvec::ArrayVec;
         let mut points: ArrayVec<[GridPoint3; 1]> = ArrayVec::new();
         points.push(point);
-        InteriorPoints {
-            points_iter: points.into_iter(),
-        }
+        InteriorPoints { points_iter: points.into_iter() }
     }
 }
 
@@ -436,13 +426,51 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
-        assert!(equivalent_points == vec![
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 0 }, x: 0, y: 0 }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 1 }, x: 0, y: 0 }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 2 }, x: 0, y: 0 }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 0, y: 0 }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 0, y: 0 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 0 },
+                            x: 0,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 1 },
+                            x: 0,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 2 },
+                            x: 0,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 0,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 0,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -461,13 +489,51 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
-        assert!(equivalent_points == vec![
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 0 }, x: ROOT_RESOLUTION[0], y: ROOT_RESOLUTION[1] }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 1 }, x: ROOT_RESOLUTION[0], y: ROOT_RESOLUTION[1] }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 2 }, x: ROOT_RESOLUTION[0], y: ROOT_RESOLUTION[1] }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: ROOT_RESOLUTION[0], y: ROOT_RESOLUTION[1] }, z: 77 },
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: ROOT_RESOLUTION[0], y: ROOT_RESOLUTION[1] }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 0 },
+                            x: ROOT_RESOLUTION[0],
+                            y: ROOT_RESOLUTION[1],
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 1 },
+                            x: ROOT_RESOLUTION[0],
+                            y: ROOT_RESOLUTION[1],
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 2 },
+                            x: ROOT_RESOLUTION[0],
+                            y: ROOT_RESOLUTION[1],
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: ROOT_RESOLUTION[0],
+                            y: ROOT_RESOLUTION[1],
+                        },
+                        z: 77,
+                    },
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: ROOT_RESOLUTION[0],
+                            y: ROOT_RESOLUTION[1],
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -486,12 +552,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 0, y: 3 }, z: 77 },
-            // Equivalent point in next root east
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 3, y: 0 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 0,
+                            y: 3,
+                        },
+                        z: 77,
+                    },
+                    // Equivalent point in next root east
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 3,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -510,12 +593,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Equivalent point in next root east
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 2 }, x: 0, y: 3 }, z: 77 },
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 3, y: 0 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Equivalent point in next root east
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 2 },
+                            x: 0,
+                            y: 3,
+                        },
+                        z: 77,
+                    },
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 3,
+                            y: 0,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -534,12 +634,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 0, y: 13 }, z: 77 },
-            // Equivalent point in next root east
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 8, y: 5 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 0,
+                            y: 13,
+                        },
+                        z: 77,
+                    },
+                    // Equivalent point in next root east
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 8,
+                            y: 5,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -558,12 +675,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Equivalent point in next root east
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 2 }, x: 0, y: 12 }, z: 77 },
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 8, y: 4 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Equivalent point in next root east
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 2 },
+                            x: 0,
+                            y: 12,
+                        },
+                        z: 77,
+                    },
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 8,
+                            y: 4,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -582,12 +716,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 3, y: 16 }, z: 77 },
-            // Equivalent point in next root east
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 8, y: 11 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 3,
+                            y: 16,
+                        },
+                        z: 77,
+                    },
+                    // Equivalent point in next root east
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 8,
+                            y: 11,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -606,12 +757,29 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
-        assert!(equivalent_points == vec![
-            // Equivalent point in next root west
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 3 }, x: 3, y: 16 }, z: 77 },
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 8, y: 11 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Equivalent point in next root west
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 3 },
+                            x: 3,
+                            y: 16,
+                        },
+                        z: 77,
+                    },
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 8,
+                            y: 11,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
@@ -630,19 +798,26 @@ mod tests {
         let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 1);
-        assert!(equivalent_points == vec![
-            // Same point as given
-            GridPoint3 { rxy: GridPoint2 { root: Root { index: 4 }, x: 3, y: 5 }, z: 77 },
-        ]);
+        assert!(
+            equivalent_points ==
+                vec![
+                    // Same point as given
+                    GridPoint3 {
+                        rxy: GridPoint2 {
+                            root: Root { index: 4 },
+                            x: 3,
+                            y: 5,
+                        },
+                        z: 77,
+                    },
+                ]
+        );
     }
 
     #[test]
     fn all_equivalent_points_symmetric() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
-        for xy in iproduct!(
-            0..(ROOT_RESOLUTION[0] + 1),
-            0..(ROOT_RESOLUTION[1] + 1)
-        ) {
+        for xy in iproduct!(0..(ROOT_RESOLUTION[0] + 1), 0..(ROOT_RESOLUTION[1] + 1)) {
             let (x, y) = xy;
             let point = GridPoint3::new(
                 // Arbitrary root

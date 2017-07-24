@@ -2,9 +2,7 @@ use shred;
 use specs;
 
 /// `World`-global resource for game state.
-pub struct GameState {
-
-}
+pub struct GameState {}
 
 impl GameState {
     pub fn ensure_registered(world: &mut specs::World) {
@@ -15,7 +13,6 @@ impl GameState {
     }
 
     pub fn new() -> GameState {
-        GameState {
-        }
+        GameState {}
     }
 }

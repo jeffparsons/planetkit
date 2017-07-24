@@ -1,6 +1,6 @@
 use types::*;
 
-use grid::{ GridCoord, GridPoint2, GridPoint3 };
+use grid::{GridCoord, GridPoint2, GridPoint3};
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.
@@ -89,22 +89,17 @@ impl Spec {
     pub fn cell_center_on_unit_sphere(&self, column: GridPoint2) -> Pt3 {
         let res_x = self.root_resolution[0] as f64;
         let res_y = self.root_resolution[1] as f64;
-        let pt_in_root_quad = Pt2::new(
-            column.x as f64 / res_x,
-            column.y as f64 / res_y,
-        );
+        let pt_in_root_quad = Pt2::new(column.x as f64 / res_x, column.y as f64 / res_y);
         super::project(column.root, pt_in_root_quad)
     }
 
     pub fn cell_center_center(&self, grid_point: GridPoint3) -> Pt3 {
-        let radius = self.floor_radius +
-            self.block_height * (grid_point.z as f64 + 0.5);
+        let radius = self.floor_radius + self.block_height * (grid_point.z as f64 + 0.5);
         radius * self.cell_center_on_unit_sphere(grid_point.rxy)
     }
 
     pub fn cell_bottom_center(&self, grid_point: GridPoint3) -> Pt3 {
-        let radius = self.floor_radius +
-            self.block_height * (grid_point.z as f64);
+        let radius = self.floor_radius + self.block_height * (grid_point.z as f64);
         radius * self.cell_center_on_unit_sphere(grid_point.rxy)
     }
 
@@ -120,8 +115,7 @@ impl Spec {
     }
 
     pub fn cell_bottom_vertex(&self, grid_point: GridPoint3, offset: [i64; 2]) -> Pt3 {
-        let radius = self.floor_radius +
-            self.block_height * grid_point.z as f64;
+        let radius = self.floor_radius + self.block_height * grid_point.z as f64;
         radius * self.cell_vertex_on_unit_sphere(grid_point, offset)
     }
 

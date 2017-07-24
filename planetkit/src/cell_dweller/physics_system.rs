@@ -1,10 +1,10 @@
 use specs;
-use specs::{ ReadStorage, WriteStorage, Fetch };
+use specs::{ReadStorage, WriteStorage, Fetch};
 use slog::Logger;
 
 use types::*;
 use super::CellDweller;
-use ::Spatial;
+use Spatial;
 use globe::Globe;
 use globe::chunk::Material;
 
@@ -24,12 +24,7 @@ impl PhysicsSystem {
     // Fall under the force of gravity if there's anywhere to fall to.
     // Note that "gravity" moves you down at a constant speed;
     // i.e. it doesn't accelerate you like in the real world.
-    fn maybe_fall(
-        &self,
-        cd: &mut CellDweller,
-        globe: &Globe,
-        dt: TimeDelta,
-    ) {
+    fn maybe_fall(&self, cd: &mut CellDweller, globe: &Globe, dt: TimeDelta) {
         // Only make you fall if there's air below you.
         if cd.pos.z <= 0 {
             // There's nothing below; someone built a silly globe.
@@ -63,12 +58,10 @@ impl PhysicsSystem {
 }
 
 impl<'a> specs::System<'a> for PhysicsSystem {
-    type SystemData = (
-        Fetch<'a, TimeDeltaResource>,
-        WriteStorage<'a, CellDweller>,
-        WriteStorage<'a, Spatial>,
-        ReadStorage<'a, Globe>,
-    );
+    type SystemData = (Fetch<'a, TimeDeltaResource>,
+     WriteStorage<'a, CellDweller>,
+     WriteStorage<'a, Spatial>,
+     ReadStorage<'a, Globe>);
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
@@ -78,16 +71,22 @@ impl<'a> specs::System<'a> for PhysicsSystem {
             let globe_entity = match cd.globe_entity {
                 Some(globe_entity) => globe_entity,
                 None => {
-                    warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
+                    warn!(
+                        self.log,
+                        "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!"
+                    );
                     continue;
-                },
+                }
             };
             let globe = match globes.get(globe_entity) {
                 Some(globe) => globe,
                 None => {
-                    warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                    warn!(
+                        self.log,
+                        "The globe associated with this CellDweller is not alive! Can't proceed!"
+                    );
                     continue;
-                },
+                }
             };
 
             self.maybe_fall(cd, globe, dt.0);

@@ -1,16 +1,16 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ ReadStorage, WriteStorage, Fetch };
+use specs::{ReadStorage, WriteStorage, Fetch};
 use slog::Logger;
 use piston::input::Input;
 
 use types::*;
-use super::{ CellDweller, ActiveCellDweller };
-use ::Spatial;
-use ::movement::*;
+use super::{CellDweller, ActiveCellDweller};
+use Spatial;
+use movement::*;
 use globe::Globe;
 use globe::chunk::Material;
-use ::input_adapter;
+use input_adapter;
 
 // TODO: own file?
 pub struct MovementInputAdapter {
@@ -19,15 +19,13 @@ pub struct MovementInputAdapter {
 
 impl MovementInputAdapter {
     pub fn new(sender: mpsc::Sender<MovementEvent>) -> MovementInputAdapter {
-        MovementInputAdapter {
-            sender: sender,
-        }
+        MovementInputAdapter { sender: sender }
     }
 }
 
 impl input_adapter::InputAdapter for MovementInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{ Button, PressEvent, ReleaseEvent };
+        use piston::input::{Button, PressEvent, ReleaseEvent};
         use piston::input::keyboard::Key;
 
         if let Some(Button::Keyboard(key)) = input_event.press_args() {
@@ -42,7 +40,11 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
         if let Some(Button::Keyboard(key)) = input_event.release_args() {
             match key {
                 Key::I => self.sender.send(MovementEvent::StepForward(false)).unwrap(),
-                Key::K => self.sender.send(MovementEvent::StepBackward(false)).unwrap(),
+                Key::K => {
+                    self.sender
+                        .send(MovementEvent::StepBackward(false))
+                        .unwrap()
+                }
                 Key::J => self.sender.send(MovementEvent::TurnLeft(false)).unwrap(),
                 Key::L => self.sender.send(MovementEvent::TurnRight(false)).unwrap(),
                 _ => (),
@@ -74,7 +76,10 @@ enum ForwardOrBackward {
 }
 
 impl MovementSystem {
-    pub fn new(input_receiver: mpsc::Receiver<MovementEvent>, parent_log: &Logger) -> MovementSystem {
+    pub fn new(
+        input_receiver: mpsc::Receiver<MovementEvent>,
+        parent_log: &Logger,
+    ) -> MovementSystem {
         MovementSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
@@ -138,11 +143,21 @@ impl MovementSystem {
 
         match forward_or_backward {
             ForwardOrBackward::Forward => {
-                step_forward_and_face_neighbor(&mut new_pos, &mut new_dir, globe.spec().root_resolution, &mut new_last_turn_bias)
-            },
+                step_forward_and_face_neighbor(
+                    &mut new_pos,
+                    &mut new_dir,
+                    globe.spec().root_resolution,
+                    &mut new_last_turn_bias,
+                )
+            }
             ForwardOrBackward::Backward => {
-                step_backward_and_face_neighbor(&mut new_pos, &mut new_dir, globe.spec().root_resolution, &mut new_last_turn_bias)
-            },
+                step_backward_and_face_neighbor(
+                    &mut new_pos,
+                    &mut new_dir,
+                    globe.spec().root_resolution,
+                    &mut new_last_turn_bias,
+                )
+            }
         }.expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
@@ -167,13 +182,11 @@ impl MovementSystem {
 }
 
 impl<'a> specs::System<'a> for MovementSystem {
-    type SystemData = (
-        Fetch<'a, TimeDeltaResource>,
-        WriteStorage<'a, CellDweller>,
-        WriteStorage<'a, Spatial>,
-        ReadStorage<'a, Globe>,
-        Fetch<'a, ActiveCellDweller>,
-    );
+    type SystemData = (Fetch<'a, TimeDeltaResource>,
+     WriteStorage<'a, CellDweller>,
+     WriteStorage<'a, Spatial>,
+     ReadStorage<'a, Globe>,
+     Fetch<'a, ActiveCellDweller>);
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
@@ -182,23 +195,33 @@ impl<'a> specs::System<'a> for MovementSystem {
             Some(entity) => entity,
             None => return,
         };
-        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect("Someone deleted the controlled entity's CellDweller");
-        let spatial = spatials.get_mut(active_cell_dweller_entity).expect("Someone deleted the controlled entity's Spatial");
+        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect(
+            "Someone deleted the controlled entity's CellDweller",
+        );
+        let spatial = spatials.get_mut(active_cell_dweller_entity).expect(
+            "Someone deleted the controlled entity's Spatial",
+        );
 
         // Get the associated globe, complaining loudly if we fail.
         let globe_entity = match cd.globe_entity {
             Some(globe_entity) => globe_entity,
             None => {
-                warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
+                warn!(
+                    self.log,
+                    "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!"
+                );
                 return;
-            },
+            }
         };
         let globe = match globes.get(globe_entity) {
             Some(globe) => globe,
             None => {
-                warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                warn!(
+                    self.log,
+                    "The globe associated with this CellDweller is not alive! Can't proceed!"
+                );
                 return;
-            },
+            }
         };
 
         // Count down until we're allowed to move next.
@@ -216,11 +239,7 @@ impl<'a> specs::System<'a> for MovementSystem {
             } else {
                 ForwardOrBackward::Backward
             };
-            self.step_if_possible(
-                cd,
-                globe,
-                forward_or_backward,
-            );
+            self.step_if_possible(cd, globe, forward_or_backward);
         }
 
         // Count down until we're allowed to turn next.
@@ -229,7 +248,7 @@ impl<'a> specs::System<'a> for MovementSystem {
         }
         let still_waiting_to_turn = cd.seconds_until_next_turn > 0.0;
         if !still_waiting_to_turn {
-            if self.turn_left && !self.turn_right  {
+            if self.turn_left && !self.turn_right {
                 cd.turn(TurnDir::Left);
                 cd.seconds_until_next_turn = cd.seconds_between_turns;
                 trace!(self.log, "Turned left"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));

@@ -1,6 +1,6 @@
-use std::sync::{ Arc, Mutex, mpsc };
+use std::sync::{Arc, Mutex, mpsc};
 use piston_window::PistonWindow;
-use piston::input::{ UpdateArgs, RenderArgs };
+use piston::input::{UpdateArgs, RenderArgs};
 use slog::Logger;
 use gfx;
 use gfx_device_gl;
@@ -8,7 +8,7 @@ use camera_controllers;
 use specs;
 
 use render;
-use render::{ Visual, Mesh, MeshRepository };
+use render::{Visual, Mesh, MeshRepository};
 use types::*;
 use input_adapter::InputAdapter;
 
@@ -18,8 +18,10 @@ fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
 
     let draw_size = w.window.draw_size();
     CameraPerspective {
-        fov: 90.0, near_clip: 0.01, far_clip: 100.0,
-        aspect_ratio: (draw_size.width as f32) / (draw_size.height as f32)
+        fov: 90.0,
+        near_clip: 0.01,
+        far_clip: 100.0,
+        aspect_ratio: (draw_size.width as f32) / (draw_size.height as f32),
     }.projection()
 }
 
@@ -35,8 +37,14 @@ pub struct App {
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
     first_person: Arc<Mutex<camera_controllers::FirstPerson>>,
     factory: gfx_device_gl::Factory,
-    output_color: gfx::handle::RenderTargetView<gfx_device_gl::Resources, (gfx::format::R8_G8_B8_A8, gfx::format::Srgb)>,
-    output_stencil: gfx::handle::DepthStencilView<gfx_device_gl::Resources, (gfx::format::D24_S8, gfx::format::Unorm)>,
+    output_color: gfx::handle::RenderTargetView<
+        gfx_device_gl::Resources,
+        (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+    >,
+    output_stencil: gfx::handle::DepthStencilView<
+        gfx_device_gl::Resources,
+        (gfx::format::D24_S8, gfx::format::Unorm),
+    >,
     mesh_repo: Arc<Mutex<MeshRepository<gfx_device_gl::Resources>>>,
 }
 
@@ -45,13 +53,10 @@ impl App {
     pub fn new(
         parent_log: &Logger,
         window: &mut PistonWindow,
-        world: specs:: World,
+        world: specs::World,
         dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
     ) -> App {
-        use camera_controllers::{
-            FirstPersonSettings,
-            FirstPerson,
-        };
+        use camera_controllers::{FirstPersonSettings, FirstPerson};
 
         // Rendering system, with bi-directional channel to pass
         // encoder back and forth between this thread (which owns
@@ -90,10 +95,7 @@ impl App {
         let log = parent_log.new(o!());
 
         let projection = Arc::new(Mutex::new(get_projection(window)));
-        let first_person = FirstPerson::new(
-            [0.5, 0.5, 4.0],
-            FirstPersonSettings::keyboard_wasd()
-        );
+        let first_person = FirstPerson::new([0.5, 0.5, 4.0], FirstPersonSettings::keyboard_wasd());
         let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
 
         let mesh_repo = MeshRepository::new(
@@ -176,7 +178,9 @@ impl App {
         let mut encoder = match self.encoder_channel.receiver.try_recv() {
             Ok(encoder) => encoder,
             Err(TryRecvError::Empty) => return,
-            Err(TryRecvError::Disconnected) => panic!("Render system hung up. That wasn't supposed to happen!"),
+            Err(TryRecvError::Disconnected) => {
+                panic!("Render system hung up. That wasn't supposed to happen!")
+            }
         };
 
         // TODO: what's make_current actually necessary for?
@@ -220,7 +224,9 @@ impl App {
             if !needs_to_be_realized {
                 continue;
             }
-            let proto_mesh = visual.proto_mesh.clone().expect("Just ensured this above...");
+            let proto_mesh = visual.proto_mesh.clone().expect(
+                "Just ensured this above...",
+            );
             // Realize the mesh and hand it off to the mesh repository.
             let mesh = Mesh::new(
                 &mut self.factory,

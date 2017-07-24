@@ -1,10 +1,10 @@
 use specs;
-use specs::{ ReadStorage, WriteStorage };
+use specs::{ReadStorage, WriteStorage};
 use specs::Entities;
 use slog::Logger;
 
 use grid::PosInOwningRoot;
-use super::{ Globe, ChunkOrigin };
+use super::{Globe, ChunkOrigin};
 use cell_dweller::CellDweller;
 
 /// Loads and unloads `Chunk`s for a `Globe`.
@@ -22,9 +22,7 @@ pub struct ChunkSystem {
 }
 
 impl ChunkSystem {
-    pub fn new(
-        parent_log: &Logger,
-    ) -> ChunkSystem {
+    pub fn new(parent_log: &Logger) -> ChunkSystem {
         ChunkSystem {
             log: parent_log.new(o!()),
             // TODO: accept as arguments.
@@ -59,22 +57,24 @@ impl ChunkSystem {
         // Use the first CellDweller we find on this Globe.
         let one_true_cd = match cds.join()
             .filter(|cd| cd.globe_entity == Some(globe_entity))
-            .next()
-        {
+            .next() {
             Some(cd) => cd,
             // There are no cell dwellers, so no interesting terrain.
             // (If a tree falls in a forest...)
             None => return,
         };
-        let one_true_cd_pos = one_true_cd.real_transform_without_setting_clean()
-            .translation.vector;
+        let one_true_cd_pos = one_true_cd
+            .real_transform_without_setting_clean()
+            .translation
+            .vector;
 
         // Unload the most distant chunks.
         //
         // TODO: Don't allocate memory all the time here.
         // At very least use a persistent scratch buffer instead
         // of allocating every time!
-        let mut chunk_distances: Vec<(ChunkOrigin, f64)> = globe.chunks()
+        let mut chunk_distances: Vec<(ChunkOrigin, f64)> = globe
+            .chunks()
             .keys()
             .map(|chunk_origin| {
                 // TODO: don't use chunk origin; use the middle cell,
@@ -87,7 +87,11 @@ impl ChunkSystem {
             })
             .collect();
         // Farthest away chunks come first.
-        chunk_distances.sort_by(|a, b| b.1.partial_cmp(&a.1).expect("All chunk origins and CellDwellers should be real distances from each other!"));
+        chunk_distances.sort_by(|a, b| {
+            b.1.partial_cmp(&a.1).expect(
+                "All chunk origins and CellDwellers should be real distances from each other!",
+            )
+        });
         let chunks_to_remove = self.max_chunks_loaded_per_globe - self.cull_chunks_down_to;
         chunk_distances.truncate(chunks_to_remove);
 
@@ -107,9 +111,12 @@ impl ChunkSystem {
             let mut globe = match globes.get_mut(globe_entity) {
                 Some(globe) => globe,
                 None => {
-                    warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                    warn!(
+                        self.log,
+                        "The globe associated with this CellDweller is not alive! Can't proceed!"
+                    );
                     return;
-                },
+                }
             };
 
             // TODO: throttle, and do in background.
@@ -132,8 +139,9 @@ impl ChunkSystem {
             globe.ensure_chunk_present(chunk_origin);
             let accessible_chunks = {
                 use super::globe::GlobeGuts;
-                let chunk = globe.chunks().get(&chunk_origin)
-                    .expect("We just ensured this chunk is loaded.");
+                let chunk = globe.chunks().get(&chunk_origin).expect(
+                    "We just ensured this chunk is loaded.",
+                );
                 // TODO: Gah, such slow!
                 chunk.accessible_chunks.clone()
             };
@@ -143,8 +151,9 @@ impl ChunkSystem {
                 // Repeat this from each immediately accessible chunk.
                 let next_level_accessible_chunks = {
                     use super::globe::GlobeGuts;
-                    let chunk = globe.chunks().get(&accessible_chunk_origin)
-                        .expect("We just ensured this chunk is loaded.");
+                    let chunk = globe.chunks().get(&accessible_chunk_origin).expect(
+                        "We just ensured this chunk is loaded.",
+                    );
                     // TODO: Gah, such slow!
                     chunk.accessible_chunks.clone()
                 };
@@ -157,11 +166,7 @@ impl ChunkSystem {
 }
 
 impl<'a> specs::System<'a> for ChunkSystem {
-    type SystemData = (
-        Entities<'a>,
-        WriteStorage<'a, Globe>,
-        ReadStorage<'a, CellDweller>,
-    );
+    type SystemData = (Entities<'a>, WriteStorage<'a, Globe>, ReadStorage<'a, CellDweller>);
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;

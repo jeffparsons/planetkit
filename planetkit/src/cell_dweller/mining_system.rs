@@ -1,15 +1,15 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ WriteStorage, Fetch };
+use specs::{WriteStorage, Fetch};
 use slog::Logger;
 use piston::input::Input;
 
-use super::{ CellDweller, ActiveCellDweller };
-use ::movement::*;
+use super::{CellDweller, ActiveCellDweller};
+use movement::*;
 use grid::PosInOwningRoot;
 use globe::Globe;
 use globe::chunk::Material;
-use ::input_adapter;
+use input_adapter;
 
 // TODO: own file?
 pub struct MiningInputAdapter {
@@ -18,15 +18,13 @@ pub struct MiningInputAdapter {
 
 impl MiningInputAdapter {
     pub fn new(sender: mpsc::Sender<MiningEvent>) -> MiningInputAdapter {
-        MiningInputAdapter {
-            sender: sender,
-        }
+        MiningInputAdapter { sender: sender }
     }
 }
 
 impl input_adapter::InputAdapter for MiningInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{ Button, PressEvent, ReleaseEvent };
+        use piston::input::{Button, PressEvent, ReleaseEvent};
         use piston::input::keyboard::Key;
 
         if let Some(Button::Keyboard(key)) = input_event.press_args() {
@@ -81,11 +79,7 @@ impl MiningSystem {
         }
     }
 
-    fn pick_up_if_possible(
-        &self,
-        cd: &mut CellDweller,
-        globe: &mut Globe,
-    ) {
+    fn pick_up_if_possible(&self, cd: &mut CellDweller, globe: &mut Globe) {
         use globe::is_point_on_chunk_edge;
 
         // Only allow picking stuff up if you're sitting above solid ground.
@@ -131,15 +125,17 @@ impl MiningSystem {
             // that make it super-easy to configure.
             // The goal here should be that the "block dude" game
             // ends up both concise and legible.
-            let new_pos_in_owning_root = PosInOwningRoot::new(
-                new_pos,
-                globe.spec().root_resolution
-            );
-            globe.authoritative_cell_mut(
-                new_pos_in_owning_root
-            ).material = Material::Air;
+            let new_pos_in_owning_root =
+                PosInOwningRoot::new(new_pos, globe.spec().root_resolution);
+            globe
+                .authoritative_cell_mut(new_pos_in_owning_root)
+                .material = Material::Air;
             // Some extra stuff is only relevant if the cell is on the edge of its chunk.
-            if is_point_on_chunk_edge(*new_pos_in_owning_root.pos(), globe.spec().chunk_resolution) {
+            if is_point_on_chunk_edge(
+                *new_pos_in_owning_root.pos(),
+                globe.spec().chunk_resolution,
+            )
+            {
                 // Bump version of owned shared cells.
                 globe.increment_chunk_owned_edge_version_for_cell(new_pos_in_owning_root);
                 // Propagate change to neighbouring chunks.
@@ -160,11 +156,9 @@ impl MiningSystem {
 }
 
 impl<'a> specs::System<'a> for MiningSystem {
-    type SystemData = (
-        WriteStorage<'a, CellDweller>,
-        WriteStorage<'a, Globe>,
-        Fetch<'a, ActiveCellDweller>,
-    );
+    type SystemData = (WriteStorage<'a, CellDweller>,
+     WriteStorage<'a, Globe>,
+     Fetch<'a, ActiveCellDweller>);
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
@@ -173,29 +167,34 @@ impl<'a> specs::System<'a> for MiningSystem {
             Some(entity) => entity,
             None => return,
         };
-        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect("Someone deleted the controlled entity's CellDweller");
+        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect(
+            "Someone deleted the controlled entity's CellDweller",
+        );
 
         // Get the associated globe, complaining loudly if we fail.
         let globe_entity = match cd.globe_entity {
             Some(globe_entity) => globe_entity,
             None => {
-                warn!(self.log, "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!");
+                warn!(
+                    self.log,
+                    "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!"
+                );
                 return;
-            },
+            }
         };
         let globe = match globes.get_mut(globe_entity) {
             Some(globe) => globe,
             None => {
-                warn!(self.log, "The globe associated with this CellDweller is not alive! Can't proceed!");
+                warn!(
+                    self.log,
+                    "The globe associated with this CellDweller is not alive! Can't proceed!"
+                );
                 return;
-            },
+            }
         };
 
         if self.pick_up {
-            self.pick_up_if_possible(
-                cd,
-                globe,
-            );
+            self.pick_up_if_possible(cd, globe);
         }
     }
 }

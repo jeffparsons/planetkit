@@ -1,4 +1,4 @@
-use specs::{ self, Entity, ReadStorage, WriteStorage };
+use specs::{self, Entity, ReadStorage, WriteStorage};
 
 use super::types::*;
 
@@ -58,7 +58,7 @@ pub trait SpatialStorage {
         &self,
         a: Entity,
         a_local_transform: Iso3,
-        b: Entity
+        b: Entity,
     ) -> Iso3;
 }
 
@@ -73,7 +73,8 @@ pub trait MaybeMutStorage<'a, T> {
 }
 
 impl<'a, T> MaybeMutStorage<'a, T> for ReadStorage<'a, T>
-    where T: specs::Component
+where
+    T: specs::Component,
 {
     fn get(&self, e: Entity) -> Option<&T> {
         (self as &ReadStorage<T>).get(e)
@@ -81,7 +82,8 @@ impl<'a, T> MaybeMutStorage<'a, T> for ReadStorage<'a, T>
 }
 
 impl<'a, T> MaybeMutStorage<'a, T> for WriteStorage<'a, T>
-    where T: specs::Component
+where
+    T: specs::Component,
 {
     fn get(&self, e: Entity) -> Option<&T> {
         (self as &WriteStorage<T>).get(e)
@@ -89,27 +91,26 @@ impl<'a, T> MaybeMutStorage<'a, T> for WriteStorage<'a, T>
 }
 
 impl<'e, S> SpatialStorage for S
-    where S: MaybeMutStorage<'e, Spatial>,
+where
+    S: MaybeMutStorage<'e, Spatial>,
 {
     fn depth_of(&self, entity: Entity) -> i32 {
-        let spatial = self.get(entity)
-            .expect("Given entity doesn't have a Spatial");
+        let spatial = self.get(entity).expect(
+            "Given entity doesn't have a Spatial",
+        );
         match spatial.parent_entity {
             None => 0,
-            Some(parent) => {
-                1 + self.depth_of(parent)
-            }
+            Some(parent) => 1 + self.depth_of(parent),
         }
     }
 
     fn root_of(&self, entity: Entity) -> Entity {
-        let spatial = self.get(entity)
-            .expect("Given entity doesn't have a Spatial");
+        let spatial = self.get(entity).expect(
+            "Given entity doesn't have a Spatial",
+        );
         match spatial.parent_entity {
             None => entity,
-            Some(parent) => {
-                self.root_of(parent)
-            }
+            Some(parent) => self.root_of(parent),
         }
     }
 
@@ -155,11 +156,15 @@ impl<'e, S> SpatialStorage for S
             a = self.get(a)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
-                .expect("I thought this Spatial had a parent; maybe a and b do not share a root...");
+                .expect(
+                    "I thought this Spatial had a parent; maybe a and b do not share a root...",
+                );
             b = self.get(b)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
-                .expect("I thought this Spatial had a parent; maybe a and b do not share a root...");
+                .expect(
+                    "I thought this Spatial had a parent; maybe a and b do not share a root...",
+                );
         }
         a
     }
@@ -179,20 +184,18 @@ impl<'e, S> SpatialStorage for S
         &self,
         a: Entity,
         a_local_transform: Iso3,
-        b: Entity
+        b: Entity,
     ) -> Iso3 {
         if a == b {
             a_local_transform
         } else {
             // TODO: factor this out; it seems to be a common pattern...
             let a_spatial = self.get(a).expect("Entity isn't a Spatial");
-            let parent = a_spatial.parent_entity
-                .expect("I thought this Spatial had a parent...");
-            self.a_local_transform_relative_to_ancestor_b(
-                parent,
-                a_spatial.local_transform(),
-                b
-            ) * a_local_transform
+            let parent = a_spatial.parent_entity.expect(
+                "I thought this Spatial had a parent...",
+            );
+            self.a_local_transform_relative_to_ancestor_b(parent, a_spatial.local_transform(), b) *
+                a_local_transform
         }
     }
 }
@@ -224,23 +227,17 @@ mod tests {
             let mut world = specs::World::new();
             world.register::<Spatial>();
 
-            let sun = world.create_entity()
-                .with(Spatial::new_root())
-                .build();
+            let sun = world.create_entity().with(Spatial::new_root()).build();
 
-            let earth_transform = Iso3::new(
-                Vec3::new(1000.0, 2000.0, 0.0),
-                na::zero(),
-            );
-            let earth = world.create_entity()
+            let earth_transform = Iso3::new(Vec3::new(1000.0, 2000.0, 0.0), na::zero());
+            let earth = world
+                .create_entity()
                 .with(Spatial::new(sun, earth_transform))
                 .build();
 
-            let moon_transform = Iso3::new(
-                Vec3::new(300.0, 400.0, 0.0),
-                na::zero(),
-            );
-            let moon = world.create_entity()
+            let moon_transform = Iso3::new(Vec3::new(300.0, 400.0, 0.0), na::zero());
+            let moon = world
+                .create_entity()
                 .with(Spatial::new(earth, moon_transform))
                 .build();
 
@@ -248,7 +245,8 @@ mod tests {
             let target = Pt3::origin();
             // Look straight down at Earth.
             let polar_satellite_transform = Iso3::look_at_rh(&eye, &target, &Vec3::y());
-            let polar_satellite = world.create_entity()
+            let polar_satellite = world
+                .create_entity()
                 .with(Spatial::new(earth, polar_satellite_transform))
                 .build();
 
@@ -310,11 +308,20 @@ mod tests {
         );
 
         // Rotate the Earth a bit and make sure it doesn't make a difference.
-        let eye = Pt3::from_coordinates(spatials.get(ss.earth).unwrap().local_transform().translation.vector);
+        let eye = Pt3::from_coordinates(
+            spatials
+                .get(ss.earth)
+                .unwrap()
+                .local_transform()
+                .translation
+                .vector,
+        );
         // Look off to wherever.
         let target = Pt3::new(123.0, 321.0, 456.0);
         let new_earth_transform = Iso3::look_at_rh(&eye, &target, &Vec3::y());
-        spatials.get_mut(ss.earth).unwrap().set_local_transform(new_earth_transform);
+        spatials.get_mut(ss.earth).unwrap().set_local_transform(
+            new_earth_transform,
+        );
 
         let earth_from_polar_satellite = spatials.a_relative_to_b(ss.earth, ss.polar_satellite);
         assert_relative_eq!(

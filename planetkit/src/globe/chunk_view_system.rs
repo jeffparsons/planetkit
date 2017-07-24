@@ -1,13 +1,13 @@
 use na;
 use specs;
-use specs::{ WriteStorage, Fetch };
+use specs::{WriteStorage, Fetch};
 use specs::Entities;
 use slog::Logger;
 
 use types::*;
-use globe::{ Globe, View, ChunkView };
-use ::render::{ Visual, ProtoMesh, Vertex };
-use ::Spatial;
+use globe::{Globe, View, ChunkView};
+use render::{Visual, ProtoMesh, Vertex};
+use Spatial;
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.
@@ -40,7 +40,8 @@ impl ChunkViewSystem {
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.
-        let ready = self.seconds_since_last_geometry_creation > self.seconds_between_geometry_creation;
+        let ready = self.seconds_since_last_geometry_creation >
+            self.seconds_between_geometry_creation;
         if !ready {
             return;
         }
@@ -57,9 +58,12 @@ impl ChunkViewSystem {
             let mut globe = match globes.get_mut(globe_entity) {
                 Some(globe) => globe,
                 None => {
-                    warn!(self.log, "The globe associated with this ChunkView is not alive! Can't proceed!");
+                    warn!(
+                        self.log,
+                        "The globe associated with this ChunkView is not alive! Can't proceed!"
+                    );
                     continue;
-                },
+                }
             };
 
             // Only re-generate geometry if the chunk is marked as having
@@ -86,10 +90,7 @@ impl ChunkViewSystem {
             trace!(self.log, "Making chunk proto-mesh"; "origin" => format!("{:?}", chunk_view.origin));
             // TEMP: just use the existing globe `View` struct
             // to get this done. TODO: move into `ChunkView`.
-            let globe_view = View::new(
-                spec,
-                &self.log,
-            );
+            let globe_view = View::new(spec, &self.log);
             // Build geometry for this chunk into vertex
             // and index buffers.
             let mut vertex_data: Vec<Vertex> = Vec::new();
@@ -201,10 +202,7 @@ impl ChunkViewSystem {
                 continue;
             }
             trace!(self.log, "Making a chunk view"; "origin" => format!("{:?}", chunk.origin));
-            let chunk_view = ChunkView::new(
-                globe_entity,
-                chunk.origin,
-            );
+            let chunk_view = ChunkView::new(globe_entity, chunk.origin);
 
             // We store the geometry relative to the bottom-center of the chunk origin cell.
             let chunk_origin_pos = globe_spec.cell_bottom_center(*chunk.origin.pos());
@@ -225,14 +223,12 @@ impl ChunkViewSystem {
 }
 
 impl<'a> specs::System<'a> for ChunkViewSystem {
-    type SystemData = (
-        Entities<'a>,
-        Fetch<'a, TimeDeltaResource>,
-        WriteStorage<'a, Globe>,
-        WriteStorage<'a, Visual>,
-        WriteStorage<'a, Spatial>,
-        WriteStorage<'a, ChunkView>,
-    );
+    type SystemData = (Entities<'a>,
+     Fetch<'a, TimeDeltaResource>,
+     WriteStorage<'a, Globe>,
+     WriteStorage<'a, Visual>,
+     WriteStorage<'a, Spatial>,
+     WriteStorage<'a, ChunkView>);
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
@@ -271,10 +267,6 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
 
         // Build geometry for some chunks; throttled
         // so we don't spend too much time doing this each frame.
-        self.build_chunk_geometry(
-            globes,
-            visuals,
-            chunk_views,
-        );
+        self.build_chunk_geometry(globes, visuals, chunk_views);
     }
 }

@@ -74,51 +74,54 @@ impl System {
         // from peers, and buffer them up until we're ready to process them.
         let server_log = parent_log.new(o!());
         let codec_log = parent_log.new(o!());
-        thread::Builder::new().name("server".to_string()).spawn(move || {
-            let mut reactor = Core::new().expect("Failed to create reactor for System");
-            let handle = reactor.handle();
-            let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
-            info!(server_log, "Listening"; "addr" => format!("{}", addr));
+        thread::Builder::new()
+            .name("server".to_string())
+            .spawn(move || {
+                let mut reactor = Core::new().expect("Failed to create reactor for System");
+                let handle = reactor.handle();
+                let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
+                info!(server_log, "Listening"; "addr" => format!("{}", addr));
 
-            let codec = Codec {
-                log: codec_log,
-            };
-            let stream = socket.framed(codec);
-            let f = stream.filter(|message| {
-                // TODO: log
-                match message {
-                    &Message::BadMessage => {
-                        println!("Got a bad message from peer: {:?}", message);
-                        false
-                    },
-                    _ => true,
-                }
-            }).for_each(move |message| {
-                // TODO: Only do this at debug level for a while, then demote to trace.
-                info!(server_log, "Got message"; "message" => format!("{:?}", message));
+                let codec = Codec { log: codec_log };
+                let stream = socket.framed(codec);
+                let f = stream
+                    .filter(|message| {
+                        // TODO: log
+                        match message {
+                            &Message::BadMessage => {
+                                println!("Got a bad message from peer: {:?}", message);
+                                false
+                            }
+                            _ => true,
+                        }
+                    })
+                    .for_each(move |message| {
+                        // TODO: Only do this at debug level for a while, then demote to trace.
+                        info!(server_log, "Got message"; "message" => format!("{:?}", message));
 
-                // Send the message to net System.
-                //
-                // TODO: how are we going to dispatch messages to the systems that
-                // need to know about them? Input adapter just sends it to _all_ systems,
-                // but that's probably not going to fly. There needs to be a central
-                // dispatcher that can decide based on message type, that you provide
-                // to the network system.
-                //
-                // Individual systems shouldn't need to know about whatever the
-                // wrapper type for the specific game is. So individual systems
-                // might need a reference to the "dispatcher", whatever it is.
-                // Maybe it's kind of like a codec object?
-                inbound_message_tx.send(message).expect("Receiver hung up?");
+                        // Send the message to net System.
+                        //
+                        // TODO: how are we going to dispatch messages to the systems that
+                        // need to know about them? Input adapter just sends it to _all_ systems,
+                        // but that's probably not going to fly. There needs to be a central
+                        // dispatcher that can decide based on message type, that you provide
+                        // to the network system.
+                        //
+                        // Individual systems shouldn't need to know about whatever the
+                        // wrapper type for the specific game is. So individual systems
+                        // might need a reference to the "dispatcher", whatever it is.
+                        // Maybe it's kind of like a codec object?
+                        inbound_message_tx.send(message).expect("Receiver hung up?");
 
-                futures::future::ok(())
-            });
-            // TODO: handle error; log warning, don't crash server.
-            // (The stream will terminate on first error.)
-            // Or maybe do all the handling in `Codec`.
+                        futures::future::ok(())
+                    });
+                // TODO: handle error; log warning, don't crash server.
+                // (The stream will terminate on first error.)
+                // Or maybe do all the handling in `Codec`.
 
-            reactor.run(f).expect("Server reactor failed");
-        }).expect("Failed to spawn server thread");
+                reactor.run(f).expect("Server reactor failed");
+            })
+            .expect("Failed to spawn server thread");
 
         System {
             log: parent_log.new(o!()),
@@ -128,8 +131,7 @@ impl System {
 }
 
 impl<'a> specs::System<'a> for System {
-    type SystemData = (
-    );
+    type SystemData = ();
 
     fn run(&mut self, _data: Self::SystemData) {
         // ...
@@ -164,14 +166,18 @@ mod tests {
         let target_addr = "127.0.0.1:62831".to_string();
         let target_addr = target_addr.parse::<SocketAddr>().unwrap();
         // Oops, it's lowercase; it won't match any message type!
-        let f = socket.send_dgram(b"\"hello\"", target_addr).and_then(move |(socket2, _buf)| {
-            // TODO: sleep; delivery order isn't guaranteed, even though
-            // it almost certainly will be fine on localhost. (TODO: look this up.)
-            socket2.send_dgram(b"\"Goodbye\"", target_addr)
-        });
+        let f = socket.send_dgram(b"\"hello\"", target_addr).and_then(
+            move |(socket2, _buf)| {
+                // TODO: sleep; delivery order isn't guaranteed, even though
+                // it almost certainly will be fine on localhost. (TODO: look this up.)
+                socket2.send_dgram(b"\"Goodbye\"", target_addr)
+            },
+        );
         reactor.run(f).expect("Test reactor failed");
 
-        let message = system.inbound_message_rx.recv().expect("Failed to receive message");
+        let message = system.inbound_message_rx.recv().expect(
+            "Failed to receive message",
+        );
         assert_eq!(message, Message::Goodbye);
 
         // TODO: gracefully shut down the server before the end of all tests;

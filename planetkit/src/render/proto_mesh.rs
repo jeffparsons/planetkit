@@ -8,10 +8,7 @@ pub struct ProtoMesh {
 
 impl ProtoMesh {
     /// Panicks if given an empty vertex or index vector.
-    pub fn new(
-        vertexes: Vec<Vertex>,
-        indexes: Vec<u32>,
-    ) -> ProtoMesh {
+    pub fn new(vertexes: Vec<Vertex>, indexes: Vec<u32>) -> ProtoMesh {
         // Don't allow creating empty mesh.
         // Back-end doesn't seem to like this, and it probably represents
         // a mistake if we attempt this anyway.

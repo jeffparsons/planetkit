@@ -24,8 +24,7 @@ fn add_systems(
     GameState::ensure_registered(world);
 
     let game_system = game_system::GameSystem::new(logger);
-    dispatcher_builder
-        .add(game_system, "woolgather_game", &[])
+    dispatcher_builder.add(game_system, "woolgather_game", &[])
 }
 
 fn create_entities(world: &mut specs::World) {
@@ -38,8 +37,7 @@ fn create_entities(world: &mut specs::World) {
     // Create the shepherd.
     let shepherd_entity = shepherd::create_now(world, globe_entity);
     // Set our new shepherd player character as the currently controlled cell dweller.
-    world.write_resource::<ActiveCellDweller>().maybe_entity =
-        Some(shepherd_entity);
+    world.write_resource::<ActiveCellDweller>().maybe_entity = Some(shepherd_entity);
 
     // Create basic third-person following camera.
     pk::simple::create_simple_chase_camera_now(world, shepherd_entity);

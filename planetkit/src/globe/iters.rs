@@ -1,4 +1,4 @@
-use grid::{ GridCoord, GridPoint3 };
+use grid::{GridCoord, GridPoint3};
 use super::ChunkOrigin;
 
 // TODO: rename this file; probably neater to have smaller files
@@ -58,7 +58,11 @@ pub struct ChunksInSameRootContainingPoint {
 }
 
 impl ChunksInSameRootContainingPoint {
-    pub fn new(point: GridPoint3, root_resolution: [GridCoord; 2], chunk_resolution: [GridCoord; 3]) -> ChunksInSameRootContainingPoint {
+    pub fn new(
+        point: GridPoint3,
+        root_resolution: [GridCoord; 2],
+        chunk_resolution: [GridCoord; 3],
+    ) -> ChunksInSameRootContainingPoint {
         ChunksInSameRootContainingPoint {
             point: point,
             root_resolution: root_resolution,
@@ -111,7 +115,8 @@ impl ChunksInSameRootContainingPoint {
                 self.point.root,
                 chunk_x,
                 chunk_y,
-                self.point.z / self.chunk_resolution[2] * self.chunk_resolution[2],
+                self.point.z / self.chunk_resolution[2] *
+                    self.chunk_resolution[2],
             ),
             self.root_resolution,
             self.chunk_resolution,
@@ -127,47 +132,35 @@ impl Iterator for ChunksInSameRootContainingPoint {
             CandidateChunk::SameXSameY => {
                 self.next_candidate_chunk = CandidateChunk::SameXPrevY;
                 if self.has_same_x_chunk() && self.has_same_y_chunk() {
-                    self.chunk_origin(
-                        self.same_chunk_x(),
-                        self.same_chunk_y(),
-                    )
+                    self.chunk_origin(self.same_chunk_x(), self.same_chunk_y())
                 } else {
                     self.next()
                 }
-            },
+            }
             CandidateChunk::SameXPrevY => {
                 self.next_candidate_chunk = CandidateChunk::PrevXSameY;
                 if self.has_same_x_chunk() && self.has_prev_y_chunk() {
-                    self.chunk_origin(
-                        self.same_chunk_x(),
-                        self.prev_chunk_y(),
-                    )
+                    self.chunk_origin(self.same_chunk_x(), self.prev_chunk_y())
                 } else {
                     self.next()
                 }
-            },
+            }
             CandidateChunk::PrevXSameY => {
                 self.next_candidate_chunk = CandidateChunk::PrevXPrevY;
                 if self.has_prev_x_chunk() && self.has_same_y_chunk() {
-                    self.chunk_origin(
-                        self.prev_chunk_x(),
-                        self.same_chunk_y(),
-                    )
+                    self.chunk_origin(self.prev_chunk_x(), self.same_chunk_y())
                 } else {
                     self.next()
                 }
-            },
+            }
             CandidateChunk::PrevXPrevY => {
                 self.next_candidate_chunk = CandidateChunk::Done;
                 if self.has_prev_x_chunk() && self.has_prev_y_chunk() {
-                    self.chunk_origin(
-                        self.prev_chunk_x(),
-                        self.prev_chunk_y(),
-                    )
+                    self.chunk_origin(self.prev_chunk_x(), self.prev_chunk_y())
                 } else {
                     self.next()
                 }
-            },
+            }
             CandidateChunk::Done => None,
         }
     }
@@ -205,41 +198,38 @@ mod tests {
             // Kinda arbitrary; just to make sure it gets calculated based on resolution
             77,
         );
-        let chunks_iter = ChunksInSameRootContainingPoint::new(point, ROOT_RESOLUTION, CHUNK_RESOLUTION);
+        let chunks_iter =
+            ChunksInSameRootContainingPoint::new(point, ROOT_RESOLUTION, CHUNK_RESOLUTION);
         let chunk_origins: Vec<ChunkOrigin> = chunks_iter.collect();
         assert_eq!(chunk_origins.len(), 2);
         // This is the chunk just north-west of the point.
-        assert!(chunk_origins.contains(
-            &ChunkOrigin::new(
-                GridPoint3::new(
-                    // Root made it through
-                    4.into(),
-                    // This is the chunk just north-west of the point.
-                    2,
-                    4,
-                    // Z-coordinate of chunk was calculated correctly
-                    64,
-                ),
-                ROOT_RESOLUTION,
-                CHUNK_RESOLUTION,
-            )
-        ));
+        assert!(chunk_origins.contains(&ChunkOrigin::new(
+            GridPoint3::new(
+                // Root made it through
+                4.into(),
+                // This is the chunk just north-west of the point.
+                2,
+                4,
+                // Z-coordinate of chunk was calculated correctly
+                64,
+            ),
+            ROOT_RESOLUTION,
+            CHUNK_RESOLUTION,
+        )));
         // This is the chunk just south-west of the point.
-        assert!(chunk_origins.contains(
-            &ChunkOrigin::new(
-                GridPoint3::new(
-                    // Root made it through
-                    4.into(),
-                    // This is the chunk just south-west of the point.
-                    2,
-                    6,
-                    // Z-coordinate of chunk was calculated correctly
-                    64,
-                ),
-                ROOT_RESOLUTION,
-                CHUNK_RESOLUTION,
-            )
-        ));
+        assert!(chunk_origins.contains(&ChunkOrigin::new(
+            GridPoint3::new(
+                // Root made it through
+                4.into(),
+                // This is the chunk just south-west of the point.
+                2,
+                6,
+                // Z-coordinate of chunk was calculated correctly
+                64,
+            ),
+            ROOT_RESOLUTION,
+            CHUNK_RESOLUTION,
+        )));
     }
 
     #[test]

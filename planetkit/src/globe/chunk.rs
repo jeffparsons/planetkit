@@ -1,5 +1,5 @@
 use specs;
-use grid::{ GridCoord, GridPoint3, PosInOwningRoot };
+use grid::{GridCoord, GridPoint3, PosInOwningRoot};
 use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
 use globe::chunk_pair::PointPair;
@@ -121,14 +121,22 @@ impl Chunk {
         for our_point in shared_points {
             // Find what chunk this belongs to.
             let our_point_in_owning_root = PosInOwningRoot::new(our_point, root_resolution);
-            let owning_chunk_origin = origin_of_chunk_owning(our_point_in_owning_root, root_resolution, self.chunk_resolution);
+            let owning_chunk_origin = origin_of_chunk_owning(
+                our_point_in_owning_root,
+                root_resolution,
+                self.chunk_resolution,
+            );
             let we_own_this_point = owning_chunk_origin == self.origin;
 
             // TODO: wrap this up as an `AllChunksContainingPoint` iterator.
             // TODO: this is perfect as an "easy"-tagged github issue. Maybe try carving some of these off.
             let equivalent_points = EquivalentPoints::new(our_point, root_resolution);
             for equivalent_point in equivalent_points {
-                let containing_chunks = ChunksInSameRootContainingPoint::new(equivalent_point, root_resolution, self.chunk_resolution);
+                let containing_chunks = ChunksInSameRootContainingPoint::new(
+                    equivalent_point,
+                    root_resolution,
+                    self.chunk_resolution,
+                );
                 for chunk_origin in containing_chunks {
                     if chunk_origin == self.origin {
                         // We're looking at the same chunk; we'll never need to copy to/from self!
@@ -159,7 +167,8 @@ impl Chunk {
                                 origin: chunk_origin,
                                 shared_cells: Vec::new(),
                             });
-                        let equivalent_point_in_owning_root = PosInOwningRoot::new(equivalent_point, root_resolution);
+                        let equivalent_point_in_owning_root =
+                            PosInOwningRoot::new(equivalent_point, root_resolution);
                         upstream_neighbor.shared_cells.push(PointPair {
                             source: equivalent_point_in_owning_root,
                             sink: our_point,
@@ -175,7 +184,8 @@ impl Chunk {
         // Sort the points inside these for cache-friendliness.
         self.upstream_neighbors = upstream_neighbors_by_origin.values().cloned().collect();
         for upstream_neighbor in &mut self.upstream_neighbors {
-            upstream_neighbor.shared_cells.sort_by(|point_pair_a, point_pair_b| {
+            upstream_neighbor.shared_cells.sort_by(|point_pair_a,
+             point_pair_b| {
                 // Comparing by source points should give us some tiny cache locality benefit.
                 // So would sorting by sink points, but hopefully better one sorted than neither.
                 // TODO: check whether this helps at all.
@@ -184,7 +194,8 @@ impl Chunk {
         }
         self.downstream_neighbors = downstream_neighbors_by_origin.values().cloned().collect();
         for downstream_neighbor in &mut self.downstream_neighbors {
-            downstream_neighbor.shared_cells.sort_by(|point_pair_a, point_pair_b| {
+            downstream_neighbor.shared_cells.sort_by(|point_pair_a,
+             point_pair_b| {
                 // Comparing by sink points should give us some tiny cache locality benefit.
                 // So would sorting by source points, but hopefully better one sorted than neither.
                 // TODO: check whether this helps at all.
@@ -252,13 +263,9 @@ impl Chunk {
             // Chunks don't share cells in the z-direction,
             // but do in the x- and y-directions.
             &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
-        ) {
-            let corner_pos = GridPoint3::new(
-                origin.pos().root,
-                *x,
-                *y,
-                *z,
-            );
+        )
+        {
+            let corner_pos = GridPoint3::new(origin.pos().root, *x, *y, *z);
             // Find all its neighbors and their chunks' origins.
             //
             // TODO: does Neighbors actually guarantee that we'll get chunks

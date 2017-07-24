@@ -1,7 +1,7 @@
 use specs;
 
 use pk;
-use pk::globe::{ Globe, Spec };
+use pk::globe::{Globe, Spec};
 
 // Create a planet to fight on.
 pub fn create_now(world: &mut specs::World) -> specs::Entity {
@@ -25,7 +25,8 @@ pub fn create_now(world: &mut specs::World) -> specs::Entity {
     };
     let globe = Globe::new(spec);
 
-    world.create_entity()
+    world
+        .create_entity()
         .with(globe)
         .with(pk::Spatial::new_root())
         .build()

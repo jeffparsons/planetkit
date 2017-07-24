@@ -17,9 +17,7 @@ impl GameState {
     }
 
     pub fn new() -> GameState {
-        GameState {
-            current_level: LevelState::new(),
-        }
+        GameState { current_level: LevelState::new() }
     }
 }
 
@@ -29,9 +27,7 @@ pub struct LevelState {
 
 impl LevelState {
     pub fn new() -> LevelState {
-        LevelState {
-            level_outcome: LevelOutcome::Pending,
-        }
+        LevelState { level_outcome: LevelOutcome::Pending }
     }
 }
 

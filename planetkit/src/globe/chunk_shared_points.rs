@@ -1,7 +1,7 @@
 use std::ops;
 use itertools;
 
-use grid::{ Root, GridCoord, GridPoint3 };
+use grid::{Root, GridCoord, GridPoint3};
 use super::ChunkOrigin;
 
 /// Iterate over all the points in a chunk that are shared with any
@@ -21,11 +21,11 @@ pub struct ChunkSharedPoints {
         itertools::Product<
             itertools::Product<
                 ops::Range<GridCoord>,
-                ops::Range<GridCoord>
+                ops::Range<GridCoord>,
             >,
-            ops::Range<GridCoord>
+            ops::Range<GridCoord>,
         >,
-        ((GridCoord, GridCoord), GridCoord)
+        ((GridCoord, GridCoord), GridCoord),
     >,
 }
 
@@ -97,7 +97,7 @@ mod tests {
         let shared_points: Vec<GridPoint3> = shared_points_iter.collect();
         // Should have as many points as the whole chunk minus the column down
         // the middle of non-shared cells.
-        assert_eq!(shared_points.len(), 9*9*64 - 7*7*64);
+        assert_eq!(shared_points.len(), 9 * 9 * 64 - 7 * 7 * 64);
         // TODO: better assertions?
     }
 
@@ -118,9 +118,10 @@ mod tests {
             ROOT_RESOLUTION,
             CHUNK_RESOLUTION,
         );
-        let origins_of_shared_points_iter = ChunkSharedPoints::new(chunk_origin, CHUNK_RESOLUTION).map(|point| {
-            origin_of_chunk_in_same_root_containing(point, ROOT_RESOLUTION, CHUNK_RESOLUTION)
-        });
+        let origins_of_shared_points_iter = ChunkSharedPoints::new(chunk_origin, CHUNK_RESOLUTION)
+            .map(|point| {
+                origin_of_chunk_in_same_root_containing(point, ROOT_RESOLUTION, CHUNK_RESOLUTION)
+            });
         let origins: HashSet<ChunkOrigin> = origins_of_shared_points_iter.collect();
         for origin in &origins {
             assert_eq!(origin.pos().root.index, 4);

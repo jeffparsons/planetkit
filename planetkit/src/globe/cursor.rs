@@ -1,6 +1,6 @@
 use grid::GridPoint3;
-use super::{ Globe, ChunkOrigin };
-use super::chunk::{ Chunk, Cell };
+use super::{Globe, ChunkOrigin};
+use super::chunk::{Chunk, Cell};
 use globe::globe::GlobeGuts;
 
 // TODO: describe how it only changes between chunks when _necessary_,
@@ -174,7 +174,8 @@ impl<'a> Cursor<'a> {
 impl<'a> CursorMut<'a> {
     // See `Globe::ensure_chunk_present`.
     pub fn ensure_chunk_present(&mut self) {
-        let chunk_origin: ChunkOrigin = self.globe.origin_of_chunk_in_same_root_containing(self.pos);
+        let chunk_origin: ChunkOrigin =
+            self.globe.origin_of_chunk_in_same_root_containing(self.pos);
         self.globe.ensure_chunk_present(chunk_origin);
     }
 
@@ -195,8 +196,9 @@ impl<'a> CursorMut<'a> {
     }
 
     fn current_chunk(&mut self) -> Option<&mut Chunk> {
-        self.current_chunk_origin
-            .and_then(move |chunk_origin| self.globe.chunks_mut().get_mut(&chunk_origin))
+        self.current_chunk_origin.and_then(move |chunk_origin| {
+            self.globe.chunks_mut().get_mut(&chunk_origin)
+        })
     }
 
     fn set_current_chunk(&mut self, new_chunk_origin: ChunkOrigin) {

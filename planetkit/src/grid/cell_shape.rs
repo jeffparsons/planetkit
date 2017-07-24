@@ -146,21 +146,11 @@ pub const FULL_HEX: CellShape = CellShape {
 };
 
 pub const NORTH_PORTION: CellShape = CellShape {
-    top_outline_dir_offsets: &[
-        [0, 0],
-        DIR_OFFSETS[0],
-        DIR_OFFSETS[1],
-        DIR_OFFSETS[2],
-    ],
+    top_outline_dir_offsets: &[[0, 0], DIR_OFFSETS[0], DIR_OFFSETS[1], DIR_OFFSETS[2]],
 };
 
 pub const SOUTH_PORTION: CellShape = CellShape {
-    top_outline_dir_offsets: &[
-        [0, 0],
-        DIR_OFFSETS[6],
-        DIR_OFFSETS[7],
-        DIR_OFFSETS[8],
-    ],
+    top_outline_dir_offsets: &[[0, 0], DIR_OFFSETS[6], DIR_OFFSETS[7], DIR_OFFSETS[8]],
 };
 
 pub const WEST_PORTION: CellShape = CellShape {
@@ -244,11 +234,5 @@ pub const SOUTH_EAST_PORTION: CellShape = CellShape {
 //
 //              x
 //              ↓
-pub static NEIGHBOR_OFFSETS: [(GridCoord, GridCoord); 6] = [
-    (  1,  0 ),
-    (  0,  1 ),
-    ( -1,  1 ),
-    ( -1,  0 ),
-    (  0, -1 ),
-    (  1, -1 ),
-];
+pub static NEIGHBOR_OFFSETS: [(GridCoord, GridCoord); 6] =
+    [(1, 0), (0, 1), (-1, 1), (-1, 0), (0, -1), (1, -1)];

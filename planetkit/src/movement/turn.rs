@@ -1,4 +1,4 @@
-use ::grid::{ GridCoord, GridPoint3, Dir };
+use grid::{GridCoord, GridPoint3, Dir};
 
 use super::transform::*;
 use super::util::*;
@@ -54,12 +54,7 @@ pub fn turn_left_by_one_hex_edge(
     dir: &mut Dir,
     resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
-    turn_by_one_hex_edge(
-        pos,
-        dir,
-        resolution,
-        TurnDir::Left,
-    )
+    turn_by_one_hex_edge(pos, dir, resolution, TurnDir::Left)
 }
 
 /// See `turn_by_one_hex_edge`.
@@ -68,12 +63,7 @@ pub fn turn_right_by_one_hex_edge(
     dir: &mut Dir,
     resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
-    turn_by_one_hex_edge(
-        pos,
-        dir,
-        resolution,
-        TurnDir::Right,
-    )
+    turn_by_one_hex_edge(pos, dir, resolution, TurnDir::Right)
 }
 
 /// Returns an error if `pos` and `dir` do not point at an edge
@@ -163,15 +153,13 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
     *pos = new_pos;
     *dir = new_dir;
 
-    let next_pos = adjacent_pos_in_dir(
-        *pos, *dir
-    ).expect("Caller should have assured we're pointing at a hex edge.");
+    let next_pos = adjacent_pos_in_dir(*pos, *dir).expect(
+        "Caller should have assured we're pointing at a hex edge.",
+    );
 
     // If the next step would be into the same root, then we can just transform
     // straight back to world coordinates via the same triangle
-    let still_in_same_quad =
-        next_pos.x >= 0 &&
-        next_pos.y >= 0;
+    let still_in_same_quad = next_pos.x >= 0 && next_pos.y >= 0;
     if still_in_same_quad {
         transform_into_exit_triangle(pos, dir, resolution, &tri.exits[0]);
         return;

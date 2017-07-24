@@ -1,6 +1,6 @@
 use gfx;
 
-use ::types::Pt3;
+use types::Pt3;
 
 // Pretty basic pipeline currently used for terrain.
 //
@@ -8,13 +8,11 @@ use ::types::Pt3;
 // to re-use this for other things. I.e. what's the cost
 // of having lots of pipelines and switching between them.
 
-gfx_vertex_struct!(
-    _Vertex {
-        a_pos: [f32; 4] = "a_pos",
-        tex_coord: [f32; 2] = "a_tex_coord",
-        a_color: [f32; 3] = "a_color",
-    }
-);
+gfx_vertex_struct!(_Vertex {
+    a_pos: [f32; 4] = "a_pos",
+    tex_coord: [f32; 2] = "a_tex_coord",
+    a_color: [f32; 3] = "a_color",
+});
 
 pub type Vertex = _Vertex;
 
@@ -28,14 +26,7 @@ impl Vertex {
     }
 
     pub fn new_from_pt3(pos: Pt3, color: [f32; 3]) -> Vertex {
-        Vertex::new(
-            [
-                pos[0] as f32,
-                pos[1] as f32,
-                pos[2] as f32,
-            ],
-            color,
-        )
+        Vertex::new([pos[0] as f32, pos[1] as f32, pos[2] as f32], color)
     }
 }
 

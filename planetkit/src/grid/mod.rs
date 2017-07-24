@@ -19,10 +19,7 @@ pub use self::equivalent_points::*;
 pub type GridCoord = i64;
 
 /// Generate a random column on the globe.
-pub fn random_column<R: Rng>(
-    root_resolution: [GridCoord; 2],
-    rng: &mut R,
-) -> GridPoint2 {
+pub fn random_column<R: Rng>(root_resolution: [GridCoord; 2], rng: &mut R) -> GridPoint2 {
     // TODO: this is a bit dodgy; it isn't uniformly distributed
     // over all points in the world.
     let root_index: RootIndex = rng.gen_range(0, 5);

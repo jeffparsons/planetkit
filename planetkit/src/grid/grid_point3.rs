@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
-use std::ops::{ Deref, DerefMut };
+use std::ops::{Deref, DerefMut};
 
-use super::{ GridCoord, GridPoint2, Root, RootIndex };
+use super::{GridCoord, GridPoint2, Root, RootIndex};
 
 // TODO: rename to GridPoint3
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
@@ -127,39 +127,22 @@ impl PosInOwningRoot {
         } else if pos.y == 0 {
             // Roots don't own their north-west edge;
             // translate to next root's north-east edge.
-            GridPoint3::new(
-                pos.root.next_west(),
-                0,
-                pos.x,
-                pos.z,
-            )
+            GridPoint3::new(pos.root.next_west(), 0, pos.x, pos.z)
         } else if pos.x == end_x && pos.y < half_y {
             // Roots don't own their mid-west edge;
             // translate to the next root's mid-east edge.
-            GridPoint3::new(
-                pos.root.next_west(),
-                0,
-                half_y + pos.y,
-                pos.z,
-            )
+            GridPoint3::new(pos.root.next_west(), 0, half_y + pos.y, pos.z)
         } else if pos.x == end_x {
             // Roots don't own their south-west edge;
             // translate to the next root's south-east edge.
-            GridPoint3::new(
-                pos.root.next_west(),
-                pos.y - half_y,
-                end_y,
-                pos.z,
-            )
+            GridPoint3::new(pos.root.next_west(), pos.y - half_y, end_y, pos.z)
         } else {
             // `pos` is either on an edge owned by its root,
             // or somewhere in the middle of the root.
             pos
         };
 
-        PosInOwningRoot {
-            pos: pos_in_owning_root
-        }
+        PosInOwningRoot { pos: pos_in_owning_root }
     }
 
     /// Set z-coordinate of underlying `Pos`.

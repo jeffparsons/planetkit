@@ -1,10 +1,10 @@
-use super::{ ProtoMesh, Vertex };
-use ::globe::icosahedron;
+use super::{ProtoMesh, Vertex};
+use globe::icosahedron;
 
-pub const GRAY: [f32; 3] = [ 0.5, 0.5, 0.5 ];
-pub const RED: [f32; 3] = [ 1.0, 0.0, 0.0 ];
-pub const GREEN: [f32; 3] = [ 0.0, 1.0, 0.0 ];
-pub const BLUE: [f32; 3] = [ 0.0, 0.0, 1.0 ];
+pub const GRAY: [f32; 3] = [0.5, 0.5, 0.5];
+pub const RED: [f32; 3] = [1.0, 0.0, 0.0];
+pub const GREEN: [f32; 3] = [0.0, 1.0, 0.0];
+pub const BLUE: [f32; 3] = [0.0, 0.0, 1.0];
 
 pub fn make_axes_mesh() -> ProtoMesh {
     let mut vertex_data = Vec::<Vertex>::new();
@@ -48,13 +48,14 @@ fn add_blob(
 ) {
     let first_vertex_index = vertex_data.len() as u32;
     for vertex in &icosahedron::VERTICES {
-        vertex_data.push(
-            Vertex::new([
+        vertex_data.push(Vertex::new(
+            [
                 vertex[0] as f32 * 0.2 + offset[0],
                 vertex[1] as f32 * 0.2 + offset[1],
                 vertex[2] as f32 * 0.2 + offset[2],
-            ], color)
-        );
+            ],
+            color,
+        ));
     }
     for face in &icosahedron::FACES {
         index_vec.push(first_vertex_index + face[0] as u32);

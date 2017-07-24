@@ -1,5 +1,5 @@
 use super::*;
-use ::grid::{ GridPoint3, Dir };
+use grid::{GridPoint3, Dir};
 use super::triangles::TRIANGLES;
 use na;
 
@@ -17,9 +17,7 @@ fn move_forward_in_positive_x_direction() {
 #[test]
 fn move_forward_into_northern_tropic_pentagon() {
     // Start facing east, just west of a northern tropic pentagon.
-    let mut pos = GridPoint3::default()
-        .with_x(1)
-        .with_y(RESOLUTION[0] - 1);
+    let mut pos = GridPoint3::default().with_x(1).with_y(RESOLUTION[0] - 1);
     let mut dir = Dir::new(4);
 
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
@@ -29,9 +27,7 @@ fn move_forward_into_northern_tropic_pentagon() {
     //
     // Note that it wouldn't be legal to step in this direction.
     assert_eq!(
-        GridPoint3::default()
-            .with_root(1)
-            .with_x(RESOLUTION[0]),
+        GridPoint3::default().with_root(1).with_x(RESOLUTION[0]),
         pos
     );
     assert_eq!(Dir::new(3), dir);
@@ -47,9 +43,7 @@ fn move_forward_into_northern_tropic_pentagon() {
 
     // We should now be back where we started, but facing west.
     assert_eq!(
-        GridPoint3::default()
-            .with_x(1)
-            .with_y(RESOLUTION[0] - 1),
+        GridPoint3::default().with_x(1).with_y(RESOLUTION[0] - 1),
         pos
     );
     assert_eq!(Dir::new(10), dir);
@@ -62,10 +56,9 @@ fn turn_left_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = GridPoint3::default()
-        .with_root(0)
-        .with_x(apex.x)
-        .with_y(apex.y);
+    let mut pos = GridPoint3::default().with_root(0).with_x(apex.x).with_y(
+        apex.y,
+    );
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -120,10 +113,9 @@ fn turn_right_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = GridPoint3::default()
-        .with_root(0)
-        .with_x(apex.x)
-        .with_y(apex.y);
+    let mut pos = GridPoint3::default().with_root(0).with_x(apex.x).with_y(
+        apex.y,
+    );
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -169,10 +161,7 @@ fn turn_right_at_northern_tropic() {
 fn move_east_under_north_pole() {
     // Start just south of the north pole in root 4,
     // facing north-east.
-    let mut pos = GridPoint3::default()
-        .with_root(4)
-        .with_x(1)
-        .with_y(1);
+    let mut pos = GridPoint3::default().with_root(4).with_x(1).with_y(1);
     let mut dir = Dir::new(6);
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
@@ -199,10 +188,7 @@ fn move_east_under_north_pole() {
 fn move_west_under_north_pole() {
     // Start just south of the north pole in root 1,
     // facing north-west.
-    let mut pos = GridPoint3::default()
-        .with_root(1)
-        .with_x(1)
-        .with_y(1);
+    let mut pos = GridPoint3::default().with_root(1).with_x(1).with_y(1);
     let mut dir = Dir::new(8);
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
@@ -233,7 +219,11 @@ fn walk_anticlockwise_around_all_pentagons() {
     let triangle_indexes: Vec<usize> = (0..12).collect();
     for root_index in 0..5 {
         for triangle_index in triangle_indexes.iter() {
-            println!("Starting in root {} at apex of triangle {}.", root_index, triangle_index);
+            println!(
+                "Starting in root {} at apex of triangle {}.",
+                root_index,
+                triangle_index
+            );
             let triangle = &TRIANGLES[*triangle_index];
 
             // Start at triangle apex.
@@ -281,7 +271,11 @@ fn walk_clockwise_around_all_pentagons() {
     let triangle_indexes: Vec<usize> = (0..12).collect();
     for root_index in 0..5 {
         for triangle_index in triangle_indexes.iter() {
-            println!("Starting in root {} at apex of triangle {}.", root_index, triangle_index);
+            println!(
+                "Starting in root {} at apex of triangle {}.",
+                root_index,
+                triangle_index
+            );
             let triangle = &TRIANGLES[*triangle_index];
 
             // Start at triangle apex.
@@ -375,12 +369,8 @@ fn random_walks() {
                 }
             }
 
-            step_forward_and_face_neighbor(
-                &mut pos,
-                &mut dir,
-                RESOLUTION,
-                &mut last_turn_bias
-            ).unwrap();
+            step_forward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias)
+                .unwrap();
             crumbs.push(Action::StepForward);
             println!("Stepped forward: {:?}", pos);
         }
@@ -397,11 +387,26 @@ fn random_walks() {
         crumbs.reverse();
         for crumb in crumbs {
             match crumb {
-                Action::StepForward => step_forward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias).unwrap(),
-                Action::TurnLeft => turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
-                Action::TurnRight => turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
+                Action::StepForward => {
+                    step_forward_and_face_neighbor(
+                        &mut pos,
+                        &mut dir,
+                        RESOLUTION,
+                        &mut last_turn_bias,
+                    ).unwrap()
+                }
+                Action::TurnLeft => {
+                    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
+                }
+                Action::TurnRight => {
+                    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
+                }
             }
-            println!("Retracing crumbs walking forward; now at: {:?}, {:?}", pos, dir);
+            println!(
+                "Retracing crumbs walking forward; now at: {:?}, {:?}",
+                pos,
+                dir
+            );
         }
 
         // We should now be back at the start, but re-based into another root,
@@ -468,12 +473,8 @@ fn random_walks_retraced_by_stepping_backwards() {
                 }
             }
 
-            step_forward_and_face_neighbor(
-                &mut pos,
-                &mut dir,
-                RESOLUTION,
-                &mut last_turn_bias
-            ).unwrap();
+            step_forward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias)
+                .unwrap();
             crumbs.push(Action::StepBackward);
             println!("Stepped forward: {:?}", pos);
         }
@@ -482,11 +483,26 @@ fn random_walks_retraced_by_stepping_backwards() {
         crumbs.reverse();
         for crumb in crumbs {
             match crumb {
-                Action::StepBackward => step_backward_and_face_neighbor(&mut pos, &mut dir, RESOLUTION, &mut last_turn_bias).unwrap(),
-                Action::TurnLeft => turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
-                Action::TurnRight => turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap(),
+                Action::StepBackward => {
+                    step_backward_and_face_neighbor(
+                        &mut pos,
+                        &mut dir,
+                        RESOLUTION,
+                        &mut last_turn_bias,
+                    ).unwrap()
+                }
+                Action::TurnLeft => {
+                    turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
+                }
+                Action::TurnRight => {
+                    turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
+                }
             }
-            println!("Retracing crumbs walking backward; now at: {:?}, {:?}", pos, dir);
+            println!(
+                "Retracing crumbs walking backward; now at: {:?}, {:?}",
+                pos,
+                dir
+            );
         }
 
         // We should now be back at the start, but re-based into another root,

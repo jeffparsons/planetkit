@@ -56,18 +56,19 @@ impl<R: gfx::Resources> Mesh<R> {
         // TODO: What are these magic numbers? o_0
         use gfx::traits::FactoryExt;
         let texels = [[0x20, 0xA0, 0xC0, 0x00]];
-        let (_, texture_view) = factory.create_texture_immutable::<gfx::format::Rgba8>(
-            gfx::texture::Kind::D2(1, 1, gfx::texture::AaMode::Single),
-            &[&texels]).unwrap();
+        let (_, texture_view) = factory
+            .create_texture_immutable::<gfx::format::Rgba8>(
+                gfx::texture::Kind::D2(1, 1, gfx::texture::AaMode::Single),
+                &[&texels],
+            )
+            .unwrap();
         let sinfo = gfx::texture::SamplerInfo::new(
             gfx::texture::FilterMethod::Bilinear,
-            gfx::texture::WrapMode::Clamp
+            gfx::texture::WrapMode::Clamp,
         );
 
         let index_data: &[u32] = vertex_indices.as_slice();
-        let (vbuf, slice) = factory.create_vertex_buffer_with_slice(
-            &vertices, index_data
-        );
+        let (vbuf, slice) = factory.create_vertex_buffer_with_slice(&vertices, index_data);
         let data = pipe::Data {
             vbuf: vbuf.clone(),
             u_model_view_proj: [[0.0; 4]; 4],

@@ -42,8 +42,7 @@ fn create_entities(world: &mut specs::World) {
     // Create the player character.
     let fighter_entity = fighter::create_now(world, globe_entity);
     // Set our new shepherd player character as the currently controlled cell dweller.
-    world.write_resource::<ActiveCellDweller>().maybe_entity =
-        Some(fighter_entity);
+    world.write_resource::<ActiveCellDweller>().maybe_entity = Some(fighter_entity);
 
     // Create basic third-person following camera.
     pk::simple::create_simple_chase_camera_now(world, fighter_entity);

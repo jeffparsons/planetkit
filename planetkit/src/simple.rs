@@ -17,18 +17,27 @@ use render;
 pub fn noop_create_systems<'a, 'b>(
     _logger: &slog::Logger,
     _world: &mut specs::World,
-    dispatcher_builder: specs::DispatcherBuilder<'a, 'b>
+    dispatcher_builder: specs::DispatcherBuilder<'a, 'b>,
 ) -> specs::DispatcherBuilder<'a, 'b> {
     // No-op; just pass the DispatcherBuilder back.
     dispatcher_builder
 }
 
 pub trait CreateSystemsFn<'a, 'b>
-    : Fn(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b> {}
+    : Fn(&slog::Logger,
+   &mut specs::World,
+   specs::DispatcherBuilder<'a, 'b>)
+   -> specs::DispatcherBuilder<'a, 'b> {
+}
 
 impl<'a, 'b, F> CreateSystemsFn<'a, 'b> for F
-    where F: Fn(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>) -> specs::DispatcherBuilder<'a, 'b>
-{ }
+where
+    F: Fn(&slog::Logger,
+       &mut specs::World,
+       specs::DispatcherBuilder<'a, 'b>)
+       -> specs::DispatcherBuilder<'a, 'b>,
+{
+}
 
 /// Create a new simple PlanetKit app and window.
 ///
@@ -37,7 +46,9 @@ impl<'a, 'b, F> CreateSystemsFn<'a, 'b> for F
 ///
 /// The given function `create_systems` will be called with references
 /// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (app::App, PistonWindow) {
+pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(
+    create_systems: F,
+) -> (app::App, PistonWindow) {
     use slog::Drain;
 
     let decorator = slog_term::TermDecorator::new().build();
@@ -70,16 +81,10 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (ap
     // Initialize all systems.
     // TODO: split out system initialization into helper functions.
 
-    let mut movement_sys = cell_dweller::MovementSystem::new(
-        movement_input_receiver,
-        &log,
-    );
+    let mut movement_sys = cell_dweller::MovementSystem::new(movement_input_receiver, &log);
     movement_sys.init(&mut world);
 
-    let mut mining_sys = cell_dweller::MiningSystem::new(
-        mining_input_receiver,
-        &log,
-    );
+    let mut mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &log);
     mining_sys.init(&mut world);
 
     let physics_sys = cell_dweller::PhysicsSystem::new(
@@ -88,9 +93,7 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (ap
     );
 
     use globe;
-    let chunk_sys = globe::ChunkSystem::new(
-        &log,
-    );
+    let chunk_sys = globe::ChunkSystem::new(&log);
 
     let chunk_view_sys = globe::ChunkViewSystem::new(
         &log,
@@ -128,7 +131,9 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (ap
 ///
 /// The given function `create_systems` will be called with references
 /// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(create_systems: F) -> (app::App, PistonWindow) {
+pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(
+    create_systems: F,
+) -> (app::App, PistonWindow) {
     let (mut app, window) = new_empty(create_systems);
     // Populate the world.
     {
@@ -142,31 +147,40 @@ pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(create_systems: F) ->
 
 pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
     let globe = globe::Globe::new_earth_scale_example();
-    world.create_entity()
+    world
+        .create_entity()
         .with(globe)
         .with(::Spatial::new_root())
         .build()
 }
 
-pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity: specs::Entity) -> specs::Entity {
-    use rand::{ XorShiftRng, SeedableRng };
+pub fn create_simple_player_character_now(
+    world: &mut specs::World,
+    globe_entity: specs::Entity,
+) -> specs::Entity {
+    use rand::{XorShiftRng, SeedableRng};
 
     // Find a suitable spawn point for the player character at the globe surface.
     use grid::Dir;
     let (globe_spec, player_character_pos) = {
         let mut globe_storage = world.write::<globe::Globe>();
-        let globe = globe_storage.get_mut(globe_entity)
-            .expect("Uh oh, it looks like our Globe went missing.");
+        let globe = globe_storage.get_mut(globe_entity).expect(
+            "Uh oh, it looks like our Globe went missing.",
+        );
         let globe_spec = globe.spec();
         // Seed spawn point RNG with world seed.
         let seed = globe_spec.seed;
         let mut rng = XorShiftRng::from_seed([seed, seed, seed, seed]);
-        let player_character_pos = globe.air_above_random_surface_dry_land(
-            &mut rng,
-            2, // Min air cells above
-            5, // Max distance from starting point
-            5, // Max attempts
-        ).expect("Oh noes, we took too many attempts to find a decent spawn point!");
+        let player_character_pos = globe
+            .air_above_random_surface_dry_land(
+                &mut rng,
+                2, // Min air cells above
+                5, // Max distance from starting point
+                5, // Max attempts
+            )
+            .expect(
+                "Oh noes, we took too many attempts to find a decent spawn point!",
+            );
         (globe_spec, player_character_pos)
     };
 
@@ -188,23 +202,26 @@ pub fn create_simple_player_character_now(world: &mut specs::World, globe_entity
         .with(::Spatial::new(globe_entity, Iso3::identity()))
         .build();
     // Set our new character as the currently controlled cell dweller.
-    world.write_resource::<cell_dweller::ActiveCellDweller>().maybe_entity =
-        Some(player_character_entity);
+    world
+        .write_resource::<cell_dweller::ActiveCellDweller>()
+        .maybe_entity = Some(player_character_entity);
     player_character_entity
 }
 
-pub fn create_simple_chase_camera_now(world: &mut specs::World, player_character_entity: specs::Entity) -> specs::Entity {
+pub fn create_simple_chase_camera_now(
+    world: &mut specs::World,
+    player_character_entity: specs::Entity,
+) -> specs::Entity {
     // Create a camera sitting a little bit behind the cell dweller.
     let eye = Pt3::new(0.0, 4.0, -6.0);
     let target = Pt3::origin();
     let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
-    let camera_entity = world.create_entity()
+    let camera_entity = world
+        .create_entity()
         .with(::Spatial::new(player_character_entity, camera_transform))
         .build();
-    use ::camera::DefaultCamera;
+    use camera::DefaultCamera;
     // TODO: gah, where does this belong?
-    world.add_resource(DefaultCamera {
-        camera_entity: camera_entity,
-    });
+    world.add_resource(DefaultCamera { camera_entity: camera_entity });
     camera_entity
 }
