@@ -57,10 +57,10 @@ impl Iterator for ChunkSharedPoints {
         if let Some(xyz) = self.iter.next() {
             let (x, y, z) = xyz;
             // Only return points that are on x=0, y=0, x=max, or y=max.
-            let shared_point =
-                x == self.x_min || x == self.x_max ||
-                y == self.y_min || y == self.y_max;
-            if shared_point {
+            let is_x_lim = x == self.x_min || x == self.x_max;
+            let is_y_lim = y == self.y_min || y == self.y_max;
+            let is_shared_point = is_x_lim || is_y_lim;
+            if is_shared_point {
                 // It's an x-edge or y-edge point.
                 Some(GridPoint3::new(self.root, x, y, z))
             } else {

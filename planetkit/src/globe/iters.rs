@@ -268,9 +268,12 @@ mod tests {
                 )
             })
         });
-        let chunk_counts: Vec<usize> = points.map(|point| {
-            ChunksInSameRootContainingPoint::new(point, ROOT_RESOLUTION, CHUNK_RESOLUTION).count()
-        }).collect();
+        let chunk_counts: Vec<usize> = points
+            .map(|point| {
+                ChunksInSameRootContainingPoint::new(point, ROOT_RESOLUTION, CHUNK_RESOLUTION)
+                    .count()
+            })
+            .collect();
         // NOTE: this rustfmt_skip doesn't work here, yet, but I think it will in a coming release:
         // https://github.com/rust-lang-nursery/rustfmt/pull/1811
         #[cfg_attr(rustfmt, rustfmt_skip)]

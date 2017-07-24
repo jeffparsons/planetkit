@@ -211,11 +211,11 @@ impl Chunk {
         let local_x = pos.x - self.origin.pos().x;
         let local_y = pos.y - self.origin.pos().y;
         let local_z = pos.z - self.origin.pos().z;
-        (
-            local_z * (self.chunk_resolution[0] + 1) * (self.chunk_resolution[1] + 1) +
-            local_y * (self.chunk_resolution[0] + 1) +
-            local_x
-        ) as usize
+        let r = self.chunk_resolution;
+        let plane_offset = local_z * (r[0] + 1) * (r[1] + 1);
+        let row_offset = local_y * (r[0] + 1);
+        let cell_offset = local_x;
+        (plane_offset + row_offset + cell_offset) as usize
     }
 
     /// Returns `true` if the given `pos` lies within the bounds of this chunk,
@@ -229,9 +229,10 @@ impl Chunk {
         let end_x = self.origin.pos().x + self.chunk_resolution[0];
         let end_y = self.origin.pos().y + self.chunk_resolution[1];
         let end_z = self.origin.pos().z + self.chunk_resolution[2] - 1;
-        pos.x >= self.origin.pos().x && pos.x <= end_x &&
-        pos.y >= self.origin.pos().y && pos.y <= end_y &&
-        pos.z >= self.origin.pos().z && pos.z <= end_z
+        let contains_x = pos.x >= self.origin.pos().x && pos.x <= end_x;
+        let contains_y = pos.y >= self.origin.pos().y && pos.y <= end_y;
+        let contains_z = pos.z >= self.origin.pos().z && pos.z <= end_z;
+        contains_x && contains_y && contains_z
     }
 
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the

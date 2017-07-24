@@ -130,34 +130,42 @@ pub fn triangle_on_pos_with_closest_mid_axis(
                 a += 12;
             }
             a.abs()
-        }).expect("There should have been 1-3 triangles; did you call this with a non-pentagon pos?")
+        })
+        .expect(
+            "There should have been 1-3 triangles; did you call this with a non-pentagon pos?",
+        )
 }
 
 pub fn is_pentagon(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
-    pos.x == 0 && pos.y == 0 ||
-    pos.x == 0 && pos.y == resolution[0] ||
-    pos.x == 0 && pos.y == resolution[1] ||
-    pos.x == resolution[0] && pos.y == 0 ||
-    pos.x == resolution[0] && pos.y == resolution[0] ||
-    pos.x == resolution[0] && pos.y == resolution[1]
+    // There are six pentagons in every root quad:
+    //
+    //              ◌ north
+    //             / \
+    //            /   \
+    //      west ◌     ◌ north-east
+    //            \     \
+    //             \     \
+    //   south-west ◌     ◌ east
+    //               \   /
+    //                \ /
+    //           south ◌
+    //
+    let is_north = pos.x == 0 && pos.y == 0;
+    let is_north_east = pos.x == 0 && pos.y == resolution[0];
+    let is_east = pos.x == 0 && pos.y == resolution[1];
+    let is_west = pos.x == resolution[0] && pos.y == 0;
+    let is_south_west = pos.x == resolution[0] && pos.y == resolution[0];
+    let is_south = pos.x == resolution[0] && pos.y == resolution[1];
+    is_north || is_north_east || is_east || is_west || is_south_west || is_south
 }
 
 pub fn is_on_root_edge(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
-    pos.x == 0 ||
-    pos.y == 0 ||
-    pos.x == resolution[0] ||
-    pos.y == resolution[1]
+    pos.x == 0 || pos.y == 0 || pos.x == resolution[0] || pos.y == resolution[1]
 }
 
-pub fn debug_assert_pos_within_root(
-    pos: &mut GridPoint3,
-    resolution: [GridCoord; 2],
-) {
+pub fn debug_assert_pos_within_root(pos: &mut GridPoint3, resolution: [GridCoord; 2]) {
     debug_assert!(
-        pos.x >= 0 &&
-        pos.y >= 0 &&
-        pos.x <= resolution[0] &&
-        pos.y <= resolution[1],
+        pos.x >= 0 && pos.y >= 0 && pos.x <= resolution[0] && pos.y <= resolution[1],
         "`pos` was outside its root at the given resolution."
     );
 }
