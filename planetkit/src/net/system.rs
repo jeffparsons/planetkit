@@ -1,4 +1,5 @@
 use std;
+use std::result::Result;
 use std::io;
 use std::net::SocketAddr;
 
@@ -18,7 +19,19 @@ enum Message {
     /// you as having cleanly disconnected rather than mysteriously disappearing.
     Goodbye,
     // TODO: flesh out
-    BadMessage,
+    Bad,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+struct OutboundFrame {
+    // TODO: dest peer
+    message: Message,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+struct InboundFrame {
+    // TODO: src peer
+    message: Result<Message, ()>,
 }
 
 struct Codec {
@@ -29,26 +42,35 @@ struct Codec {
 // initial handshake easy, and then optionally move to a more efficient encoding
 // (so we can always keep it in JSON for debugging).
 impl UdpCodec for Codec {
-    type In = Message;
-    type Out = Message;
+    type In = InboundFrame;
+    type Out = OutboundFrame;
 
-    fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<Message> {
-        serde_json::from_slice(buf).or_else(|error| {
+    fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<InboundFrame> {
+        // TODO: identify the peer from a list of connected peers.
+        serde_json::from_slice::<Message>(buf)
+        .map(|message| {
+            InboundFrame {
+                message: Result::Ok(message)
+            }
+        })
+        .or_else(|error| {
             // TODO: don't warn here; trace here with details unless we can wrap
             // them up in an error to log below.
             warn!(self.log, "Got a bad message from peer"; "peer_addr" => format!("{:?}", src), "message" => format!("{:?}", buf), "error" => format!("{:?}", error));
-            Ok(Message::BadMessage)
+            Ok(InboundFrame {
+                message: Result::Err(())
+            })
         })
     }
 
-    fn encode(&mut self, _message: Message, _buf: &mut Vec<u8>) -> SocketAddr {
+    fn encode(&mut self, _message: OutboundFrame, _buf: &mut Vec<u8>) -> SocketAddr {
         panic!("Not implemented");
     }
 }
 
 pub struct System {
     log: Logger,
-    inbound_message_rx: std::sync::mpsc::Receiver<Message>,
+    inbound_frame_rx: std::sync::mpsc::Receiver<InboundFrame>,
 }
 
 // TODO: take a parameter for game-specific message type.
@@ -65,7 +87,7 @@ impl System {
         //
         // We can't do this in the `System` because there could be thousands of
         // messages coming in between ticks.
-        let (inbound_message_tx, inbound_message_rx) = std::sync::mpsc::channel();
+        let (inbound_frame_tx, inbound_frame_rx) = std::sync::mpsc::channel();
 
         let addr = "0.0.0.0:62831".to_string();
         let addr = addr.parse::<SocketAddr>().unwrap();
@@ -85,19 +107,19 @@ impl System {
                 let codec = Codec { log: codec_log };
                 let stream = socket.framed(codec);
                 let f = stream
-                    .filter(|message| {
+                    .filter(|frame| {
                         // TODO: log
-                        match message {
-                            &Message::BadMessage => {
-                                println!("Got a bad message from peer: {:?}", message);
+                        match frame.message {
+                            Result::Err(_) => {
+                                println!("Got a bad message from peer");
                                 false
                             }
                             _ => true,
                         }
                     })
-                    .for_each(move |message| {
+                    .for_each(move |frame| {
                         // TODO: Only do this at debug level for a while, then demote to trace.
-                        info!(server_log, "Got message"; "message" => format!("{:?}", message));
+                        info!(server_log, "Got frame"; "frame" => format!("{:?}", frame));
 
                         // Send the message to net System.
                         //
@@ -111,7 +133,11 @@ impl System {
                         // wrapper type for the specific game is. So individual systems
                         // might need a reference to the "dispatcher", whatever it is.
                         // Maybe it's kind of like a codec object?
-                        inbound_message_tx.send(message).expect("Receiver hung up?");
+
+                        // TODO: bypass network system; go straight
+                        // to dispatcher? Or do we need a network system
+                        // for something? Delete it until you have a use for it.
+                        inbound_frame_tx.send(frame).expect("Receiver hung up?");
 
                         futures::future::ok(())
                     });
@@ -125,7 +151,7 @@ impl System {
 
         System {
             log: parent_log.new(o!()),
-            inbound_message_rx: inbound_message_rx,
+            inbound_frame_rx: inbound_frame_rx,
         }
     }
 }
@@ -175,10 +201,10 @@ mod tests {
         );
         reactor.run(f).expect("Test reactor failed");
 
-        let message = system.inbound_message_rx.recv().expect(
-            "Failed to receive message",
+        let frame = system.inbound_frame_rx.recv().expect(
+            "Failed to receive frame",
         );
-        assert_eq!(message, Message::Goodbye);
+        assert_eq!(frame.message.unwrap(), Message::Goodbye);
 
         // TODO: gracefully shut down the server before the end of all tests;
         // you don't want to leave the thread hanging around awkwardly.
