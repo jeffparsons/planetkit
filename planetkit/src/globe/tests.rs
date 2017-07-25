@@ -8,7 +8,7 @@ fn find_spawn_points() {
     // we just want to check that if we keep finding new points
     // then some of them will fail, because they are underwater.
     let mut rng = rand::thread_rng();
-    const TRIALS: usize = 100;
+    const TRIALS: usize = 200;
     let successes = (0..TRIALS)
         .map(|_| {
             // TODO: move globe out of closure and "collect garbage" chunks
@@ -26,8 +26,8 @@ fn find_spawn_points() {
         .filter(|maybe_pos| maybe_pos.is_some())
         .count();
     // Some should eventually succeed, some should give up.
-    assert!(successes > 5);
-    assert!(successes < TRIALS - 5);
+    assert!(successes > 15);
+    assert!(successes < TRIALS - 15);
 }
 
 #[cfg(feature = "nightly")]
