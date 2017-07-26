@@ -76,10 +76,16 @@ pub struct System {
 // TODO: take a parameter for game-specific message type.
 // TODO: accept should_listen parameter and not listen otherwise.
 impl System {
+    // Only returns once the server is successfully listening.
     pub fn new(parent_log: &Logger) -> System {
         use std::thread;
         use tokio_core::reactor::Core;
         use futures::Stream;
+
+        // Don't return to caller until we've bound the socket,
+        // or we might miss some messages.
+        // (This came up in tests that talk to localhost.)
+        let (ready_tx, ready_rx) = std::sync::mpsc::channel::<()>();
 
         // Create an unbounded channel. We'll make it `Codec`'s job to record
         // message rates/sizes from each peer, and to start rejecting them if
@@ -102,6 +108,10 @@ impl System {
                 let mut reactor = Core::new().expect("Failed to create reactor for System");
                 let handle = reactor.handle();
                 let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
+
+                // Let main thread know we're ready to receive messages.
+                ready_tx.send(()).expect("Receiver hung up");
+
                 info!(server_log, "Listening"; "addr" => format!("{}", addr));
 
                 let codec = Codec { log: codec_log };
@@ -148,6 +158,9 @@ impl System {
                 reactor.run(f).expect("Server reactor failed");
             })
             .expect("Failed to spawn server thread");
+
+        // Wait until socket is bound before returning system.
+        ready_rx.recv().expect("Sender hung up");
 
         System {
             log: parent_log.new(o!()),
