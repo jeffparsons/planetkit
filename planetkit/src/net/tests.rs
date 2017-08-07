@@ -26,8 +26,7 @@ fn receive_corrupt_message() {
     start_server(&log, recv_system.sender().clone());
 
     // Bind socket for sending message.
-    // TODO: pick a random / free port.
-    let addr = "0.0.0.0:62832".to_string();
+    let addr = "0.0.0.0:0".to_string();
     let addr = addr.parse::<SocketAddr>().unwrap();
     let mut reactor = Core::new().expect("Failed to create reactor");
     let handle = reactor.handle();
