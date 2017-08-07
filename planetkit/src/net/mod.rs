@@ -17,11 +17,15 @@ pub use self::server::start_server;
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.
 
+// Game-specific message body.
+//
+// These are forwarded to systems without any filtering or sanitization
+// by generic network systems. Therefore they should in general be treated
+// as a verbatim message from a peer that is only trusted as much as that
+// peer is trusted.
+//
 // Exists primarily as a way to aggregate all the super-traits we expect,
 // especially around being able to serialize it.
-//
-// TODO: remark on GameMessage being the body of the message from a peer verbatim,
-// and therefore that it shouldn't be trusted.
 pub trait GameMessage : 'static + Serialize + DeserializeOwned + Debug + Eq + PartialEq + Send + Sync {}
 
 // TODO: identify self in every message. Make this a struct wrapping the enum,

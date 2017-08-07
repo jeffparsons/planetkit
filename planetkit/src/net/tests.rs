@@ -8,13 +8,13 @@ use specs;
 
 use super::*;
 
+// Nothing interesting in here!
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+struct TestMessage {}
+impl GameMessage for TestMessage{}
+
 #[test]
 fn receive_corrupt_message() {
-    // Nothing interesting in here!
-    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-    struct TestMessage {}
-    impl GameMessage for TestMessage{}
-
     // Receiving a corrupt message should not kill the reactor.
     let drain = slog::Discard;
     let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
