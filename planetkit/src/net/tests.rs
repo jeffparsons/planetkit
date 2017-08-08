@@ -1,7 +1,8 @@
 use std;
+use std::time::Duration;
 
 use futures::Future;
-use tokio_core::reactor::Core;
+use tokio_core::reactor::{Core, Timeout};
 use tokio_core::net::UdpSocket;
 use slog;
 use specs;
@@ -37,10 +38,14 @@ fn receive_corrupt_message() {
     let target_addr = target_addr.parse::<SocketAddr>().unwrap();
     // Oops, it's lowercase; it won't match any message type!
     let f = socket.send_dgram(b"\"hello\"", target_addr).and_then(
-        move |(socket2, _buf)| {
-            // TODO: sleep; delivery order isn't guaranteed, even though
-            // it almost certainly will be fine on localhost. (TODO: look this up.)
-            socket2.send_dgram(b"{\"Game\":{}}", target_addr)
+        |(socket2, _buf)| {
+            // Wait a bit; delivery order isn't guaranteed,
+            // even though it will almost certainly be fine on localhost.
+            Timeout::new(Duration::from_millis(10), &handle).expect("Failed to set timeout").and_then(
+                move |_| {
+                    socket2.send_dgram(b"{\"Game\":{}}", target_addr)
+                }
+            )
         },
     );
     reactor.run(f).expect("Test reactor failed");
