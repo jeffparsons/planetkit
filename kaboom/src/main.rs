@@ -4,11 +4,17 @@ extern crate specs;
 extern crate rand;
 #[macro_use]
 extern crate slog;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
 
 mod fighter;
 mod game_state;
 mod game_system;
 mod planet;
+mod message;
+
+use message::Message;
 
 fn main() {
     let (mut app, mut window) = pk::simple::new_empty(add_systems);
@@ -25,11 +31,11 @@ fn add_systems(
     GameState::ensure_registered(world);
 
     let game_system = game_system::GameSystem::new(logger);
-    let net_system = pk::net::System::new(logger);
+    let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
 
     dispatcher_builder
         .add(game_system, "woolgather_game", &[])
-        .add(net_system, "net", &[])
+        .add(recv_system, "net", &[])
 }
 
 fn create_entities(world: &mut specs::World) {
