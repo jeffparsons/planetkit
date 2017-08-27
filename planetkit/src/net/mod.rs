@@ -1,5 +1,6 @@
 mod recv_system;
-mod server;
+mod udp_server;
+mod tcp_server;
 
 #[cfg(test)]
 mod tests;
@@ -12,7 +13,8 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 pub use self::recv_system::RecvSystem;
-pub use self::server::start_server;
+pub use self::udp_server::start_udp_server;
+pub use self::tcp_server::start_tcp_server;
 
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.

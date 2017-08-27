@@ -40,6 +40,7 @@ the line. This would imply significant API breakage.
 
 #![cfg_attr(all(feature = "nightly", test), feature(test))]
 
+extern crate bytes;
 extern crate chrono;
 extern crate rand;
 extern crate noise;
@@ -71,6 +72,7 @@ extern crate froggy;
 extern crate arrayvec;
 extern crate futures;
 extern crate tokio_core;
+extern crate tokio_io;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;

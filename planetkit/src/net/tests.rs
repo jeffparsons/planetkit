@@ -14,6 +14,9 @@ use super::*;
 struct TestMessage {}
 impl GameMessage for TestMessage{}
 
+//
+// TODO: Make this test higher-level, and use both TCP and UDP server together.
+//
 #[test]
 fn receive_corrupt_message() {
     // Receiving a corrupt message should not kill the reactor.
@@ -24,7 +27,7 @@ fn receive_corrupt_message() {
 
     // Create receiver system and spawn network server.
     let recv_system = RecvSystem::<TestMessage>::new(&log, &mut world);
-    start_server(&log, recv_system.sender().clone());
+    let server_addr = start_udp_server(&log, recv_system.sender().clone(), None);
 
     // Bind socket for sending message.
     let addr = "0.0.0.0:0".to_string();
@@ -34,16 +37,14 @@ fn receive_corrupt_message() {
     let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind socket");
 
     // Send a dodgy message.
-    let target_addr = "127.0.0.1:62831".to_string();
-    let target_addr = target_addr.parse::<SocketAddr>().unwrap();
     // Oops, it's lowercase; it won't match any message type!
-    let f = socket.send_dgram(b"\"hello\"", target_addr).and_then(
+    let f = socket.send_dgram(b"\"hello\"", server_addr).and_then(
         |(socket2, _buf)| {
             // Wait a bit; delivery order isn't guaranteed,
             // even though it will almost certainly be fine on localhost.
             Timeout::new(Duration::from_millis(10), &handle).expect("Failed to set timeout").and_then(
                 move |_| {
-                    socket2.send_dgram(b"{\"Game\":{}}", target_addr)
+                    socket2.send_dgram(b"{\"Game\":{}}", server_addr)
                 }
             )
         },

@@ -28,6 +28,12 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 
     fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<RecvWireMessage<G>> {
         // TODO: identify the peer from a list of connected peers.
+        // Or... is that the role of the server logic below? Probably the server
+        // logic below... because it allows us to store less state up here.
+        // Which means that RecvWireMessage contains source address. That sounds right.
+
+        // Now that we have both TCP and UDP servers we should try to keep as much as
+        // possible off in common code somewhere.
         serde_json::from_slice::<WireMessage<G>>(buf)
         .map(|message| {
             RecvWireMessage {
@@ -56,8 +62,12 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 // received per second, and the `RecvSystem` buffers up messages for a while before
 // getting to them.
 //
+// Picks a random port if none was specified.
+//
+// Returns bound address.
+//
 // TODO: mechanism to stop server.
-pub fn start_server<G: GameMessage>(parent_log: &Logger, recv_system_sender: mpsc::Sender<RecvWireMessage<G>>) {
+pub fn start_udp_server<G: GameMessage, MaybePort: Into<Option<u16>>>(parent_log: &Logger, recv_system_sender: mpsc::Sender<RecvWireMessage<G>>, port: MaybePort) -> SocketAddr {
     use std::thread;
     use tokio_core::reactor::Core;
     use futures::Stream;
@@ -65,9 +75,10 @@ pub fn start_server<G: GameMessage>(parent_log: &Logger, recv_system_sender: mps
     // Don't return to caller until we've bound the socket,
     // or we might miss some messages.
     // (This came up in tests that talk to localhost.)
-    let (ready_tx, ready_rx) = std::sync::mpsc::channel::<()>();
+    let (actual_addr_tx, actual_addr_rx) = std::sync::mpsc::channel::<SocketAddr>();
 
-    let addr = "0.0.0.0:62831".to_string();
+    // Pick a random port if none was specified.
+    let addr = format!("0.0.0.0:{}", port.into().unwrap_or(0));
     let addr = addr.parse::<SocketAddr>().unwrap();
 
     // Run reactor on its own thread so we can always be receiving messages
@@ -75,16 +86,17 @@ pub fn start_server<G: GameMessage>(parent_log: &Logger, recv_system_sender: mps
     let server_log = parent_log.new(o!());
     let codec_log = parent_log.new(o!());
     thread::Builder::new()
-        .name("server".to_string())
+        .name("udp_server".to_string())
         .spawn(move || {
             let mut reactor = Core::new().expect("Failed to create reactor for network server");
             let handle = reactor.handle();
             let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
+            let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            info!(server_log, "Listening"; "addr" => format!("{}", addr));
+            info!(server_log, "UDP server listening"; "addr" => format!("{}", addr));
 
             // Let main thread know we're ready to receive messages.
-            ready_tx.send(()).expect("Receiver hung up");
+            actual_addr_tx.send(actual_addr).expect("Receiver hung up");
 
             let codec = Codec::<G>{
                 log: codec_log,
@@ -120,5 +132,69 @@ pub fn start_server<G: GameMessage>(parent_log: &Logger, recv_system_sender: mps
         .expect("Failed to spawn server thread");
 
     // Wait until socket is bound before returning system.
-    ready_rx.recv().expect("Sender hung up");
+    actual_addr_rx.recv().expect("Sender hung up")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std;
+    use std::time::Duration;
+
+    use futures::Future;
+    use tokio_core::reactor::{Core, Timeout};
+    use tokio_core::net::UdpSocket;
+    use slog;
+
+    // Nothing interesting in here!
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    struct TestMessage {}
+    impl GameMessage for TestMessage{}
+
+    #[test]
+    fn receive_corrupt_message() {
+        // Receiving a corrupt message should not kill the reactor.
+        let drain = slog::Discard;
+        let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
+
+        // Spawn network server.
+        let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
+        let server_addr = start_udp_server(&log, tx, None);
+
+        // Bind socket for sending message.
+        let addr = "0.0.0.0:0".to_string();
+        let addr = addr.parse::<SocketAddr>().unwrap();
+        let mut reactor = Core::new().expect("Failed to create reactor");
+        let handle = reactor.handle();
+        let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind socket");
+
+        // Send a dodgy message.
+        // Oops, it's lowercase; it won't match any message type!
+        let f = socket.send_dgram(b"\"hello\"", server_addr).and_then(
+            |(socket2, _buf)| {
+                // Wait a bit; delivery order isn't guaranteed,
+                // even though it will almost certainly be fine on localhost.
+                Timeout::new(Duration::from_millis(10), &handle).expect("Failed to set timeout").and_then(
+                    move |_| {
+                        socket2.send_dgram(b"{\"Game\":{}}", server_addr)
+                    }
+                )
+            },
+        );
+        reactor.run(f).expect("Test reactor failed");
+
+        // Sleep a while to make sure we receive the message.
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        // Take a look at what was received. Only one message should have made
+        // it through to the RecvSystem channel.
+        let recv_wire_message = rx.recv().expect("Should have been something on the channel");
+        assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
+        // There shouldn't be any more messages on the channel.
+        assert_eq!(rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+
+        // TODO: gracefully shut down the server before the end of all tests;
+        // you don't want to leave the thread hanging around awkwardly.
+    }
 }
