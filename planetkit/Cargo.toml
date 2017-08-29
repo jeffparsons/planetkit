@@ -39,7 +39,7 @@ num-traits = "0.1.36"
 itertools = "0.6.0"
 # At time of writing, only used for tests.
 approx = "0.1.1"
-froggy = "0.3.0"
+froggy = "0.4.0"
 arrayvec = "0.4.0"
 futures = "0.1.14"
 tokio-core = "0.1.8"
