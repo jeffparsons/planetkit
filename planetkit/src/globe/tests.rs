@@ -26,8 +26,8 @@ fn find_spawn_points() {
         .filter(|maybe_pos| maybe_pos.is_some())
         .count();
     // Some should eventually succeed, some should give up.
-    assert!(successes > 15);
-    assert!(successes < TRIALS - 15);
+    assert!(successes > 5);
+    assert!(successes < TRIALS - 5);
 }
 
 #[cfg(feature = "nightly")]
