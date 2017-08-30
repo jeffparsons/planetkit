@@ -67,7 +67,13 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 // Returns bound address.
 //
 // TODO: mechanism to stop server.
-pub fn start_udp_server<G: GameMessage, MaybePort: Into<Option<u16>>>(parent_log: &Logger, recv_system_sender: mpsc::Sender<RecvWireMessage<G>>, port: MaybePort) -> SocketAddr {
+pub fn start_udp_server<G: GameMessage, MaybePort>(
+    parent_log: &Logger,
+    recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    port: MaybePort
+) -> SocketAddr
+    where MaybePort: Into<Option<u16>>
+{
     use std::thread;
     use tokio_core::reactor::Core;
     use futures::Stream;
@@ -75,6 +81,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort: Into<Option<u16>>>(parent_log
     // Don't return to caller until we've bound the socket,
     // or we might miss some messages.
     // (This came up in tests that talk to localhost.)
+    // Also use this to communicate the actual address we bound to.
     let (actual_addr_tx, actual_addr_rx) = std::sync::mpsc::channel::<SocketAddr>();
 
     // Pick a random port if none was specified.
@@ -93,7 +100,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort: Into<Option<u16>>>(parent_log
             let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
             let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            info!(server_log, "UDP server listening"; "addr" => format!("{}", addr));
+            info!(server_log, "UDP server listening"; "addr" => format!("{}", actual_addr));
 
             // Let main thread know we're ready to receive messages.
             actual_addr_tx.send(actual_addr).expect("Receiver hung up");
@@ -131,7 +138,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort: Into<Option<u16>>>(parent_log
         })
         .expect("Failed to spawn server thread");
 
-    // Wait until socket is bound before returning system.
+    // Wait until socket is bound before telling the caller what address we bound.
     actual_addr_rx.recv().expect("Sender hung up")
 }
 
