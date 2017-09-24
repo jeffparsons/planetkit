@@ -50,6 +50,7 @@ impl<G> RecvSystem<G>
 impl<'a, G> specs::System<'a> for RecvSystem<G>
     where G: GameMessage
 {
+    // TODO: require peer list as systemdata.
     type SystemData = (FetchMut<'a, RecvMessageQueue<G>>,);
 
     fn run(&mut self, data: Self::SystemData) {

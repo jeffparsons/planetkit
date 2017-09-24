@@ -7,6 +7,7 @@ use std::mem::size_of;
 
 use bytes::{BytesMut, BigEndian, ByteOrder};
 use futures::{self, Future};
+use tokio_core::reactor::Remote;
 use tokio_core::net::TcpListener;
 use tokio_io::codec::{Encoder, Decoder};
 use slog::Logger;
@@ -91,12 +92,11 @@ impl<G: GameMessage> Decoder for Codec<G> {
 pub fn start_tcp_server<G: GameMessage, MaybePort>(
     parent_log: &Logger,
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    remote: Remote,
     port: MaybePort
 ) -> SocketAddr
     where MaybePort: Into<Option<u16>>
 {
-    use std::thread;
-    use tokio_core::reactor::Core;
     use futures::Stream;
 
     // Don't return to caller until we've bound the socket,
@@ -112,64 +112,64 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     // Run reactor on its own thread so we can always be receiving messages
     // from peers, and buffer them up until we're ready to process them.
     let server_log = parent_log.new(o!());
+    let server_error_log = server_log.new(o!());
+
     let codec_log = parent_log.new(o!());
-    thread::Builder::new()
-        .name("tcp_server".to_string())
-        .spawn(move || {
-            let mut reactor = Core::new().expect("Failed to create reactor for network server");
-            let handle = reactor.handle();
-            let socket = TcpListener::bind(&addr, &handle).expect("Failed to bind server socket");
-            let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            info!(server_log, "TCP server listening"; "addr" => format!("{}", actual_addr));
+    remote.spawn(move |handle| {
+        let socket = TcpListener::bind(&addr, &handle).expect("Failed to bind server socket");
+        let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            // Let main thread know we're ready to receive messages.
-            actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+        info!(server_log, "TCP server listening"; "addr" => format!("{}", actual_addr));
 
-            let f = socket.incoming().for_each(move |(socket, peer_addr)| {
-                use tokio_io::AsyncRead;
-                let codec = Codec::<G>{
-                    peer_addr: peer_addr,
-                    log: codec_log.clone(),
-                    _phantom_game_message: std::marker::PhantomData,
-                };
-                let stream = socket.framed(codec);
-                let peer_recv_system_sender = recv_system_sender.clone();
-                let peer_server_log = server_log.new(o!("peer_addr" => format!("{}", peer_addr)));
-                let peer_server_error_log = server_log.new(o!("peer_addr" => format!("{}", peer_addr)));
-                stream.filter(|recv_wire_message| {
-                    // TODO: log
-                    match recv_wire_message.message {
-                        Result::Err(_) => {
-                            println!("Got a bad message from peer");
-                            false
-                        }
-                        _ => true,
+        // Let main thread know we're ready to receive messages.
+        actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+
+        let f = socket.incoming().for_each(move |(socket, peer_addr)| {
+            use tokio_io::AsyncRead;
+            let codec = Codec::<G>{
+                peer_addr: peer_addr,
+                log: codec_log.clone(),
+                _phantom_game_message: std::marker::PhantomData,
+            };
+            let stream = socket.framed(codec);
+            let peer_recv_system_sender = recv_system_sender.clone();
+            let peer_server_log = server_log.new(o!("peer_addr" => format!("{}", peer_addr)));
+            let peer_server_error_log = server_log.new(o!("peer_addr" => format!("{}", peer_addr)));
+            stream.filter(|recv_wire_message| {
+                // TODO: log
+                match recv_wire_message.message {
+                    Result::Err(_) => {
+                        println!("Got a bad message from peer");
+                        false
                     }
-                })
-                .for_each(move |recv_wire_message| {
-                    // TODO: Only do this at debug level for a while, then demote to trace.
-                    info!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+                    _ => true,
+                }
+            })
+            .for_each(move |recv_wire_message| {
+                // TODO: Only do this at debug level for a while, then demote to trace.
+                info!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
-                    // Send the message to net RecvSystem, to be interpreted and dispatched.
-                    peer_recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
+                // Send the message to net RecvSystem, to be interpreted and dispatched.
+                peer_recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
 
-                    futures::future::ok(())
-                }).or_else(move |error| {
-                    // Got a bad message from the peer (I assume) so the
-                    // connection is going to close.
-                    info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
-                    futures::future::ok(())
-                })
-            });
+                futures::future::ok(())
+            }).or_else(move |error| {
+                // Got a bad message from the peer (I assume) so the
+                // connection is going to close.
+                info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
+                futures::future::ok(())
+            })
+        }).or_else(move |error| {
+            info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
+            futures::future::ok(())
+        });
 
-            // TODO: handle error; log warning, don't crash server.
-            // (The stream will terminate on first error.)
-            // Or maybe do all the handling in `Codec`.
+        // TODO: handle stream disconnection somewhere.
+        // (The stream will terminate on first error.)
 
-            reactor.run(f).expect("Server reactor failed");
-        })
-        .expect("Failed to spawn server thread");
+        f
+    });
 
     // Wait until socket is bound before telling the caller what address we bound.
     actual_addr_rx.recv().expect("Sender hung up")
@@ -180,8 +180,9 @@ mod tests {
     use super::*;
 
     use std;
+    use std::thread;
 
-    use futures::Future;
+    use futures::{self, Future};
     use tokio_core::reactor::Core;
     use tokio_core::net::TcpStream;
     use tokio_io::io::write_all;
@@ -196,12 +197,23 @@ mod tests {
     #[test]
     fn receive_corrupt_message() {
         // Receiving a corrupt message should not kill the reactor.
+
+        // Run reactor on its own thread.
+        let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+        thread::Builder::new()
+            .name("tcp_server".to_string())
+            .spawn(move || {
+                let mut reactor = Core::new().expect("Failed to create reactor for network server");
+                remote_tx.send(reactor.remote()).expect("Receiver hung up");
+                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
+            }).expect("Failed to spawn server thread");
+        let remote = remote_rx.recv().expect("Sender hung up");
+
+        // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-
-        // Spawn network server.
         let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_tcp_server(&log, tx, None);
+        let server_addr = start_tcp_server(&log, tx, remote, None);
 
         // Connect to server.
         let mut reactor = Core::new().expect("Failed to create reactor");
@@ -242,12 +254,23 @@ mod tests {
     fn receive_two_messages_in_one_segment() {
         // Receiving two message in one segment (probably) should result
         // in both being happily parsed and forwarded to game message channel.
+
+        // Run reactor on its own thread.
+        let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+        thread::Builder::new()
+            .name("tcp_server".to_string())
+            .spawn(move || {
+                let mut reactor = Core::new().expect("Failed to create reactor for network server");
+                remote_tx.send(reactor.remote()).expect("Receiver hung up");
+                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
+            }).expect("Failed to spawn server thread");
+        let remote = remote_rx.recv().expect("Sender hung up");
+
+        // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-
-        // Spawn network server.
         let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_tcp_server(&log, tx, None);
+        let server_addr = start_tcp_server(&log, tx, remote, None);
 
         // Connect to server.
         let mut reactor = Core::new().expect("Failed to create reactor");

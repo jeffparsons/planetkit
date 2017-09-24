@@ -1,8 +1,10 @@
 use std;
 use std::time::Duration;
+use std::sync::mpsc;
+use std::thread;
 
-use futures::Future;
-use tokio_core::reactor::{Core, Timeout};
+use futures::{self, Future};
+use tokio_core::reactor::{Core, Remote, Timeout};
 use tokio_core::net::UdpSocket;
 use slog;
 use specs;
@@ -20,14 +22,24 @@ impl GameMessage for TestMessage{}
 #[test]
 fn receive_corrupt_message() {
     // Receiving a corrupt message should not kill the reactor.
-    let drain = slog::Discard;
-    let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
 
-    let mut world = specs::World::new();
+    // Run reactor on its own thread.
+    let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+    thread::Builder::new()
+        .name("tcp_server".to_string())
+        .spawn(move || {
+            let mut reactor = Core::new().expect("Failed to create reactor for network server");
+            remote_tx.send(reactor.remote()).expect("Receiver hung up");
+            reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
+        }).expect("Failed to spawn server thread");
+    let remote = remote_rx.recv().expect("Sender hung up");
 
     // Create receiver system and spawn network server.
+    let drain = slog::Discard;
+    let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
+    let mut world = specs::World::new();
     let recv_system = RecvSystem::<TestMessage>::new(&log, &mut world);
-    let server_addr = start_udp_server(&log, recv_system.sender().clone(), None);
+    let server_addr = start_udp_server(&log, recv_system.sender().clone(), remote, None);
 
     // Bind socket for sending message.
     let addr = "0.0.0.0:0".to_string();

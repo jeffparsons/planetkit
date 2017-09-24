@@ -5,6 +5,7 @@ use std::net::SocketAddr;
 use std::sync::mpsc;
 
 use futures;
+use tokio_core::reactor::Remote;
 use tokio_core::net::{UdpSocket, UdpCodec};
 use slog::Logger;
 use serde_json;
@@ -70,13 +71,12 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 pub fn start_udp_server<G: GameMessage, MaybePort>(
     parent_log: &Logger,
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    remote: Remote,
     port: MaybePort
 ) -> SocketAddr
     where MaybePort: Into<Option<u16>>
 {
-    use std::thread;
-    use tokio_core::reactor::Core;
-    use futures::Stream;
+    use futures::{Future, Stream};
 
     // Don't return to caller until we've bound the socket,
     // or we might miss some messages.
@@ -91,52 +91,52 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     // Run reactor on its own thread so we can always be receiving messages
     // from peers, and buffer them up until we're ready to process them.
     let server_log = parent_log.new(o!());
+    let server_error_log = server_log.new(o!());
     let codec_log = parent_log.new(o!());
-    thread::Builder::new()
-        .name("udp_server".to_string())
-        .spawn(move || {
-            let mut reactor = Core::new().expect("Failed to create reactor for network server");
-            let handle = reactor.handle();
-            let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
-            let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            info!(server_log, "UDP server listening"; "addr" => format!("{}", actual_addr));
+    remote.spawn(move |handle| {
+        let socket = UdpSocket::bind(&addr, &handle).expect("Failed to bind server socket");
+        let actual_addr = socket.local_addr().expect("Socket isn't bound");
 
-            // Let main thread know we're ready to receive messages.
-            actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+        info!(server_log, "UDP server listening"; "addr" => format!("{}", actual_addr));
 
-            let codec = Codec::<G>{
-                log: codec_log,
-                _phantom_game_message: std::marker::PhantomData,
-            };
-            let stream = socket.framed(codec);
-            let f = stream
-                .filter(|recv_wire_message| {
-                    // TODO: log
-                    match recv_wire_message.message {
-                        Result::Err(_) => {
-                            println!("Got a bad message from peer");
-                            false
-                        }
-                        _ => true,
+        // Let main thread know we're ready to receive messages.
+        actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+
+        let codec = Codec::<G>{
+            log: codec_log,
+            _phantom_game_message: std::marker::PhantomData,
+        };
+        let stream = socket.framed(codec);
+        let f = stream
+            .filter(|recv_wire_message| {
+                // TODO: log
+                match recv_wire_message.message {
+                    Result::Err(_) => {
+                        println!("Got a bad message from peer");
+                        false
                     }
-                })
-                .for_each(move |recv_wire_message| {
-                    // TODO: Only do this at debug level for a while, then demote to trace.
-                    info!(server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+                    _ => true,
+                }
+            })
+            .for_each(move |recv_wire_message| {
+                // TODO: Only do this at debug level for a while, then demote to trace.
+                info!(server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
-                    // Send the message to net RecvSystem, to be interpreted and dispatched.
-                    recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
+                // Send the message to net RecvSystem, to be interpreted and dispatched.
+                recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
 
-                    futures::future::ok(())
-                });
+                futures::future::ok(())
+            }).or_else(move |error| {
+                info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
+                futures::future::ok(())
+            });
             // TODO: handle error; log warning, don't crash server.
             // (The stream will terminate on first error.)
             // Or maybe do all the handling in `Codec`.
 
-            reactor.run(f).expect("Server reactor failed");
-        })
-        .expect("Failed to spawn server thread");
+        f
+    });
 
     // Wait until socket is bound before telling the caller what address we bound.
     actual_addr_rx.recv().expect("Sender hung up")
@@ -147,6 +147,7 @@ mod tests {
     use super::*;
 
     use std;
+    use std::thread;
     use std::time::Duration;
 
     use futures::Future;
@@ -162,12 +163,23 @@ mod tests {
     #[test]
     fn receive_corrupt_message() {
         // Receiving a corrupt message should not kill the reactor.
+
+        // Run reactor on its own thread.
+        let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+        thread::Builder::new()
+            .name("tcp_server".to_string())
+            .spawn(move || {
+                let mut reactor = Core::new().expect("Failed to create reactor for network server");
+                remote_tx.send(reactor.remote()).expect("Receiver hung up");
+                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
+            }).expect("Failed to spawn server thread");
+        let remote = remote_rx.recv().expect("Sender hung up");
+
+        // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-
-        // Spawn network server.
         let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_udp_server(&log, tx, None);
+        let server_addr = start_udp_server(&log, tx, remote, None);
 
         // Bind socket for sending message.
         let addr = "0.0.0.0:0".to_string();
