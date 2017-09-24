@@ -1,4 +1,5 @@
 mod recv_system;
+mod send_system;
 mod udp_server;
 mod tcp_server;
 
@@ -13,6 +14,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 pub use self::recv_system::RecvSystem;
+pub use self::send_system::SendSystem;
 pub use self::udp_server::start_udp_server;
 pub use self::tcp_server::start_tcp_server;
 
@@ -47,16 +49,16 @@ pub enum WireMessage<G> {
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct SendWireMessage<G> {
-    dest: SocketAddr,
-    message: WireMessage<G>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct RecvWireMessage<G> {
     src: SocketAddr,
     // TODO: error type for mangled message
     message: Result<WireMessage<G>, ()>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct SendWireMessage<G> {
+    dest: SocketAddr,
+    message: WireMessage<G>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -65,8 +67,20 @@ pub struct RecvMessage<G> {
     game_message: G,
 }
 
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct SendMessage<G> {
+    // TODO: dest peer id
+    game_message: G,
+}
+
 /// `World`-global resource for game messages waiting to be dispatched
 /// to game-specific systems.
 pub struct RecvMessageQueue<G> {
     pub queue: VecDeque<RecvMessage<G>>,
+}
+
+/// `World`-global resource for game messages waiting to be sent
+/// to peers.
+pub struct SendMessageQueue<G> {
+    pub queue: VecDeque<SendMessage<G>>,
 }

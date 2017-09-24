@@ -26,7 +26,6 @@ impl<G> RecvSystem<G>
             let recv_message_queue = RecvMessageQueue {
                 queue: VecDeque::<RecvMessage<G>>::new()
             };
-            // RAGH, VecDeque is not Sync. Why does it have to be sync? :(
             world.add_resource(recv_message_queue);
         }
 

@@ -4,7 +4,7 @@ use std::io;
 use std::net::SocketAddr;
 use std::sync::mpsc;
 
-use futures;
+use futures::{self, sync};
 use tokio_core::reactor::Remote;
 use tokio_core::net::{UdpSocket, UdpCodec};
 use slog::Logger;
@@ -28,13 +28,6 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
     type Out = SendWireMessage<G>;
 
     fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<RecvWireMessage<G>> {
-        // TODO: identify the peer from a list of connected peers.
-        // Or... is that the role of the server logic below? Probably the server
-        // logic below... because it allows us to store less state up here.
-        // Which means that RecvWireMessage contains source address. That sounds right.
-
-        // Now that we have both TCP and UDP servers we should try to keep as much as
-        // possible off in common code somewhere.
         serde_json::from_slice::<WireMessage<G>>(buf)
         .map(|message| {
             RecvWireMessage {
@@ -53,8 +46,9 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
         })
     }
 
-    fn encode(&mut self, _message: SendWireMessage<G>, _buf: &mut Vec<u8>) -> SocketAddr {
-        panic!("Not implemented");
+    fn encode(&mut self, message: SendWireMessage<G>, buf: &mut Vec<u8>) -> SocketAddr {
+        serde_json::to_writer(buf, &message.message).expect("Error encoding message");
+        message.dest
     }
 }
 
@@ -71,12 +65,13 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 pub fn start_udp_server<G: GameMessage, MaybePort>(
     parent_log: &Logger,
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    send_system_receiver: sync::mpsc::Receiver<SendWireMessage<G>>,
     remote: Remote,
     port: MaybePort
 ) -> SocketAddr
     where MaybePort: Into<Option<u16>>
 {
-    use futures::{Future, Stream};
+    use futures::{Future, Stream, Sink};
 
     // Don't return to caller until we've bound the socket,
     // or we might miss some messages.
@@ -92,6 +87,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     // from peers, and buffer them up until we're ready to process them.
     let server_log = parent_log.new(o!());
     let server_error_log = server_log.new(o!());
+    let sink_error_log = server_log.new(o!());
     let codec_log = parent_log.new(o!());
 
     remote.spawn(move |handle| {
@@ -107,8 +103,19 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
             log: codec_log,
             _phantom_game_message: std::marker::PhantomData,
         };
-        let stream = socket.framed(codec);
-        let f = stream
+        let (sink, stream) = socket.framed(codec).split();
+
+        // Sender future
+        let sink = sink.sink_map_err(move |err| {
+            error!(sink_error_log, "Unexpected error in sending to sink"; "err" => format!("{}", err));
+            ()
+        });
+        // Throw away the source and sink when we're done; what else do we want with them? :)
+        let tx_f = sink.send_all(send_system_receiver).map(|_| ());
+        handle.spawn(tx_f);
+
+        // Receiver future
+        let rx_f = stream
             .filter(|recv_wire_message| {
                 // TODO: log
                 match recv_wire_message.message {
@@ -131,11 +138,8 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
                 info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
                 futures::future::ok(())
             });
-            // TODO: handle error; log warning, don't crash server.
-            // (The stream will terminate on first error.)
-            // Or maybe do all the handling in `Codec`.
 
-        f
+        rx_f
     });
 
     // Wait until socket is bound before telling the caller what address we bound.
@@ -178,8 +182,11 @@ mod tests {
         // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-        let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_udp_server(&log, tx, remote, None);
+        let (recv_tx, recv_rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
+        // Tiny buffer is fine for test. Someone else can figure out how
+        // big is reasonable in the real world.
+        let (_send_tx, send_rx) = sync::mpsc::channel::<SendWireMessage<TestMessage>>(10);
+        let server_addr = start_udp_server(&log, recv_tx, send_rx, remote, None);
 
         // Bind socket for sending message.
         let addr = "0.0.0.0:0".to_string();
@@ -208,10 +215,10 @@ mod tests {
 
         // Take a look at what was received. Only one message should have made
         // it through to the RecvSystem channel.
-        let recv_wire_message = rx.recv().expect("Should have been something on the channel");
+        let recv_wire_message = recv_rx.recv().expect("Should have been something on the channel");
         assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
         // There shouldn't be any more messages on the channel.
-        assert_eq!(rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+        assert_eq!(recv_rx.try_recv(), Err(mpsc::TryRecvError::Empty));
 
         // TODO: gracefully shut down the server before the end of all tests;
         // you don't want to leave the thread hanging around awkwardly.
