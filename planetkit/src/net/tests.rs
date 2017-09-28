@@ -41,10 +41,12 @@ fn all_the_way_from_send_system_to_recv_system() {
     let mut world = specs::World::new();
     let recv_system = RecvSystem::<TestMessage>::new(&log, &mut world);
     let (mut send_system, send_rx) = SendSystem::<TestMessage>::new(&log, &mut world);
-    let server_addr = start_udp_server(&log, recv_system.sender().clone(), send_rx, remote, None);
+    let server_port = start_udp_server(&log, recv_system.sender().clone(), send_rx, remote, None);
     // TEMP/TODO: track actual peer addresses
     // For now, just send it to ourself.
-    send_system.set_one_true_peer_addr(server_addr);
+    let connect_addr = format!("127.0.0.1:{}", server_port);
+    let connect_addr: SocketAddr = connect_addr.parse().unwrap();
+    send_system.set_one_true_peer_addr(connect_addr);
 
     // Put a message on the SendMessageQueue.
     // NLL SVP.

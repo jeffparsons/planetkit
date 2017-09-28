@@ -57,9 +57,10 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 // received per second, and the `RecvSystem` buffers up messages for a while before
 // getting to them.
 //
+// Listens on all network interfaces.
 // Picks a random port if none was specified.
 //
-// Returns bound address.
+// Returns the actual port that was bound.
 //
 // TODO: mechanism to stop server.
 pub fn start_udp_server<G: GameMessage, MaybePort>(
@@ -68,7 +69,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     send_system_receiver: sync::mpsc::Receiver<SendWireMessage<G>>,
     remote: Remote,
     port: MaybePort
-) -> SocketAddr
+) -> u16
     where MaybePort: Into<Option<u16>>
 {
     use futures::{Future, Stream, Sink};
@@ -77,7 +78,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     // or we might miss some messages.
     // (This came up in tests that talk to localhost.)
     // Also use this to communicate the actual address we bound to.
-    let (actual_addr_tx, actual_addr_rx) = std::sync::mpsc::channel::<SocketAddr>();
+    let (actual_port_tx, actual_port_rx) = std::sync::mpsc::channel::<u16>();
 
     // Pick a random port if none was specified.
     let addr = format!("0.0.0.0:{}", port.into().unwrap_or(0));
@@ -97,7 +98,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
         info!(server_log, "UDP server listening"; "addr" => format!("{}", actual_addr));
 
         // Let main thread know we're ready to receive messages.
-        actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+        actual_port_tx.send(actual_addr.port()).expect("Receiver hung up");
 
         let codec = Codec::<G>{
             log: codec_log,
@@ -143,7 +144,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     });
 
     // Wait until socket is bound before telling the caller what address we bound.
-    actual_addr_rx.recv().expect("Sender hung up")
+    actual_port_rx.recv().expect("Sender hung up")
 }
 
 #[cfg(test)]
@@ -186,7 +187,7 @@ mod tests {
         // Tiny buffer is fine for test. Someone else can figure out how
         // big is reasonable in the real world.
         let (_send_tx, send_rx) = sync::mpsc::channel::<SendWireMessage<TestMessage>>(10);
-        let server_addr = start_udp_server(&log, recv_tx, send_rx, remote, None);
+        let server_port = start_udp_server(&log, recv_tx, send_rx, remote, None);
 
         // Bind socket for sending message.
         let addr = "0.0.0.0:0".to_string();
@@ -197,13 +198,15 @@ mod tests {
 
         // Send a dodgy message.
         // Oops, it's lowercase; it won't match any message type!
-        let f = socket.send_dgram(b"\"hello\"", server_addr).and_then(
+        let dest_addr = format!("127.0.0.1:{}", server_port);
+        let dest_addr: SocketAddr = dest_addr.parse().unwrap();
+        let f = socket.send_dgram(b"\"hello\"", dest_addr).and_then(
             |(socket2, _buf)| {
                 // Wait a bit; delivery order isn't guaranteed,
                 // even though it will almost certainly be fine on localhost.
                 Timeout::new(Duration::from_millis(10), &handle).expect("Failed to set timeout").and_then(
                     move |_| {
-                        socket2.send_dgram(b"{\"Game\":{}}", server_addr)
+                        socket2.send_dgram(b"{\"Game\":{}}", dest_addr)
                     }
                 )
             },

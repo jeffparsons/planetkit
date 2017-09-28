@@ -84,9 +84,10 @@ impl<G: GameMessage> Decoder for Codec<G> {
 // received per second, and the `RecvSystem` buffers up messages for a while before
 // getting to them.
 //
+// Listens on all network interfaces.
 // Picks a random port if none was specified.
 //
-// Returns bound address.
+// Returns the actual port that was bound.
 //
 // TODO: mechanism to stop server.
 pub fn start_tcp_server<G: GameMessage, MaybePort>(
@@ -94,7 +95,7 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
     remote: Remote,
     port: MaybePort
-) -> SocketAddr
+) -> u16
     where MaybePort: Into<Option<u16>>
 {
     use futures::Stream;
@@ -103,7 +104,7 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     // or we might miss some messages.
     // (This came up in tests that talk to localhost.)
     // Also use this to communicate the actual address we bound to.
-    let (actual_addr_tx, actual_addr_rx) = std::sync::mpsc::channel::<SocketAddr>();
+    let (actual_port_tx, actual_port_rx) = std::sync::mpsc::channel::<u16>();
 
     // Pick a random port if none was specified.
     let addr = format!("0.0.0.0:{}", port.into().unwrap_or(0));
@@ -123,7 +124,7 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
         info!(server_log, "TCP server listening"; "addr" => format!("{}", actual_addr));
 
         // Let main thread know we're ready to receive messages.
-        actual_addr_tx.send(actual_addr).expect("Receiver hung up");
+        actual_port_tx.send(actual_addr.port()).expect("Receiver hung up");
 
         let f = socket.incoming().for_each(move |(socket, peer_addr)| {
             use tokio_io::AsyncRead;
@@ -171,8 +172,8 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
         f
     });
 
-    // Wait until socket is bound before telling the caller what address we bound.
-    actual_addr_rx.recv().expect("Sender hung up")
+    // Wait until socket is bound before telling the caller what port we bound.
+    actual_port_rx.recv().expect("Sender hung up")
 }
 
 #[cfg(test)]
@@ -213,12 +214,15 @@ mod tests {
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
         let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_tcp_server(&log, tx, remote, None);
+        let server_port = start_tcp_server(&log, tx, remote, None);
 
         // Connect to server.
+        let connect_addr = format!("127.0.0.1:{}", server_port);
+        let connect_addr: SocketAddr = connect_addr.parse().unwrap();
+
         let mut reactor = Core::new().expect("Failed to create reactor");
         let handle = reactor.handle();
-        let socket_future = TcpStream::connect(&server_addr, &handle);
+        let socket_future = TcpStream::connect(&connect_addr, &handle);
 
         // Send a dodgy message.
         // Oops, it's lowercase; it won't match any message type!
@@ -270,12 +274,14 @@ mod tests {
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
         let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_addr = start_tcp_server(&log, tx, remote, None);
+        let server_port = start_tcp_server(&log, tx, remote, None);
 
         // Connect to server.
+        let connect_addr = format!("127.0.0.1:{}", server_port);
+        let connect_addr: SocketAddr = connect_addr.parse().unwrap();
         let mut reactor = Core::new().expect("Failed to create reactor");
         let handle = reactor.handle();
-        let socket_future = TcpStream::connect(&server_addr, &handle);
+        let socket_future = TcpStream::connect(&connect_addr, &handle);
 
         // Send to great messages together!
         let mut buf = BytesMut::with_capacity(1000);
