@@ -40,8 +40,8 @@ fn all_the_way_from_send_system_to_recv_system() {
     let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
     let mut world = specs::World::new();
     let recv_system = RecvSystem::<TestMessage>::new(&log, &mut world);
-    let (mut send_system, send_rx) = SendSystem::<TestMessage>::new(&log, &mut world);
-    let server_port = start_udp_server(&log, recv_system.sender().clone(), send_rx, remote, None);
+    let (mut send_system, udp_send_rx) = SendSystem::<TestMessage>::new(&log, &mut world);
+    let server_port = start_udp_server(&log, recv_system.sender().clone(), udp_send_rx, remote, None);
     // TEMP/TODO: track actual peer addresses
     // For now, just send it to ourself.
     let connect_addr = format!("127.0.0.1:{}", server_port);

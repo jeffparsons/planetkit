@@ -66,7 +66,7 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 pub fn start_udp_server<G: GameMessage, MaybePort>(
     parent_log: &Logger,
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
-    send_system_receiver: sync::mpsc::Receiver<SendWireMessage<G>>,
+    send_system_udp_receiver: sync::mpsc::Receiver<SendWireMessage<G>>,
     remote: Remote,
     port: MaybePort
 ) -> u16
@@ -112,7 +112,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
             ()
         });
         // Throw away the source and sink when we're done; what else do we want with them? :)
-        let tx_f = sink.send_all(send_system_receiver).map(|_| ());
+        let tx_f = sink.send_all(send_system_udp_receiver).map(|_| ());
         handle.spawn(tx_f);
 
         // Receiver future

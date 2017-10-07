@@ -2,18 +2,23 @@ use std;
 use std::result::Result;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::mpsc;
 use std::mem::size_of;
 
 use bytes::{BytesMut, BigEndian, ByteOrder};
 use futures::{self, Future};
-use tokio_core::reactor::Remote;
+use tokio_core::reactor::{Remote, Handle};
 use tokio_core::net::{TcpListener, TcpStream};
 use tokio_io::codec::{Encoder, Decoder};
 use slog::Logger;
 use serde_json;
 
-use super::{GameMessage, WireMessage, SendWireMessage, RecvWireMessage};
+use super::{
+    GameMessage,
+    WireMessage,
+    SendWireMessage,
+    RecvWireMessage,
+    NewPeer,
+};
 
 type MessageLengthPrefix = u16;
 
@@ -92,7 +97,12 @@ impl<G: GameMessage> Decoder for Codec<G> {
 // TODO: mechanism to stop server.
 pub fn start_tcp_server<G: GameMessage, MaybePort>(
     parent_log: &Logger,
-    recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    recv_system_sender: std::sync::mpsc::Sender<RecvWireMessage<G>>,
+    // Used to establish new peer connections,
+    // and register the sender ends of channels
+    // to send messages to those connections.
+    send_system_new_peer_sender:
+        std::sync::mpsc::Sender<NewPeer<G>>,
     remote: Remote,
     port: MaybePort
 ) -> u16
@@ -124,12 +134,15 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
         // Let main thread know we're ready to receive messages.
         actual_port_tx.send(actual_addr.port()).expect("Receiver hung up");
 
+        let cloned_handle = handle.clone();
         let f = socket.incoming().for_each(move |(socket, peer_addr)| {
             handle_tcp_stream(
+                &cloned_handle,
                 socket,
                 peer_addr,
                 &server_log,
-                recv_system_sender.clone()
+                recv_system_sender.clone(),
+                send_system_new_peer_sender.clone(),
             )
         }).or_else(move |error| {
             info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
@@ -150,12 +163,18 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
 // once a TCP stream (as either client or server) has been
 // established.
 fn handle_tcp_stream<G: GameMessage>(
+    handle: &Handle,
     socket: TcpStream,
     peer_addr: SocketAddr,
     parent_log: &Logger,
-    recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
+    recv_system_sender: std::sync::mpsc::Sender<RecvWireMessage<G>>,
+    // Used to establish new peer connections,
+    // and register the sender ends of channels
+    // to send messages to those connections.
+    send_system_new_peer_sender: std::sync::mpsc::Sender<NewPeer<G>>,
 ) -> Box<Future<Item=(), Error=std::io::Error>> {
     use futures::Stream;
+    use futures::Sink;
     use tokio_io::AsyncRead;
 
     let codec = Codec::<G>{
@@ -163,7 +182,30 @@ fn handle_tcp_stream<G: GameMessage>(
         log: parent_log.new(o!()),
         _phantom_game_message: std::marker::PhantomData,
     };
-    let stream = socket.framed(codec);
+    let (sink, stream) = socket.framed(codec).split();
+
+    // Sender future
+    let sink_error_log = parent_log.new(o!("peer_addr" => format!("{}", peer_addr)));
+    let sink = sink.sink_map_err(move |err| {
+        error!(sink_error_log, "Unexpected error in sending to sink"; "err" => format!("{}", err));
+        ()
+    });
+    // Create a channel for the SendSystem to
+    // send messages over this TCP connection,
+    // and use it to notify the SendSystem that
+    // we've connected with a new peer.
+    // TODO: how big is reasonable here? Unbounded? Probably...
+    let (tcp_tx, tcp_rx) = futures::sync::mpsc::channel::<SendWireMessage<G>>(1000);
+    let new_peer = NewPeer {
+        tcp_sender: tcp_tx,
+        peer_addr: peer_addr,
+    };
+    send_system_new_peer_sender.send(new_peer).expect("Receiver hung up?");
+    // Throw away the source and sink when we're done; what else do we want with them? :)
+    let tx_f = sink.send_all(tcp_rx).map(|_| ());
+    handle.spawn(tx_f);
+
+    // Receiver future
     let peer_server_log = parent_log.new(o!("peer_addr" => format!("{}", peer_addr)));
     let peer_server_error_log = peer_server_log.clone();
     let f = stream.filter(|recv_wire_message| {
@@ -217,7 +259,7 @@ mod tests {
         // Receiving a corrupt message should not kill the reactor.
 
         // Run reactor on its own thread.
-        let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+        let (remote_tx, remote_rx) = std::sync::mpsc::channel::<Remote>();
         thread::Builder::new()
             .name("tcp_server".to_string())
             .spawn(move || {
@@ -230,8 +272,9 @@ mod tests {
         // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-        let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_port = start_tcp_server(&log, tx, remote, None);
+        let (tx, rx) = std::sync::mpsc::channel::<RecvWireMessage<TestMessage>>();
+        let (new_peer_tx, _new_peer_rx) = std::sync::mpsc::channel::<NewPeer<TestMessage>>();
+        let server_port = start_tcp_server(&log, tx, new_peer_tx, remote, None);
 
         // Connect to server.
         let connect_addr = format!("127.0.0.1:{}", server_port);
@@ -265,7 +308,7 @@ mod tests {
 
         // Take a look at what was received. The bad message should have terminated the connection,
         // so nothing should have made it through to the game message channel.
-        assert_eq!(rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+        assert_eq!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty));
 
         // TODO: gracefully shut down the server before the end of all tests;
         // you don't want to leave the thread hanging around awkwardly.
@@ -277,7 +320,7 @@ mod tests {
         // in both being happily parsed and forwarded to game message channel.
 
         // Run reactor on its own thread.
-        let (remote_tx, remote_rx) = mpsc::channel::<Remote>();
+        let (remote_tx, remote_rx) = std::sync::mpsc::channel::<Remote>();
         thread::Builder::new()
             .name("tcp_server".to_string())
             .spawn(move || {
@@ -290,8 +333,9 @@ mod tests {
         // Spawn network server on other thread.
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-        let (tx, rx) = mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let server_port = start_tcp_server(&log, tx, remote, None);
+        let (tx, rx) = std::sync::mpsc::channel::<RecvWireMessage<TestMessage>>();
+        let (new_peer_tx, _new_peer_rx) = std::sync::mpsc::channel::<NewPeer<TestMessage>>();
+        let server_port = start_tcp_server(&log, tx, new_peer_tx, remote, None);
 
         // Connect to server.
         let connect_addr = format!("127.0.0.1:{}", server_port);
@@ -327,7 +371,7 @@ mod tests {
         let recv_wire_message = rx.recv_timeout(blink).expect("Should have found our second message on the channel");
         assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
         // There shouldn't be any more messages on the channel.
-        assert_eq!(rx.try_recv(), Err(mpsc::TryRecvError::Empty));
+        assert_eq!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty));
 
         // TODO: gracefully shut down the server before the end of all tests;
         // you don't want to leave the thread hanging around awkwardly.

@@ -12,6 +12,7 @@ use std::collections::vec_deque::VecDeque;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use futures;
 
 pub use self::recv_system::RecvSystem;
 pub use self::send_system::SendSystem;
@@ -83,4 +84,9 @@ pub struct RecvMessageQueue<G> {
 /// to peers.
 pub struct SendMessageQueue<G> {
     pub queue: VecDeque<SendMessage<G>>,
+}
+
+pub struct NewPeer<G> {
+    pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
+    pub peer_addr: SocketAddr,
 }
