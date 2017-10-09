@@ -86,6 +86,30 @@ pub struct SendMessageQueue<G> {
     pub queue: VecDeque<SendMessage<G>>,
 }
 
+/// Local identifier for a network peer.
+///
+/// This identifier is used to label network peers
+/// within this host; i.e. it should never be communicated
+/// to a peer.
+///
+/// Note that this is not the same thing as a player ID.
+/// This is used in deciding what network peer to send
+/// messages to, and which peers have authority over what
+/// parts of the world. We might receive messages regarding
+/// multiple players from one peer, and need to decide
+/// whether that peer has authority to make assertions about
+/// those players.
+pub struct PeerId(u16);
+
+/// A new network peer.
+///
+/// Might be a server we connected to,
+/// or a client that connected to us.
+/// Contains the peer's address, and a channel used
+/// to send it message over TCP.
+///
+/// This is used to communicate these essentials
+/// to the `SendSystem` when a new connection is established.
 pub struct NewPeer<G> {
     pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
     pub peer_addr: SocketAddr,
