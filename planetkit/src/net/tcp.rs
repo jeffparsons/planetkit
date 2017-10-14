@@ -15,7 +15,6 @@ use serde_json;
 use super::{
     GameMessage,
     WireMessage,
-    SendWireMessage,
     RecvWireMessage,
     NewPeer,
 };
@@ -29,11 +28,31 @@ struct Codec<G> {
 }
 
 impl<G: GameMessage> Encoder for Codec<G> {
-    type Item = SendWireMessage<G>;
+    type Item = WireMessage<G>;
     type Error = io::Error;
 
-    fn encode(&mut self, _message: SendWireMessage<G>, _buf: &mut BytesMut) -> Result<(), io::Error> {
-        panic!("Not implemented");
+    fn encode(&mut self, message: WireMessage<G>, buf: &mut BytesMut) -> Result<(), io::Error> {
+        use bytes::BufMut;
+
+        // Reserve space for the length prefix; we'll only know how long
+        // the serialized form is after we write it out.
+        let length_header_index = buf.len();
+        buf.put_u16::<BigEndian>(0);
+
+        // Write the message itself.
+        // NLL SVP.
+        {
+            let reference = buf.by_ref();
+            let writer = reference.writer();
+            serde_json::to_writer(writer, &message).expect("Error encoding message");
+        }
+
+        // Now that we know how much space the message itself took,
+        // go back and fill in the actual in the header.
+        let message_length = (buf.len() - length_header_index - size_of::<MessageLengthPrefix>()) as u16;
+        BigEndian::write_u16(&mut buf[length_header_index..], message_length);
+
+        Ok(())
     }
 }
 
@@ -242,7 +261,7 @@ fn handle_tcp_stream<G: GameMessage>(
     // and use it to notify the SendSystem that
     // we've connected with a new peer.
     // TODO: how big is reasonable here? Unbounded? Probably...
-    let (tcp_tx, tcp_rx) = futures::sync::mpsc::channel::<SendWireMessage<G>>(1000);
+    let (tcp_tx, tcp_rx) = futures::sync::mpsc::channel::<WireMessage<G>>(1000);
     let new_peer = NewPeer {
         tcp_sender: tcp_tx,
         socket_addr: peer_addr,

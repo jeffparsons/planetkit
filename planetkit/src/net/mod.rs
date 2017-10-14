@@ -71,10 +71,16 @@ pub struct RecvMessage<G> {
     game_message: G,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub enum Transport {
+    UDP,
+    TCP,
+}
+
 pub struct SendMessage<G> {
     dest_peer_id: PeerId,
     game_message: G,
+    /// The network transport that should be used to send this message.
+    transport: Transport,
 }
 
 /// `World`-global resource for game messages waiting to be dispatched
@@ -115,13 +121,13 @@ pub struct PeerId(u16);
 /// This is used to communicate these essentials
 /// to the `SendSystem` when a new connection is established.
 pub struct NewPeer<G> {
-    pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
+    pub tcp_sender: futures::sync::mpsc::Sender<WireMessage<G>>,
     pub socket_addr: SocketAddr,
 }
 
 pub struct NetworkPeer<G> {
     pub id: PeerId,
-    pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
+    pub tcp_sender: futures::sync::mpsc::Sender<WireMessage<G>>,
     pub socket_addr: SocketAddr,
     // TODO: connection state, etc.
 }

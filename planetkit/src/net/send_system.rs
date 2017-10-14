@@ -18,6 +18,7 @@ use super::{
     NetworkPeers,
     NetworkPeer,
     PeerId,
+    Transport,
 };
 
 pub struct SendSystem<G: GameMessage>{
@@ -137,22 +138,36 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
 
         // Send everything in send queue to UDP/TCP server.
         while let Some(message) = send_message_queue.queue.pop_front() {
-            // TODO: decide whether it should go over TCP or UDP
+            // Decide whether the message should go over TCP or UDP.
+            match message.transport {
+                Transport::UDP => {
+                    // Look up the destination socket address for this peer.
+                    // (Peer ID 0 refers to self, and isn't in the vec.)
+                    let dest_socket_addr = peers[message.dest_peer_id.0 as usize - 1].socket_addr;
 
-            // Look up the destination socket address for this peer.
-            // Peer ID 0 refers to self, and isn't in the vec.
-            let dest_socket_addr = peers[message.dest_peer_id.0 as usize - 1].socket_addr;
+                    // Re-wrap the message for sending.
+                    let send_wire_message = SendWireMessage {
+                        dest: dest_socket_addr,
+                        message: WireMessage::Game(message.game_message),
+                    };
 
-            // Re-wrap the message for sending.
-            let send_wire_message = SendWireMessage {
-                dest: dest_socket_addr,
-                message: WireMessage::Game(message.game_message),
-            };
+                    self.send_udp_wire_message_tx.try_send(send_wire_message).unwrap_or_else(|err| {
+                        error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
+                        ()
+                    });
+                },
+                Transport::TCP => {
+                    // Look up TCP sender channel for this peer.
+                    // (Peer ID 0 refers to self, and isn't in the vec.)
+                    let sender = &mut peers[message.dest_peer_id.0 as usize - 1].tcp_sender;
 
-            self.send_udp_wire_message_tx.try_send(send_wire_message).unwrap_or_else(|err| {
-                error!(self.log, "Could send message to network server; was the buffer full?"; "err" => format!("{:?}", err));
-                ()
-            });
+                    let wire_message = WireMessage::Game(message.game_message);
+                    sender.try_send(wire_message).unwrap_or_else(|err| {
+                        error!(self.log, "Could send message to TCP client; was the buffer full?"; "err" => format!("{:?}", err));
+                        ()
+                    });
+                }
+            }
         }
     }
 }
