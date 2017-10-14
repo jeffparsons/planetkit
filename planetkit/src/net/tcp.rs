@@ -159,6 +159,53 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     actual_port_rx.recv().expect("Sender hung up")
 }
 
+pub fn connect_to_server<G: GameMessage>(
+    parent_log: &Logger,
+    recv_system_sender: std::sync::mpsc::Sender<RecvWireMessage<G>>,
+    // Used to establish new peer connections,
+    // and register the sender ends of channels
+    // to send messages to those connections.
+    send_system_new_peer_sender:
+        std::sync::mpsc::Sender<NewPeer<G>>,
+    remote: Remote,
+    addr: SocketAddr,
+) {
+    // Don't return until we've actually established a connection,
+    // or we might miss some messages.
+    let (connection_established_tx, connection_established_rx) = std::sync::mpsc::channel::<()>();
+
+    // Run reactor on its own thread so we can always be receiving messages
+    // from peers, and buffer them up until we're ready to process them.
+    let client_log = parent_log.new(o!());
+    let client_error_log = client_log.new(o!());
+
+    remote.spawn(move |handle| {
+        let socket_future = TcpStream::connect(&addr, &handle);
+
+        let cloned_handle = handle.clone();
+        let f = socket_future.and_then(move |socket| {
+            connection_established_tx.send(()).expect("Receiver hung up?");
+            handle_tcp_stream(
+                &cloned_handle,
+                socket,
+                addr,
+                &client_log,
+                recv_system_sender,
+                send_system_new_peer_sender,
+            )
+        }).or_else(move |error| {
+            // TODO: figure out more specific error; decide where each is handled.
+            info!(client_error_log, "Something broke in connecting to server, or handling connection"; "error" => format!("{}", error));
+            futures::future::ok(())
+        });
+
+        f
+    });
+
+    // Wait until connection is established.
+    connection_established_rx.recv().expect("Sender hung up")
+}
+
 // Handle sending/receiving and encoding/decoding messages
 // once a TCP stream (as either client or server) has been
 // established.
@@ -198,7 +245,7 @@ fn handle_tcp_stream<G: GameMessage>(
     let (tcp_tx, tcp_rx) = futures::sync::mpsc::channel::<SendWireMessage<G>>(1000);
     let new_peer = NewPeer {
         tcp_sender: tcp_tx,
-        peer_addr: peer_addr,
+        socket_addr: peer_addr,
     };
     send_system_new_peer_sender.send(new_peer).expect("Receiver hung up?");
     // Throw away the source and sink when we're done; what else do we want with them? :)

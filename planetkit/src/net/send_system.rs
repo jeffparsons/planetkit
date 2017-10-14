@@ -1,6 +1,6 @@
 use std;
 use std::collections::vec_deque::VecDeque;
-use std::net::SocketAddr;
+use std::sync::mpsc::TryRecvError;
 
 use specs;
 use specs::{FetchMut};
@@ -15,6 +15,9 @@ use super::{
     SendWireMessage,
     SendMessageQueue,
     NewPeer,
+    NetworkPeers,
+    NetworkPeer,
+    PeerId,
 };
 
 pub struct SendSystem<G: GameMessage>{
@@ -25,8 +28,6 @@ pub struct SendSystem<G: GameMessage>{
     // Only exists until taken by a client.
     new_peer_tx: Option<std::sync::mpsc::Sender<NewPeer<G>>>,
     new_peer_rx: std::sync::mpsc::Receiver<NewPeer<G>>,
-    // TODO: track actual peer addresses
-    one_true_peer_addr: SocketAddr,
 }
 
 impl<G> SendSystem<G>
@@ -42,9 +43,15 @@ impl<G> SendSystem<G>
             world.add_resource(send_message_queue);
         }
 
-        // TEMP
-        let placeholder_addr = "0.0.0.0:0".to_string();
-        let placeholder_addr = placeholder_addr.parse::<SocketAddr>().unwrap();
+        // TODO: make a generic helper for this!!!
+        // Ensure NetworkPeers resource is registered.
+        let res_id = shred::ResourceId::new::<NetworkPeers<G>>();
+        if !world.res.has_value(res_id) {
+            let network_peers = NetworkPeers {
+                peers: Vec::<NetworkPeer<G>>::new()
+            };
+            world.add_resource(network_peers);
+        }
 
         // Create channel for sending network messages.
         // TODO: how big is reasonable? Just go unbounded?
@@ -60,7 +67,6 @@ impl<G> SendSystem<G>
             send_udp_wire_message_rx: Some(rx),
             new_peer_tx: Some(new_peer_tx),
             new_peer_rx: new_peer_rx,
-            one_true_peer_addr: placeholder_addr,
         };
         system
     }
@@ -76,40 +82,72 @@ impl<G> SendSystem<G>
     {
         self.new_peer_tx.take()
     }
-
-    pub fn set_one_true_peer_addr(&mut self, addr: SocketAddr) {
-        self.one_true_peer_addr = addr;
-    }
 }
 
 impl<'a, G> specs::System<'a> for SendSystem<G>
     where G: GameMessage
 {
     // TODO: require peer list as systemdata.
-    type SystemData = (FetchMut<'a, SendMessageQueue<G>>,);
+    type SystemData = (
+        FetchMut<'a, SendMessageQueue<G>>,
+        FetchMut<'a, NetworkPeers<G>>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut send_message_queue,) = data;
+        let (
+            mut send_message_queue,
+            mut peers,
+        ) = data;
+        let peers = &mut peers.peers;
 
-        // TODO: while the new peers channel has anything in it...
-        // - allocate next peer id
-        // - store new channel for them.
+        // TODO: does this stuff even belong here,
+        // or should things like `send_system_new_peer_sender`
+        // be in RESOURCES? I think the latter.
+        // Then you can have a NewPeerSystem or something.
+        // TODO: try that.
 
-        // Send everything in send queue to UDP server.
+        // Register any new peers that have connected
+        // (or that we've connected to).
+        loop {
+            match self.new_peer_rx.try_recv() {
+                Ok(new_peer) => {
+                    // Peer ID 0 refers to self, and isn't in the array.
+                    let next_peer_id = PeerId(peers.len() as u16 + 1);
+                    let peer = NetworkPeer {
+                        id: next_peer_id,
+                        tcp_sender: new_peer.tcp_sender,
+                        socket_addr: new_peer.socket_addr,
+                    };
+                    peers.push(peer);
+                },
+                Err(err) => {
+                    match err {
+                        TryRecvError::Empty => {
+                            break;
+                        },
+                        TryRecvError::Disconnected => {
+                            // TODO: don't panic; we're going to need
+                            // a way to shut the server down gracefully.
+                            panic!("Sender hung up");
+                        },
+                    }
+                },
+            }
+        }
+
+        // Send everything in send queue to UDP/TCP server.
         while let Some(message) = send_message_queue.queue.pop_front() {
-            ///
-            // TODO: tack on the appropriate peer address
-            // so we know where to send it!!!!!!!!!!!!!!!
-            // For now, just use the hard-coded one provided.
-            //
+            // TODO: decide whether it should go over TCP or UDP
+
+            // Look up the destination socket address for this peer.
+            // Peer ID 0 refers to self, and isn't in the vec.
+            let dest_socket_addr = peers[message.dest_peer_id.0 as usize - 1].socket_addr;
 
             // Re-wrap the message for sending.
             let send_wire_message = SendWireMessage {
-                dest: self.one_true_peer_addr,
+                dest: dest_socket_addr,
                 message: WireMessage::Game(message.game_message),
             };
-
-            // TODO: decide whether it should go over TCP or UDP
 
             self.send_udp_wire_message_tx.try_send(send_wire_message).unwrap_or_else(|err| {
                 error!(self.log, "Could send message to network server; was the buffer full?"; "err" => format!("{:?}", err));

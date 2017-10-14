@@ -1,5 +1,6 @@
 mod recv_system;
 mod send_system;
+mod server;
 mod udp;
 mod tcp;
 
@@ -16,8 +17,7 @@ use futures;
 
 pub use self::recv_system::RecvSystem;
 pub use self::send_system::SendSystem;
-pub use self::udp::start_udp_server;
-pub use self::tcp::start_tcp_server;
+pub use self::server::Server;
 
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.
@@ -56,6 +56,9 @@ pub struct RecvWireMessage<G> {
     message: Result<WireMessage<G>, ()>,
 }
 
+// Only actually used for UDP; for TCP messages there are
+// per-peer channels all the way to the SendSystem, so there's
+// no need for an extra envelope around the message.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct SendWireMessage<G> {
     dest: SocketAddr,
@@ -70,7 +73,7 @@ pub struct RecvMessage<G> {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct SendMessage<G> {
-    // TODO: dest peer id
+    dest_peer_id: PeerId,
     game_message: G,
 }
 
@@ -99,6 +102,7 @@ pub struct SendMessageQueue<G> {
 /// multiple players from one peer, and need to decide
 /// whether that peer has authority to make assertions about
 /// those players.
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct PeerId(u16);
 
 /// A new network peer.
@@ -112,5 +116,17 @@ pub struct PeerId(u16);
 /// to the `SendSystem` when a new connection is established.
 pub struct NewPeer<G> {
     pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
-    pub peer_addr: SocketAddr,
+    pub socket_addr: SocketAddr,
+}
+
+pub struct NetworkPeer<G> {
+    pub id: PeerId,
+    pub tcp_sender: futures::sync::mpsc::Sender<SendWireMessage<G>>,
+    pub socket_addr: SocketAddr,
+    // TODO: connection state, etc.
+}
+
+/// `World`-global resource for network peers.
+pub struct NetworkPeers<G> {
+    pub peers: Vec<NetworkPeer<G>>,
 }
