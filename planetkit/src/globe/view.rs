@@ -103,7 +103,7 @@ impl View {
                             // Don't draw air or anything else we don't understand.
                             continue;
                         };
-                        for mut color_channel in &mut inner_cell_color {
+                        for color_channel in &mut inner_cell_color {
                             *color_channel *= 1.0 - 0.5 * cell.shade;
                         }
 
@@ -163,7 +163,7 @@ impl View {
                     // Emit each top vertex of whatever shape we're using for this cell
                     // AGAIN for the top of the sides, so they can have a different colour.
                     // Darken the top of the sides slightly to fake lighting.
-                    for mut color_channel in &mut cell_color {
+                    for color_channel in &mut cell_color {
                         *color_channel *= 0.9;
                     }
                     let first_side_top_vertex_index = first_top_vertex_index + offsets.len() as u32;
@@ -177,7 +177,7 @@ impl View {
 
                     // Emit each bottom vertex of whatever shape we're using for this cell.
                     // Darken the bottom of the sides substantially to fake lighting.
-                    for mut color_channel in &mut cell_color {
+                    for color_channel in &mut cell_color {
                         *color_channel *= 0.5;
                     }
                     let first_side_bottom_vertex_index = first_side_top_vertex_index +

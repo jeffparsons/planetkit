@@ -55,7 +55,7 @@ impl ChunkViewSystem {
 
             // Get the associated globe, complaining loudly if we fail.
             let globe_entity = chunk_view.globe_entity;
-            let mut globe = match globes.get_mut(globe_entity) {
+            let globe = match globes.get_mut(globe_entity) {
                 Some(globe) => globe,
                 None => {
                     warn!(

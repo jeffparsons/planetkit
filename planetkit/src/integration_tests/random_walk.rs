@@ -69,7 +69,7 @@ impl Walker {
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
             let mut globes = world.write::<globe::Globe>();
-            let mut globe = globes.get_mut(globe_entity).expect(
+            let globe = globes.get_mut(globe_entity).expect(
                 "Uh oh, where did our Globe go?",
             );
             globe.find_lowest_cell_containing(guy_pos, Material::Air)

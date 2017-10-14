@@ -108,7 +108,7 @@ impl ChunkSystem {
         if let Some(globe_entity) = cd.globe_entity {
             // Get the associated globe, complaining loudly if we fail.
             // TODO: this is becoming a common pattern; factor out.
-            let mut globe = match globes.get_mut(globe_entity) {
+            let globe = match globes.get_mut(globe_entity) {
                 Some(globe) => globe,
                 None => {
                     warn!(

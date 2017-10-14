@@ -147,7 +147,7 @@ impl Chunk {
                         // We own the cell; ensure there's a record for the downstream chunk,
                         // and then add the pair of representations of the same point to the list
                         // of cells that need to be synced.
-                        let mut downstream_neighbor = downstream_neighbors_by_origin
+                        let downstream_neighbor = downstream_neighbors_by_origin
                             .entry(chunk_origin)
                             .or_insert(DownstreamNeighbor {
                                 origin: chunk_origin,
@@ -161,7 +161,7 @@ impl Chunk {
                         // The other chunk owns the cell; ensure there's a record for the upstream chunk,
                         // and then add the pair of representations of the same point to the list
                         // of cells that need to be synced.
-                        let mut upstream_neighbor = upstream_neighbors_by_origin
+                        let upstream_neighbor = upstream_neighbors_by_origin
                             .entry(chunk_origin)
                             .or_insert(UpstreamNeighbor {
                                 origin: chunk_origin,
