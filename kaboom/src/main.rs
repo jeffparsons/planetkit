@@ -8,6 +8,7 @@ extern crate slog;
 extern crate serde_derive;
 extern crate serde;
 extern crate clap;
+extern crate piston_window;
 
 mod fighter;
 mod game_state;
@@ -49,13 +50,16 @@ fn main() {
     {
         use std::sync::{Arc, Mutex};
         use std::net::SocketAddr;
+        use piston_window::AdvancedWindow;
         use pk::net::Server;
         let server_ptr = app.world_mut().write_resource::<Arc<Mutex<Server<Message>>>>();
         let mut server = server_ptr.lock().expect("Failed to lock server");
         if let Some(_matches) = matches.subcommand_matches("listen") {
+            window.set_title("Kaboom (server)".to_string());
             // TODO: make port configurable
             server.start_listen(62831);
         } else if let Some(matches) = matches.subcommand_matches("connect") {
+            window.set_title("Kaboom (client)".to_string());
             // TODO: make port configurable
             let connect_addr = matches.value_of("SERVER_ADDRESS").unwrap();
             let connect_addr: SocketAddr = connect_addr.parse().expect("Invalid SERVER_ADDRESS");
