@@ -155,6 +155,7 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
 
         let cloned_handle = handle.clone();
         let f = socket.incoming().for_each(move |(socket, peer_addr)| {
+            info!(server_log, "New client connected"; "addr" => format!("{}", peer_addr));
             handle_tcp_stream(
                 &cloned_handle,
                 socket,
@@ -199,10 +200,14 @@ pub fn connect_to_server<G: GameMessage>(
     let client_error_log = client_log.new(o!());
 
     remote.spawn(move |handle| {
+        info!(client_log, "Connecting to server"; "addr" => format!("{}", addr));
+
         let socket_future = TcpStream::connect(&addr, &handle);
 
         let cloned_handle = handle.clone();
         let f = socket_future.and_then(move |socket| {
+            info!(client_log, "Connected!");
+
             connection_established_tx.send(()).expect("Receiver hung up?");
             handle_tcp_stream(
                 &cloned_handle,

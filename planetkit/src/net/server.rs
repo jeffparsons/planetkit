@@ -59,13 +59,18 @@ impl<G: GameMessage> Server<G> {
         }
     }
 
-    pub fn start_listen(&mut self) {
+    pub fn start_listen<MaybePort>(
+        &mut self,
+        port: MaybePort,
+    )
+        where MaybePort: Into<Option<u16>>
+    {
         self.port = super::tcp::start_tcp_server(
             &self.log,
             self.recv_system_sender.clone(),
             self.send_system_new_peer_sender.clone(),
             self.remote.clone(),
-            None,
+            port,
         ).into();
         super::udp::start_udp_server(
             &self.log,
@@ -84,5 +89,8 @@ impl<G: GameMessage> Server<G> {
             self.remote.clone(),
             addr,
         );
+        // TODO: listen on UDP using the same port
+        // that TCP server bound. We'll need this
+        // for communicating with the server!!!
     }
 }

@@ -36,7 +36,7 @@ impl Node {
             send_system.take_new_peer_sender().expect("Somebody else took it!"),
             send_system.take_send_udp_wire_message_rx().expect("Somebody else took it!"),
         );
-        server.start_listen();
+        server.start_listen(None);
 
         // Make a dispatcher.
         let dispatcher = specs::DispatcherBuilder::new()
@@ -57,7 +57,11 @@ impl Node {
 }
 
 //
-// TODO: Make this test higher-level, and use both TCP and UDP server together.
+// TODO:
+// - Factor out some helpers
+// - Rename sender_node and receiver_node to server_node and client_node
+// - Test messages getting from server back to client
+//   (When I wrote this, clients don't actually listen on UDP yet!)
 //
 #[test]
 fn all_the_way_from_send_system_to_recv_system() {
