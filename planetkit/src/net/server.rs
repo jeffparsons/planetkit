@@ -82,15 +82,22 @@ impl<G: GameMessage> Server<G> {
     }
 
     pub fn connect(&mut self, addr: SocketAddr) {
-        super::tcp::connect_to_server(
+        let local_port = super::tcp::connect_to_server(
             &self.log,
             self.recv_system_sender.clone(),
             self.send_system_new_peer_sender.clone(),
             self.remote.clone(),
             addr,
         );
-        // TODO: listen on UDP using the same port
-        // that TCP server bound. We'll need this
-        // for communicating with the server!!!
+        // Listen on UDP using the same port
+        // that the TCP server bound.
+        // (The server will send some things on that port.)
+        super::udp::start_udp_server(
+            &self.log,
+            self.recv_system_sender.clone(),
+            self.send_udp_wire_message_rx.take().expect("Somebody else took it!"),
+            self.remote.clone(),
+            local_port,
+        );
     }
 }

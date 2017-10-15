@@ -179,6 +179,7 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     actual_port_rx.recv().expect("Sender hung up")
 }
 
+// Returns the local port we bound to.
 pub fn connect_to_server<G: GameMessage>(
     parent_log: &Logger,
     recv_system_sender: std::sync::mpsc::Sender<RecvWireMessage<G>>,
@@ -189,10 +190,11 @@ pub fn connect_to_server<G: GameMessage>(
         std::sync::mpsc::Sender<NewPeer<G>>,
     remote: Remote,
     addr: SocketAddr,
-) {
+) -> u16 {
     // Don't return until we've actually established a connection,
     // or we might miss some messages.
-    let (connection_established_tx, connection_established_rx) = std::sync::mpsc::channel::<()>();
+    // Also use this to communicate the local address we bound to.
+    let (local_port_tx, local_port_rx) = std::sync::mpsc::channel::<u16>();
 
     // Run reactor on its own thread so we can always be receiving messages
     // from peers, and buffer them up until we're ready to process them.
@@ -208,7 +210,12 @@ pub fn connect_to_server<G: GameMessage>(
         let f = socket_future.and_then(move |socket| {
             info!(client_log, "Connected!");
 
-            connection_established_tx.send(()).expect("Receiver hung up?");
+            local_port_tx.send(
+                socket
+                    .local_addr()
+                    .expect("Somehow we didn't actually bind a local port?")
+                    .port()
+            ).expect("Receiver hung up?");
             handle_tcp_stream(
                 &cloned_handle,
                 socket,
@@ -227,7 +234,7 @@ pub fn connect_to_server<G: GameMessage>(
     });
 
     // Wait until connection is established.
-    connection_established_rx.recv().expect("Sender hung up")
+    local_port_rx.recv().expect("Sender hung up")
 }
 
 // Handle sending/receiving and encoding/decoding messages

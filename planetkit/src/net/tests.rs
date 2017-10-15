@@ -23,20 +23,22 @@ struct Node {
 }
 
 impl Node {
-    pub fn new(log: &slog::Logger) -> Node {
+    pub fn new() -> Node {
+        let drain = slog::Discard;
+        let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
+
         // Create sender and receiver systems.
         let mut world = specs::World::new();
-        let recv_system = RecvSystem::<TestMessage>::new(&log, &mut world);
-        let mut send_system = SendSystem::<TestMessage>::new(&log, &mut world);
+        let recv_system = RecvSystem::<TestMessage>::new(&root_log, &mut world);
+        let mut send_system = SendSystem::<TestMessage>::new(&root_log, &mut world);
 
         // Spawn TCP and UDP server/client.
-        let mut server = Server::new(
-            &log,
+        let server = Server::new(
+            &root_log,
             recv_system.sender().clone(),
             send_system.take_new_peer_sender().expect("Somebody else took it!"),
             send_system.take_send_udp_wire_message_rx().expect("Somebody else took it!"),
         );
-        server.start_listen(None);
 
         // Make a dispatcher.
         let dispatcher = specs::DispatcherBuilder::new()
@@ -51,119 +53,202 @@ impl Node {
         }
     }
 
+    pub fn new_server() -> Node {
+        let mut server_node = Node::new();
+        server_node.server.start_listen(None);
+        server_node
+    }
+
+    pub fn new_client_connected_to(server_node: &Node) -> Node {
+        let mut client_node = Node::new();
+        let connect_addr = format!("127.0.0.1:{}", server_node.server.port.expect("Should be listening"));
+        let connect_addr: SocketAddr = connect_addr.parse().unwrap();
+        client_node.server.connect(connect_addr);
+        client_node
+    }
+
     pub fn dispatch(&mut self) {
         self.dispatcher.dispatch(&mut self.world.res);
     }
+
+    pub fn enqueue_message(&mut self, message: SendMessage<TestMessage>) {
+        let send_queue = &mut self.world.write_resource::<SendMessageQueue<TestMessage>>().queue;
+        send_queue.push_back(message);
+    }
+
+    pub fn expect_message(&mut self, expected_message: TestMessage) {
+        let recv_queue = &mut self.world.write_resource::<RecvMessageQueue<TestMessage>>().queue;
+        assert!(recv_queue.len() >= 1);
+        let received_message = recv_queue.pop_front().unwrap().game_message;
+        assert_eq!(received_message, expected_message);
+    }
 }
 
-//
-// TODO:
-// - Factor out some helpers
-// - Rename sender_node and receiver_node to server_node and client_node
-// - Test messages getting from server back to client
-//   (When I wrote this, clients don't actually listen on UDP yet!)
-//
 #[test]
-fn all_the_way_from_send_system_to_recv_system() {
-    let drain = slog::Discard;
-    let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
+fn client_sends_udp_message_to_server() {
+    let mut server_node = Node::new_server();
+    let mut client_node = Node::new_client_connected_to(&server_node);
 
-    let mut sender_node = Node::new(&root_log);
-    let mut receiver_node = Node::new(&root_log);
-
-    let connect_addr = format!("127.0.0.1:{}", receiver_node.server.port.expect("Should be listening"));
-    let connect_addr: SocketAddr = connect_addr.parse().unwrap();
-    sender_node.server.connect(connect_addr);
-
-    // Put a message on the SendMessageQueue of the sender node,
+    // Put a message on the SendMessageQueue of the client node,
     // to be sent over UDP.
-    // (NLL SVP.)
-    {
-        let send_queue = &mut sender_node.world.write_resource::<SendMessageQueue<TestMessage>>().queue;
-        send_queue.push_back(
-            SendMessage {
-                // HACKS: There will only be exactly one peer,
-                // so its ID will be 1. (Peer ID 0 is self.)
-                // TODO: Give each peer an identity (GUID, then later a key pair),
-                // and look it up by that.
-                dest_peer_id: PeerId(1),
-                game_message: TestMessage{
-                    disposition: "Sunny!".to_string(),
-                },
-                transport: Transport::UDP,
-            }
-        );
-    }
+    client_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Sunny!".to_string(),
+            },
+            transport: Transport::UDP,
+        }
+    );
 
     // Step the world.
     // This should send the message.
-    sender_node.dispatch();
+    client_node.dispatch();
     // Sleep a while to make sure we receive the message.
-    std::thread::sleep(Duration::from_millis(100));
+    std::thread::sleep(Duration::from_millis(10));
     // This should receive the message.
-    receiver_node.dispatch();
+    server_node.dispatch();
 
-    // (NLL SVP.)
-    {
-        // Take a look at what ended up in the received message queue.
-        let recv_queue = &mut receiver_node.world.write_resource::<RecvMessageQueue<TestMessage>>().queue;
-        // We should have received something equivalent to what we sent.
-        assert_eq!(recv_queue.len(), 1);
-        let expected_message = TestMessage {
-            disposition: "Sunny!".to_string(),
-        };
-        assert_eq!(recv_queue.pop_front().unwrap().game_message, expected_message);
-    }
+    // Server should have received equivalent message.
+    server_node.expect_message(TestMessage {
+        disposition: "Sunny!".to_string(),
+    });
 
-    // Put two messages on the SendMessageQueue of the sender node,
-    // to be sent over TCP.
-    // (NLL SVP.)
-    {
-        let send_queue = &mut sender_node.world.write_resource::<SendMessageQueue<TestMessage>>().queue;
-        send_queue.push_back(
-            SendMessage {
-                // HACKS: There will only be exactly one peer,
-                // so its ID will be 1. (Peer ID 0 is self.)
-                // TODO: Give each peer an identity (GUID, then later a key pair),
-                // and look it up by that.
-                dest_peer_id: PeerId(1),
-                game_message: TestMessage{
-                    disposition: "Cooperative!".to_string(),
-                },
-                transport: Transport::TCP,
-            }
-        );
-        send_queue.push_back(
-            SendMessage {
-                dest_peer_id: PeerId(1),
-                game_message: TestMessage{
-                    disposition: "Enthusiastic!".to_string(),
-                },
-                transport: Transport::TCP,
-            }
-        );
-    }
+    // TODO: gracefully shut down the server before the end of all tests;
+    // you don't want to leave the thread hanging around awkwardly.
+}
+
+#[test]
+fn client_sends_tcp_messages_to_server() {
+    let mut server_node = Node::new_server();
+    let mut client_node = Node::new_client_connected_to(&server_node);
+
+    // Testing multiple TCP messages is kind of interesting
+    // because we need to make sure we don't corrupt the
+    // stream/buffer when receiving them, as opposed to UDP
+    // where we work with individual datagrams.
+    client_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Cooperative!".to_string(),
+            },
+            transport: Transport::TCP,
+        }
+    );
+    client_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Enthusiastic!".to_string(),
+            },
+            transport: Transport::TCP,
+        }
+    );
 
     // Step the world.
-    // This should send the messages.
-    sender_node.dispatch();
-    // Sleep a while to make sure we receive the messages.
-    std::thread::sleep(Duration::from_millis(100));
-    // This should receive the messages.
-    receiver_node.dispatch();
+    // This should send the message.
+    client_node.dispatch();
+    // Sleep a while to make sure we receive the message.
+    std::thread::sleep(Duration::from_millis(10));
+    // This should receive the message.
+    server_node.dispatch();
 
-    // Take a look at what ended up in the received message queue.
-    let recv_queue = &mut receiver_node.world.write_resource::<RecvMessageQueue<TestMessage>>().queue;
-    // We should have received something equivalent to what we sent.
-    assert_eq!(recv_queue.len(), 2);
-    let expected_message1 = TestMessage {
+    // Server should have received equivalent messages, in order.
+    server_node.expect_message(TestMessage {
         disposition: "Cooperative!".to_string(),
-    };
-    assert_eq!(recv_queue.pop_front().unwrap().game_message, expected_message1);
-    let expected_message2 = TestMessage {
+    });
+    server_node.expect_message(TestMessage {
         disposition: "Enthusiastic!".to_string(),
-    };
-    assert_eq!(recv_queue.pop_front().unwrap().game_message, expected_message2);
+    });
+
+    // TODO: gracefully shut down the server before the end of all tests;
+    // you don't want to leave the thread hanging around awkwardly.
+}
+
+#[test]
+fn server_sends_udp_message_to_client() {
+    let mut server_node = Node::new_server();
+    let mut client_node = Node::new_client_connected_to(&server_node);
+
+    // Put a message on the SendMessageQueue of the server node,
+    // to be sent over UDP.
+    server_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Authoritative!".to_string(),
+            },
+            transport: Transport::UDP,
+        }
+    );
+
+    // Step the world.
+    // This should send the message.
+    server_node.dispatch();
+    // Sleep a while to make sure we receive the message.
+    std::thread::sleep(Duration::from_millis(10));
+    // This should receive the message.
+    client_node.dispatch();
+
+    // Client should have received equivalent message.
+    client_node.expect_message(TestMessage {
+        disposition: "Authoritative!".to_string(),
+    });
+
+    // TODO: gracefully shut down the server before the end of all tests;
+    // you don't want to leave the thread hanging around awkwardly.
+}
+
+#[test]
+fn server_sends_tcp_messages_to_client() {
+    let mut server_node = Node::new_server();
+    let mut client_node = Node::new_client_connected_to(&server_node);
+
+    // Testing multiple TCP messages is kind of interesting
+    // because we need to make sure we don't corrupt the
+    // stream/buffer when receiving them, as opposed to UDP
+    // where we work with individual datagrams.
+    server_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Oppressive!".to_string(),
+            },
+            transport: Transport::TCP,
+        }
+    );
+    server_node.enqueue_message(
+        SendMessage {
+            // Peer ID 0 is self.
+            dest_peer_id: PeerId(1),
+            game_message: TestMessage{
+                disposition: "Demanding!".to_string(),
+            },
+            transport: Transport::TCP,
+        }
+    );
+
+    // Step the world.
+    // This should send the message.
+    server_node.dispatch();
+    // Sleep a while to make sure we receive the message.
+    std::thread::sleep(Duration::from_millis(10));
+    // This should receive the message.
+    client_node.dispatch();
+
+    // Client should have received equivalent messages, in order.
+    client_node.expect_message(TestMessage {
+        disposition: "Oppressive!".to_string(),
+    });
+    client_node.expect_message(TestMessage {
+        disposition: "Demanding!".to_string(),
+    });
 
     // TODO: gracefully shut down the server before the end of all tests;
     // you don't want to leave the thread hanging around awkwardly.
