@@ -187,6 +187,11 @@ fn server_sends_udp_message_to_client() {
         }
     );
 
+    // Sleep a while to make sure the server has
+    // registered the new client as a peer before
+    // trying to send to it.
+    std::thread::sleep(Duration::from_millis(10));
+
     // Step the world.
     // This should send the message.
     server_node.dispatch();
@@ -233,6 +238,11 @@ fn server_sends_tcp_messages_to_client() {
             transport: Transport::TCP,
         }
     );
+
+    // Sleep a while to make sure the server has
+    // registered the new client as a peer before
+    // trying to send to it.
+    std::thread::sleep(Duration::from_millis(10));
 
     // Step the world.
     // This should send the message.
