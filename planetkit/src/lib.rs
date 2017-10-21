@@ -97,5 +97,11 @@ pub mod net;
 mod spatial;
 pub use spatial::Spatial;
 
+mod auto_resource;
+pub use auto_resource::AutoResource;
+
+mod log_resource;
+pub use log_resource::LogResource;
+
 #[cfg(test)]
 mod integration_tests;

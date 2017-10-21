@@ -1,6 +1,7 @@
 mod recv_system;
 mod send_system;
 mod server;
+mod server_resource;
 mod udp;
 mod tcp;
 
@@ -18,6 +19,7 @@ use futures;
 pub use self::recv_system::RecvSystem;
 pub use self::send_system::SendSystem;
 pub use self::server::Server;
+pub use self::server_resource::ServerResource;
 
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.

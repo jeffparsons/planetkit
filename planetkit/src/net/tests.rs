@@ -17,28 +17,28 @@ impl GameMessage for TestMessage {}
 // server bits and Specs bits required to simulate
 // a network node, so we can easily play with multiple.
 struct Node {
-    server: Server<TestMessage>,
     world: specs::World,
     dispatcher: specs::Dispatcher<'static, 'static>,
 }
 
 impl Node {
     pub fn new() -> Node {
+        use ::LogResource;
+
         let drain = slog::Discard;
         let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
 
-        // Create sender and receiver systems.
         let mut world = specs::World::new();
-        let recv_system = RecvSystem::<TestMessage>::new(&root_log, &mut world);
-        let mut send_system = SendSystem::<TestMessage>::new(&root_log, &mut world);
 
-        // Spawn TCP and UDP server/client.
-        let server = Server::new(
-            &root_log,
-            recv_system.sender().clone(),
-            send_system.take_new_peer_sender().expect("Somebody else took it!"),
-            send_system.take_send_udp_wire_message_rx().expect("Somebody else took it!"),
-        );
+        // Initialize common resources.
+        // These should be impossible to create from
+        // just a `World`; `pk::Resource` should be
+        // preferred to ensure those.
+        world.add_resource(LogResource::new(&root_log));
+
+        // Create sender and receiver systems.
+        let recv_system = RecvSystem::<TestMessage>::new(&root_log, &mut world);
+        let send_system = SendSystem::<TestMessage>::new(&root_log, &mut world);
 
         // Make a dispatcher.
         let dispatcher = specs::DispatcherBuilder::new()
@@ -47,23 +47,34 @@ impl Node {
             .build();
 
         Node {
-            server: server,
             world: world,
             dispatcher: dispatcher,
         }
     }
 
     pub fn new_server() -> Node {
-        let mut server_node = Node::new();
-        server_node.server.start_listen(None);
+        let server_node = Node::new();
+        {
+            // NLL SVP
+            let server_resource = server_node.world.read_resource::<ServerResource<TestMessage>>();
+            let mut server = server_resource.server.lock().expect("Couldn't lock server");
+            server.start_listen(None);
+        }
         server_node
     }
 
     pub fn new_client_connected_to(server_node: &Node) -> Node {
-        let mut client_node = Node::new();
-        let connect_addr = format!("127.0.0.1:{}", server_node.server.port.expect("Should be listening"));
+        let client_node = Node::new();
+        let server_server_resource = server_node.world.read_resource::<ServerResource<TestMessage>>();
+        let server_server = server_server_resource.server.lock().expect("Couldn't lock server");
+        let connect_addr = format!("127.0.0.1:{}", server_server.port.expect("Should be listening"));
         let connect_addr: SocketAddr = connect_addr.parse().unwrap();
-        client_node.server.connect(connect_addr);
+        {
+            // NLL SVP
+            let client_server_resource = client_node.world.read_resource::<ServerResource<TestMessage>>();
+            let mut client_server = client_server_resource.server.lock().expect("Couldn't lock server");
+            client_server.connect(connect_addr);
+        }
         client_node
     }
 

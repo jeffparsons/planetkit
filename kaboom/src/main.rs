@@ -48,12 +48,13 @@ fn main() {
     // Should we start a server or connect to one?
     // NLL SVP.
     {
-        use std::sync::{Arc, Mutex};
         use std::net::SocketAddr;
         use piston_window::AdvancedWindow;
-        use pk::net::Server;
-        let server_ptr = app.world_mut().write_resource::<Arc<Mutex<Server<Message>>>>();
-        let mut server = server_ptr.lock().expect("Failed to lock server");
+        use pk::net::ServerResource;
+
+        // Systems we added will have ensured ServerResource is present.
+        let server_resource = app.world_mut().write_resource::<ServerResource<Message>>();
+        let mut server = server_resource.server.lock().expect("Failed to lock server");
         if let Some(_matches) = matches.subcommand_matches("listen") {
             window.set_title("Kaboom (server)".to_string());
             // TODO: make port configurable
@@ -76,35 +77,9 @@ fn add_systems(
     world: &mut specs::World,
     dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
 ) -> specs::DispatcherBuilder<'static, 'static> {
-    use game_state::GameState;
-    GameState::ensure_registered(world);
-
-    let game_system = game_system::GameSystem::new(logger);
+    let game_system = game_system::GameSystem::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
-    let mut send_system = pk::net::SendSystem::<Message>::new(logger, world);
-
-    // TODO: This definitely doesn't belong here.
-    // TODO: Who should be responsible for registering
-    // resources? Should they know how to "ensure"
-    // themselves, or should there be a factory that
-    // knows how to ensure them? And each system declares
-    // all the resources it expects using that factory?
-    use std::sync::{Arc, Mutex};
-    use pk::net::Server;
-    let res_id = shred::ResourceId::new::<Arc<Mutex<Server<Message>>>>();
-    if !world.res.has_value(res_id) {
-        let server_ptr = Arc::new(
-            Mutex::new(
-                Server::<Message>::new(
-                    &logger,
-                    recv_system.sender().clone(),
-                    send_system.take_new_peer_sender().expect("Somebody else took it!"),
-                    send_system.take_send_udp_wire_message_rx().expect("Somebody else took it!"),
-                )
-            )
-        );
-        world.add_resource(server_ptr);
-    }
+    let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
     dispatcher_builder
         .add(game_system, "woolgather_game", &[])
@@ -113,6 +88,8 @@ fn add_systems(
 }
 
 fn create_entities(world: &mut specs::World) {
+    // TODO: move all this into GameSystem.
+
     use pk::cell_dweller::ActiveCellDweller;
 
     // Create the globe first, because we'll need it to figure out where

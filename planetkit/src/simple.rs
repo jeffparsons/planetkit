@@ -13,6 +13,7 @@ use app;
 use globe;
 use cell_dweller;
 use render;
+use super::LogResource;
 
 pub fn noop_create_systems<'a, 'b>(
     _logger: &slog::Logger,
@@ -76,6 +77,12 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(
     world.register::<::globe::ChunkView>();
 
     // Initialize common resources.
+    // These should be impossible to create from
+    // just a `World`; `pk::Resource` should be
+    // preferred to ensure those.
+    world.add_resource(LogResource::new(&log));
+    // TODO: make every system that needs this
+    // ensure it is present.
     world.add_resource(TimeDeltaResource(0.0));
 
     // Initialize all systems.

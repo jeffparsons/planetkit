@@ -10,17 +10,21 @@ use super::{GameMessage, RecvMessage, WireMessage, RecvWireMessage, RecvMessageQ
 
 pub struct RecvSystem<G: GameMessage>{
     log: Logger,
-    recv_wire_message_rx: mpsc::Receiver<RecvWireMessage<G>>,
-    // Stored here so that clients can borrow and clone it for their own needs.
-    recv_wire_message_tx: mpsc::Sender<RecvWireMessage<G>>,
+    // Channel for slurping wire messages from network server.
+    recv_rx: mpsc::Receiver<RecvWireMessage<G>>,
 }
 
-// TODO: accept should_listen parameter and not listen otherwise.
 impl<G> RecvSystem<G>
     where G: GameMessage
 {
-    pub fn new(parent_log: &Logger, world: &mut specs::World) -> RecvSystem<G> {
+    pub fn new(
+        parent_log: &Logger,
+        world: &mut specs::World,
+    ) -> RecvSystem<G> {
+        use auto_resource::AutoResource;
+
         // Ensure RecvMessage ring buffer resource is registered.
+        // TODO: make this a self-ensuring resource.
         let res_id = shred::ResourceId::new::<RecvMessageQueue<G>>();
         if !world.res.has_value(res_id) {
             let recv_message_queue = RecvMessageQueue {
@@ -29,20 +33,20 @@ impl<G> RecvSystem<G>
             world.add_resource(recv_message_queue);
         }
 
-        // Create channel for slurping network messages.
-        let (tx, rx) = mpsc::channel();
+        // Ensure ServerResource is present, and fetch the
+        // wire message receiver from it.
+        use super::ServerResource;
+        let server_resource = ServerResource::<G>::ensure(world);
+        let recv_rx = server_resource.recv_rx
+            .lock()
+            .expect("Couldn't get lock on wire message receiver")
+            .take()
+            .expect("Somebody already took it!");
+
         RecvSystem {
             log: parent_log.new(o!()),
-            recv_wire_message_rx: rx,
-            recv_wire_message_tx: tx,
+            recv_rx: recv_rx,
         }
-    }
-
-    /// Borrow the sender end of the channel that provides incoming network
-    /// messages to this system. You will almost always want to clone this
-    /// and provide it to the network server.
-    pub fn sender(&self) -> &mpsc::Sender<RecvWireMessage<G>> {
-        &self.recv_wire_message_tx
     }
 }
 
@@ -57,7 +61,7 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
 
         // Slurp everything the server sent us.
         loop {
-            let recv_wire_message = match self.recv_wire_message_rx.try_recv() {
+            let recv_wire_message = match self.recv_rx.try_recv() {
                 Ok(recv_wire_message) => recv_wire_message,
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => panic!("sender hung up"),
