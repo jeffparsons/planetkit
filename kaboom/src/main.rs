@@ -68,7 +68,6 @@ fn main() {
         }
     }
 
-    create_entities(app.world_mut());
     app.run(&mut window);
 }
 
@@ -85,22 +84,4 @@ fn add_systems(
         .add(game_system, "woolgather_game", &[])
         .add(recv_system, "net_recv", &[])
         .add(send_system, "net_send", &[])
-}
-
-fn create_entities(world: &mut specs::World) {
-    // TODO: move all this into GameSystem.
-
-    use pk::cell_dweller::ActiveCellDweller;
-
-    // Create the globe first, because we'll need it to figure out where
-    // to place the player character.
-    let globe_entity = planet::create_now(world);
-
-    // Create the player character.
-    let fighter_entity = fighter::create_now(world, globe_entity);
-    // Set our new shepherd player character as the currently controlled cell dweller.
-    world.write_resource::<ActiveCellDweller>().maybe_entity = Some(fighter_entity);
-
-    // Create basic third-person following camera.
-    pk::simple::create_simple_chase_camera_now(world, fighter_entity);
 }

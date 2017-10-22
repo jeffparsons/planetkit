@@ -33,6 +33,7 @@ pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
 
 impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     pub fn new<F: gfx::Factory<R>>(
+        world: &mut specs::World,
         factory: &mut F,
         encoder_channel: EncoderChannel<R, C>,
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
@@ -41,8 +42,13 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         parent_log: &Logger,
         mesh_repo: Arc<Mutex<MeshRepository<R>>>,
     ) -> System<R, C> {
+        use auto_resource::AutoResource;
+
         let log = parent_log.new(o!("system" => "render"));
         debug!(log, "Initialising");
+
+        // Ensure DefaultCamera resource is present.
+        DefaultCamera::ensure(world);
 
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
@@ -175,7 +181,14 @@ where
 
     fn run(&mut self, data: Self::SystemData) {
         let (entities, default_camera, visuals, spatials) = data;
-        self.draw(&entities, &visuals, &spatials, default_camera.camera_entity);
+
+        if let Some(camera_entity) = default_camera.camera_entity {
+            // Camera must have been realized.
+            // TODO: there's got to be a better pattern than this...
+            if spatials.get(camera_entity).is_some() {
+                self.draw(&entities, &visuals, &spatials, camera_entity);
+            }
+        }
 
         // TODO: implement own "extrapolated time" concept or similar
         // to decide how often we should actually be trying to render?

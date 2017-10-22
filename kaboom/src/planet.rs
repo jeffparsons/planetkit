@@ -1,10 +1,14 @@
 use specs;
+use specs::{Fetch, LazyUpdate, Entities};
 
 use pk;
 use pk::globe::{Globe, Spec};
 
 // Create a planet to fight on.
-pub fn create_now(world: &mut specs::World) -> specs::Entity {
+pub fn create(
+    entities: &Entities,
+    updater: &Fetch<LazyUpdate>,
+) -> specs::Entity {
     // Make it small enough that you can find another person easily enough.
     // TODO: eventually make it scale to the number of players present at the start of each round.
     // TODO: special generator for this; you want to have lava beneath the land
@@ -25,9 +29,8 @@ pub fn create_now(world: &mut specs::World) -> specs::Entity {
     };
     let globe = Globe::new(spec);
 
-    world
-        .create_entity()
-        .with(globe)
-        .with(pk::Spatial::new_root())
-        .build()
+    let entity = entities.create();
+    updater.insert(entity, globe);
+    updater.insert(entity, pk::Spatial::new_root());
+    entity
 }

@@ -6,6 +6,7 @@ use slog;
 use slog_term;
 use slog_async;
 use specs;
+use specs::{Fetch, LazyUpdate, Entities};
 
 use types::*;
 use window;
@@ -14,6 +15,7 @@ use globe;
 use cell_dweller;
 use render;
 use super::LogResource;
+use camera::DefaultCamera;
 
 pub fn noop_create_systems<'a, 'b>(
     _logger: &slog::Logger,
@@ -229,6 +231,22 @@ pub fn create_simple_chase_camera_now(
         .build();
     use camera::DefaultCamera;
     // TODO: gah, where does this belong?
-    world.add_resource(DefaultCamera { camera_entity: camera_entity });
+    world.add_resource(DefaultCamera { camera_entity: Some(camera_entity) });
     camera_entity
+}
+
+pub fn create_simple_chase_camera(
+    entities: &Entities,
+    updater: &Fetch<LazyUpdate>,
+    player_character_entity: specs::Entity,
+    default_camera: &mut DefaultCamera,
+) -> specs::Entity {
+    // Create a camera sitting a little bit behind the cell dweller.
+    let eye = Pt3::new(0.0, 4.0, -6.0);
+    let target = Pt3::origin();
+    let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
+    let entity = entities.create();
+    updater.insert(entity, ::Spatial::new(player_character_entity, camera_transform));
+    default_camera.camera_entity = Some(entity);
+    entity
 }

@@ -53,7 +53,7 @@ impl App {
     pub fn new(
         parent_log: &Logger,
         window: &mut PistonWindow,
-        world: specs::World,
+        mut world: specs::World,
         dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
     ) -> App {
         use camera_controllers::{FirstPersonSettings, FirstPerson};
@@ -107,6 +107,7 @@ impl App {
         let factory = &mut window.factory.clone();
         let mesh_repo_ptr = Arc::new(Mutex::new(mesh_repo));
         let render_sys = render::System::new(
+            &mut world,
             factory,
             render_sys_encoder_channel,
             window.output_color.clone(),

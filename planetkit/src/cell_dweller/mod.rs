@@ -20,6 +20,7 @@ pub struct ActiveCellDweller {
 }
 
 impl ActiveCellDweller {
+	// TODO: replace with AutoResource
     pub fn ensure_registered(world: &mut specs::World) {
         let res_id = shred::ResourceId::new::<ActiveCellDweller>();
         if !world.res.has_value(res_id) {
