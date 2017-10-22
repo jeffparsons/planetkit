@@ -1,16 +1,27 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ReadStorage, WriteStorage, Fetch};
+use specs::{ReadStorage, WriteStorage, Fetch, FetchMut};
 use slog::Logger;
 use piston::input::Input;
 
 use types::*;
-use super::{CellDweller, ActiveCellDweller};
+use super::{
+    CellDweller,
+    ActiveCellDweller,
+    SendMessageQueue,
+    CellDwellerMessage,
+    SetPosMessage,
+};
 use Spatial;
 use movement::*;
 use globe::Globe;
 use globe::chunk::Material;
 use input_adapter;
+use ::net::{
+    SendMessage,
+    Transport,
+    PeerId,
+};
 
 // TODO: own file?
 pub struct MovementInputAdapter {
@@ -77,9 +88,13 @@ enum ForwardOrBackward {
 
 impl MovementSystem {
     pub fn new(
+        world: &mut specs::World,
         input_receiver: mpsc::Receiver<MovementEvent>,
         parent_log: &Logger,
     ) -> MovementSystem {
+        use ::AutoResource;
+        SendMessageQueue::ensure(world);
+
         MovementSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
@@ -95,6 +110,7 @@ impl MovementSystem {
     // added through my interface. We can then specialise that to automatically call this initialisation
     // code if the system happens to provide it.
     pub fn init(&mut self, world: &mut specs::World) {
+        // TODO: move this into `new`.
         ActiveCellDweller::ensure_registered(world);
     }
 
@@ -177,20 +193,32 @@ impl MovementSystem {
             // REVISIT: += ?
             cd.seconds_until_next_move = cd.seconds_between_moves;
             trace!(self.log, "Stepped"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+
+            break;
         }
     }
 }
 
 impl<'a> specs::System<'a> for MovementSystem {
-    type SystemData = (Fetch<'a, TimeDeltaResource>,
-     WriteStorage<'a, CellDweller>,
-     WriteStorage<'a, Spatial>,
-     ReadStorage<'a, Globe>,
-     Fetch<'a, ActiveCellDweller>);
+    type SystemData = (
+        Fetch<'a, TimeDeltaResource>,
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Spatial>,
+        ReadStorage<'a, Globe>,
+        Fetch<'a, ActiveCellDweller>,
+        FetchMut<'a, SendMessageQueue>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
-        let (dt, mut cell_dwellers, mut spatials, globes, active_cell_dweller_resource) = data;
+        let (
+            dt,
+            mut cell_dwellers,
+            mut spatials,
+            globes,
+            active_cell_dweller_resource,
+            mut send_message_queue
+        ) = data;
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
             None => return,
@@ -224,6 +252,8 @@ impl<'a> specs::System<'a> for MovementSystem {
             }
         };
 
+        let mut maybe_did_something = false;
+
         // Count down until we're allowed to move next.
         if cd.seconds_until_next_move > 0.0 {
             cd.seconds_until_next_move = (cd.seconds_until_next_move - dt.0).max(0.0);
@@ -239,6 +269,7 @@ impl<'a> specs::System<'a> for MovementSystem {
             } else {
                 ForwardOrBackward::Backward
             };
+            maybe_did_something = true;
             self.step_if_possible(cd, globe, forward_or_backward);
         }
 
@@ -252,10 +283,12 @@ impl<'a> specs::System<'a> for MovementSystem {
                 cd.turn(TurnDir::Left);
                 cd.seconds_until_next_turn = cd.seconds_between_turns;
                 trace!(self.log, "Turned left"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                maybe_did_something = true;
             } else if self.turn_right && !self.turn_left {
                 cd.turn(TurnDir::Right);
                 cd.seconds_until_next_turn = cd.seconds_between_turns;
                 trace!(self.log, "Turned right"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
+                maybe_did_something = true;
             }
         }
 
@@ -265,6 +298,29 @@ impl<'a> specs::System<'a> for MovementSystem {
         // enemies shunting the cell dweller around, etc. that happen
         // after control.
         if cd.is_real_space_transform_dirty() {
+            // TEMPHACK: don't send if we definitely didn't move,
+            // because even though we're supposed to be broadcasting,
+            // I'm currently sending to peer 1, which might not exist yet.
+
+            // TODO: better way of deciding whether
+            // to send network message.
+            // Tell all peers about our new position.
+            if maybe_did_something && send_message_queue.has_consumer {
+                send_message_queue.queue.push_back(
+                    SendMessage {
+                        // TODO: this should be broadcast;
+                        // allow that in a SendMessage.
+                        dest_peer_id: PeerId(1),
+                        game_message: CellDwellerMessage::SetPos(SetPosMessage {
+                            new_pos: cd.pos,
+                            new_dir: cd.dir,
+                            new_last_turn_bias: cd.last_turn_bias,
+                        }),
+                        transport: Transport::UDP,
+                    }
+                )
+            }
+
             spatial.set_local_transform(cd.get_real_transform_and_mark_as_clean());
         }
     }

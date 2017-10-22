@@ -3,8 +3,7 @@ use std::ops::{Deref, DerefMut};
 
 use super::{GridCoord, GridPoint2, Root, RootIndex};
 
-// TODO: rename to GridPoint3
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct GridPoint3 {
     pub rxy: GridPoint2,
     pub z: GridCoord,

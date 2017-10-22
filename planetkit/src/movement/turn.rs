@@ -3,7 +3,7 @@ use grid::{GridCoord, GridPoint3, Dir};
 use super::transform::*;
 use super::util::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum TurnDir {
     Left,
     Right,

@@ -90,7 +90,7 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(
     // Initialize all systems.
     // TODO: split out system initialization into helper functions.
 
-    let mut movement_sys = cell_dweller::MovementSystem::new(movement_input_receiver, &log);
+    let mut movement_sys = cell_dweller::MovementSystem::new(&mut world, movement_input_receiver, &log);
     movement_sys.init(&mut world);
 
     let mut mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &log);

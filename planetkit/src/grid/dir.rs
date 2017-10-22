@@ -1,6 +1,6 @@
 pub type DirIndex = u8;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Dir {
     pub index: DirIndex,
 }

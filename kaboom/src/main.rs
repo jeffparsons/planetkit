@@ -15,9 +15,13 @@ mod game_state;
 mod game_system;
 mod planet;
 mod message;
+mod send_mux_system;
+mod recv_demux_system;
 
 use message::Message;
 use clap::{AppSettings, Arg, SubCommand};
+use send_mux_system::SendMuxSystem;
+use recv_demux_system::RecvDemuxSystem;
 
 fn main() {
     let matches = clap::App::new("Kaboom")
@@ -53,12 +57,17 @@ fn main() {
         use pk::net::ServerResource;
 
         // Systems we added will have ensured ServerResource is present.
-        let server_resource = app.world_mut().write_resource::<ServerResource<Message>>();
+        let world = app.world_mut();
+        let server_resource = world.write_resource::<ServerResource<Message>>();
         let mut server = server_resource.server.lock().expect("Failed to lock server");
         if let Some(_matches) = matches.subcommand_matches("listen") {
             window.set_title("Kaboom (server)".to_string());
             // TODO: make port configurable
             server.start_listen(62831);
+
+            // Let the game know it's in charge of the world.
+            let mut game_state = world.write_resource::<game_state::GameState>();
+            game_state.is_master = true;
         } else if let Some(matches) = matches.subcommand_matches("connect") {
             window.set_title("Kaboom (client)".to_string());
             // TODO: make port configurable
@@ -78,10 +87,22 @@ fn add_systems(
 ) -> specs::DispatcherBuilder<'static, 'static> {
     let game_system = game_system::GameSystem::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
+    let recv_demux_system = RecvDemuxSystem::new(logger, world);
+    let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
+    let send_mux_system = SendMuxSystem::new(logger, world);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
     dispatcher_builder
         .add(game_system, "woolgather_game", &[])
         .add(recv_system, "net_recv", &[])
-        .add(send_system, "net_send", &[])
+        .add(recv_demux_system, "recv_demux", &["net_recv"])
+        .add_barrier()
+        .add(cd_recv_system, "cd_recv", &[])
+        // TODO: explicitly add all systems here,
+        // instead of whatever "simple" wants to throw at you.
+        // At the moment they might execute in an order that
+        // could add unnecessary latency to receiving/sending messages.
+        .add_barrier()
+        .add(send_mux_system, "send_mux", &[])
+        .add(send_system, "net_send", &["send_mux"])
 }

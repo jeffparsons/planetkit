@@ -1,7 +1,7 @@
 use super::{GridCoord, Root, RootIndex};
 use super::GridPoint3;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct GridPoint2 {
     pub root: Root,
     pub x: GridCoord,

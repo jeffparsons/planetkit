@@ -70,19 +70,23 @@ pub struct SendWireMessage<G> {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct RecvMessage<G> {
     // TODO: sender peer id
-    game_message: G,
+    pub game_message: G,
 }
 
+#[derive(Debug)]
 pub enum Transport {
     UDP,
     TCP,
 }
 
+/// Game message wrapped for sending to peer(s).
+/// Might wrap a module's message, or a game's message.
+#[derive(Debug)]
 pub struct SendMessage<G> {
-    dest_peer_id: PeerId,
-    game_message: G,
+    pub dest_peer_id: PeerId,
+    pub game_message: G,
     /// The network transport that should be used to send this message.
-    transport: Transport,
+    pub transport: Transport,
 }
 
 /// `World`-global resource for game messages waiting to be dispatched
@@ -111,7 +115,7 @@ pub struct SendMessageQueue<G> {
 /// whether that peer has authority to make assertions about
 /// those players.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct PeerId(u16);
+pub struct PeerId(pub u16);
 
 /// A new network peer.
 ///

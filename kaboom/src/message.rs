@@ -1,5 +1,9 @@
 use pk::net::GameMessage;
 
+use pk::cell_dweller::CellDwellerMessage;
+
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub struct Message {}
+pub enum Message {
+    CellDweller(CellDwellerMessage),
+}
 impl GameMessage for Message{}

@@ -37,7 +37,7 @@ impl Walker {
 
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
         let mut movement_sys =
-            cell_dweller::MovementSystem::new(movement_input_receiver, &root_log);
+            cell_dweller::MovementSystem::new(&mut world, movement_input_receiver, &root_log);
         movement_sys.init(&mut world);
         // Stop the player from getting stuck on cliffs; we want to test what
         // happens when they walk really aggressively all around the world, not what

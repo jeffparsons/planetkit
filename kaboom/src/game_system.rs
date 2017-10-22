@@ -59,6 +59,13 @@ impl<'a> specs::System<'a> for GameSystem {
             );
         }
 
+        // TODO: don't create your own guy unless you're the master.
+        // Instead receive updates about players joining,
+        // create entities for them, and then tell them about the
+        // entity that is their player character.
+
+        // TODO: before that, just fight over the same character. :D
+
         if game_state.fighter_entity.is_none() {
             if let Some(globe_entity) = game_state.globe_entity {
                 // We can only do this after the globe has been realized.

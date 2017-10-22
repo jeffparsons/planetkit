@@ -1,6 +1,6 @@
 pub type RootIndex = u8;
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct Root {
     pub index: RootIndex,
 }
