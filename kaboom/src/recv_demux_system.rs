@@ -38,8 +38,7 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
         while let Some(message) = recv_message_queue.queue.pop_front() {
             match message.game_message {
                 Message::CellDweller(cd_message) => {
-                    // TODO: demote to trace
-                    info!(self.log, "Forwarding cell dweller message to its recv message queue"; "message" => format!("{:?}", cd_message));
+                    trace!(self.log, "Forwarding cell dweller message to its recv message queue"; "message" => format!("{:?}", cd_message));
                     cell_dweller_recv_queue.queue.push_back(
                         RecvMessage {
                             game_message: cd_message,

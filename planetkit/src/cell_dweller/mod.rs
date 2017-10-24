@@ -37,12 +37,12 @@ impl ActiveCellDweller {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum CellDwellerMessage {
     SetPos(SetPosMessage),
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct SetPosMessage {
     pub new_pos: GridPoint3,
     pub new_dir: Dir,

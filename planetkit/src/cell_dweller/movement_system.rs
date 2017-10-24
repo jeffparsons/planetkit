@@ -20,7 +20,7 @@ use input_adapter;
 use ::net::{
     SendMessage,
     Transport,
-    PeerId,
+    Destination,
 };
 
 // TODO: own file?
@@ -308,9 +308,10 @@ impl<'a> specs::System<'a> for MovementSystem {
             if maybe_did_something && send_message_queue.has_consumer {
                 send_message_queue.queue.push_back(
                     SendMessage {
-                        // TODO: this should be broadcast;
-                        // allow that in a SendMessage.
-                        dest_peer_id: PeerId(1),
+                        // TODO: this shouldn't actually be broadcast:
+                        // it should be either broadcast if you're the master,
+                        // or just tell the server if you're a client.
+                        destination: Destination::Broadcast,
                         game_message: CellDwellerMessage::SetPos(SetPosMessage {
                             new_pos: cd.pos,
                             new_dir: cd.dir,

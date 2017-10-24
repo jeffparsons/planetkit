@@ -44,11 +44,10 @@ impl<'a> specs::System<'a> for SendMuxSystem {
 
         // Drain the cell_dweller queue into the send_message queue.
         while let Some(message) = cell_dweller_send_queue.queue.pop_front() {
-            // TODO: demote to trace
-            info!(self.log, "Forwarding cell dweller message to send message queue"; "message" => format!("{:?}", message));
+            trace!(self.log, "Forwarding cell dweller message to send message queue"; "message" => format!("{:?}", message));
             send_message_queue.queue.push_back(
                 SendMessage {
-                    dest_peer_id: message.dest_peer_id,
+                    destination: message.destination,
                     game_message: Message::CellDweller(message.game_message),
                     transport: message.transport,
                 }

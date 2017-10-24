@@ -17,6 +17,7 @@ use super::{
     NewPeer,
     NetworkPeers,
     NetworkPeer,
+    Destination,
     PeerId,
     Transport,
 };
@@ -70,6 +71,39 @@ impl<G> SendSystem<G>
             new_peer_rx: new_peer_rx,
         };
         system
+    }
+
+    fn send_message(&mut self, game_message: G, dest_peer: &mut NetworkPeer<G>, transport: Transport) {
+        // Decide whether the message should go over TCP or UDP.
+        match transport {
+            Transport::UDP => {
+                // Look up the destination socket address for this peer.
+                // (Peer ID 0 refers to self, and isn't in the vec.)
+                let dest_socket_addr = dest_peer.socket_addr;
+
+                // Re-wrap the message for sending.
+                let send_wire_message = SendWireMessage {
+                    dest: dest_socket_addr,
+                    message: WireMessage::Game(game_message),
+                };
+
+                self.send_udp_tx.try_send(send_wire_message).unwrap_or_else(|err| {
+                    error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
+                    ()
+                });
+            },
+            Transport::TCP => {
+                // Look up TCP sender channel for this peer.
+                // (Peer ID 0 refers to self, and isn't in the vec.)
+                let sender = &mut dest_peer.tcp_sender;
+
+                let wire_message = WireMessage::Game(game_message);
+                sender.try_send(wire_message).unwrap_or_else(|err| {
+                    error!(self.log, "Could send message to TCP client; was the buffer full?"; "err" => format!("{:?}", err));
+                    ()
+                });
+            }
+        }
     }
 }
 
@@ -126,34 +160,23 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
 
         // Send everything in send queue to UDP/TCP server.
         while let Some(message) = send_message_queue.queue.pop_front() {
-            // Decide whether the message should go over TCP or UDP.
-            match message.transport {
-                Transport::UDP => {
-                    // Look up the destination socket address for this peer.
-                    // (Peer ID 0 refers to self, and isn't in the vec.)
-                    let dest_socket_addr = peers[message.dest_peer_id.0 as usize - 1].socket_addr;
-
-                    // Re-wrap the message for sending.
-                    let send_wire_message = SendWireMessage {
-                        dest: dest_socket_addr,
-                        message: WireMessage::Game(message.game_message),
-                    };
-
-                    self.send_udp_tx.try_send(send_wire_message).unwrap_or_else(|err| {
-                        error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
-                        ()
-                    });
+            // Re-wrap message and send it to its destination(s).
+            match message.destination {
+                Destination::Unicast(peer_id) => {
+                    self.send_message(
+                        message.game_message,
+                        &mut peers[peer_id.0 as usize - 1],
+                        message.transport,
+                    );
                 },
-                Transport::TCP => {
-                    // Look up TCP sender channel for this peer.
-                    // (Peer ID 0 refers to self, and isn't in the vec.)
-                    let sender = &mut peers[message.dest_peer_id.0 as usize - 1].tcp_sender;
-
-                    let wire_message = WireMessage::Game(message.game_message);
-                    sender.try_send(wire_message).unwrap_or_else(|err| {
-                        error!(self.log, "Could send message to TCP client; was the buffer full?"; "err" => format!("{:?}", err));
-                        ()
-                    });
+                Destination::Broadcast => {
+                    for peer in peers.iter_mut() {
+                        self.send_message(
+                            message.game_message.clone(),
+                            peer,
+                            message.transport,
+                        );
+                    }
                 }
             }
         }

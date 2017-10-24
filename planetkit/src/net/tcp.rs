@@ -328,7 +328,7 @@ mod tests {
     use bytes::BufMut;
 
     // Nothing interesting in here!
-    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
     struct TestMessage {}
     impl GameMessage for TestMessage{}
 

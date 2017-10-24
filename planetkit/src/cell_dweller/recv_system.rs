@@ -71,6 +71,8 @@ impl<'a> specs::System<'a> for RecvSystem {
                         set_pos_message.new_last_turn_bias,
                     );
 
+                    // TODO: tell all _other_ peers about this update.
+
                     // Update real-space coordinates if necessary.
                     // TODO: do this in a separate system; it needs to be done before
                     // things are rendered, but there might be other effects like gravity,

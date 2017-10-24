@@ -7,7 +7,7 @@ use specs;
 use super::*;
 
 // Nothing interesting in here!
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 struct TestMessage {
     disposition: String,
 }
@@ -105,7 +105,7 @@ fn client_sends_udp_message_to_server() {
     client_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Sunny!".to_string(),
             },
@@ -142,7 +142,7 @@ fn client_sends_tcp_messages_to_server() {
     client_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Cooperative!".to_string(),
             },
@@ -152,7 +152,7 @@ fn client_sends_tcp_messages_to_server() {
     client_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Enthusiastic!".to_string(),
             },
@@ -190,7 +190,7 @@ fn server_sends_udp_message_to_client() {
     server_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Authoritative!".to_string(),
             },
@@ -232,7 +232,7 @@ fn server_sends_tcp_messages_to_client() {
     server_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Oppressive!".to_string(),
             },
@@ -242,7 +242,7 @@ fn server_sends_tcp_messages_to_client() {
     server_node.enqueue_message(
         SendMessage {
             // Peer ID 0 is self.
-            dest_peer_id: PeerId(1),
+            destination: Destination::Unicast(PeerId(1)),
             game_message: TestMessage{
                 disposition: "Demanding!".to_string(),
             },

@@ -33,7 +33,7 @@ pub use self::server_resource::ServerResource;
 //
 // Exists primarily as a way to aggregate all the super-traits we expect,
 // especially around being able to serialize it.
-pub trait GameMessage : 'static + Serialize + DeserializeOwned + Debug + Eq + PartialEq + Send + Sync {}
+pub trait GameMessage : 'static + Serialize + DeserializeOwned + Debug + Eq + PartialEq + Send + Sync + Clone {}
 
 // TODO: identify self in every message. Make this a struct wrapping the enum,
 // or include your identity in Goodbye and a Game wrapper?
@@ -73,7 +73,7 @@ pub struct RecvMessage<G> {
     pub game_message: G,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Transport {
     UDP,
     TCP,
@@ -83,10 +83,16 @@ pub enum Transport {
 /// Might wrap a module's message, or a game's message.
 #[derive(Debug)]
 pub struct SendMessage<G> {
-    pub dest_peer_id: PeerId,
+    pub destination: Destination,
     pub game_message: G,
     /// The network transport that should be used to send this message.
     pub transport: Transport,
+}
+
+#[derive(Debug)]
+pub enum Destination {
+    Unicast(PeerId),
+    Broadcast,
 }
 
 /// `World`-global resource for game messages waiting to be dispatched
@@ -114,7 +120,7 @@ pub struct SendMessageQueue<G> {
 /// multiple players from one peer, and need to decide
 /// whether that peer has authority to make assertions about
 /// those players.
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct PeerId(pub u16);
 
 /// A new network peer.
