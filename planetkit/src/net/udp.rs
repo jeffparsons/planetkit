@@ -128,8 +128,7 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
                 }
             })
             .for_each(move |recv_wire_message| {
-                // TODO: Only do this at debug level for a while, then demote to trace.
-                info!(server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+                trace!(server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
                 // Send the message to net RecvSystem, to be interpreted and dispatched.
                 recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");

@@ -297,8 +297,7 @@ fn handle_tcp_stream<G: GameMessage>(
         }
     })
     .for_each(move |recv_wire_message| {
-        // TODO: Only do this at debug level for a while, then demote to trace.
-        info!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+        trace!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
         // Send the message to net RecvSystem, to be interpreted and dispatched.
         recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");

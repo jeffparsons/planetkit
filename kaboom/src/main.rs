@@ -10,8 +10,10 @@ extern crate serde;
 extern crate clap;
 extern crate piston_window;
 
-mod fighter;
+mod player;
 mod game_state;
+mod client_state;
+mod fighter;
 mod game_system;
 mod planet;
 mod message;
@@ -66,8 +68,8 @@ fn main() {
             server.start_listen(62831);
 
             // Let the game know it's in charge of the world.
-            let mut game_state = world.write_resource::<game_state::GameState>();
-            game_state.is_master = true;
+            let mut client_state = world.write_resource::<client_state::ClientState>();
+            client_state.is_master = true;
         } else if let Some(matches) = matches.subcommand_matches("connect") {
             window.set_title("Kaboom (client)".to_string());
             // TODO: make port configurable

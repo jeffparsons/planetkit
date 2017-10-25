@@ -1,19 +1,18 @@
 use std;
-use std::collections::vec_deque::VecDeque;
 use std::sync::mpsc::TryRecvError;
 
 use specs;
 use specs::{FetchMut};
-use shred;
 use slog::Logger;
 use futures;
 
 use super::{
     GameMessage,
-    SendMessage,
     WireMessage,
     SendWireMessage,
     SendMessageQueue,
+    RecvMessage,
+    RecvMessageQueue,
     NewPeer,
     NetworkPeers,
     NetworkPeer,
@@ -35,24 +34,10 @@ impl<G> SendSystem<G>
         use auto_resource::AutoResource;
 
         // Ensure SendMessage ring buffer resource is registered.
-        let res_id = shred::ResourceId::new::<SendMessageQueue<G>>();
-        if !world.res.has_value(res_id) {
-            let send_message_queue = SendMessageQueue {
-                queue: VecDeque::<SendMessage<G>>::new()
-            };
-            world.add_resource(send_message_queue);
-        }
+        SendMessageQueue::<G>::ensure(world);
 
-        // TODO: make a generic helper for this!!!
-        // TODO: just use autoresoruce.
         // Ensure NetworkPeers resource is registered.
-        let res_id = shred::ResourceId::new::<NetworkPeers<G>>();
-        if !world.res.has_value(res_id) {
-            let network_peers = NetworkPeers {
-                peers: Vec::<NetworkPeer<G>>::new()
-            };
-            world.add_resource(network_peers);
-        }
+        NetworkPeers::<G>::ensure(world);
 
         // Ensure ServerResource is present, and fetch the
         // channel ends we need from it.
@@ -113,15 +98,16 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
     // TODO: require peer list as systemdata.
     type SystemData = (
         FetchMut<'a, SendMessageQueue<G>>,
+        FetchMut<'a, RecvMessageQueue<G>>,
         FetchMut<'a, NetworkPeers<G>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (
             mut send_message_queue,
-            mut peers,
+            mut recv_message_queue,
+            mut network_peers,
         ) = data;
-        let peers = &mut peers.peers;
 
         // TODO: does this stuff even belong here,
         // or should things like `send_system_new_peer_sender`
@@ -135,13 +121,18 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
             match self.new_peer_rx.try_recv() {
                 Ok(new_peer) => {
                     // Peer ID 0 refers to self, and isn't in the array.
-                    let next_peer_id = PeerId(peers.len() as u16 + 1);
+                    let next_peer_id = PeerId(network_peers.peers.len() as u16 + 1);
                     let peer = NetworkPeer {
                         id: next_peer_id,
                         tcp_sender: new_peer.tcp_sender,
                         socket_addr: new_peer.socket_addr,
                     };
-                    peers.push(peer);
+                    network_peers.peers.push(peer);
+
+                    // Leave a note about the new peer so game-specific
+                    // systems can do whatever initialization they might
+                    // need to do.
+                    network_peers.new_peers.push_back(next_peer_id);
                 },
                 Err(err) => {
                     match err {
@@ -162,15 +153,29 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
         while let Some(message) = send_message_queue.queue.pop_front() {
             // Re-wrap message and send it to its destination(s).
             match message.destination {
-                Destination::Unicast(peer_id) => {
-                    self.send_message(
-                        message.game_message,
-                        &mut peers[peer_id.0 as usize - 1],
-                        message.transport,
-                    );
+                Destination::One(peer_id) => {
+                    // If the destination is ourself,
+                    // then just put it straight back on the recv
+                    // message queue. This is useful because being
+                    // able to treat yourself as just another client/peer
+                    // sometimes allows for more general code, rather than
+                    // specialising between client or server case.
+                    if peer_id.0 == 0 {
+                        recv_message_queue.queue.push_back(
+                            RecvMessage {
+                                game_message: message.game_message,
+                            }
+                        );
+                    } else {
+                        self.send_message(
+                            message.game_message,
+                            &mut network_peers.peers[peer_id.0 as usize - 1],
+                            message.transport,
+                        );
+                    }
                 },
-                Destination::Broadcast => {
-                    for peer in peers.iter_mut() {
+                Destination::EveryoneElse => {
+                    for peer in network_peers.peers.iter_mut() {
                         self.send_message(
                             message.game_message.clone(),
                             peer,

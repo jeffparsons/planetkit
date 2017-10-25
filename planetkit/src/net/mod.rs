@@ -15,7 +15,9 @@ use std::collections::vec_deque::VecDeque;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use futures;
+use specs;
 
+use ::AutoResource;
 pub use self::recv_system::RecvSystem;
 pub use self::send_system::SendSystem;
 pub use self::server::Server;
@@ -91,8 +93,11 @@ pub struct SendMessage<G> {
 
 #[derive(Debug)]
 pub enum Destination {
-    Unicast(PeerId),
-    Broadcast,
+    One(PeerId),
+    EveryoneElse,
+    // TODO: consider adding a new one for "all including self"
+    // so we can simplify some code paths that work differently
+    // depending on whether you're the server or not.
 }
 
 /// `World`-global resource for game messages waiting to be dispatched
@@ -105,6 +110,14 @@ pub struct RecvMessageQueue<G> {
 /// to peers.
 pub struct SendMessageQueue<G> {
     pub queue: VecDeque<SendMessage<G>>,
+}
+
+impl<G: GameMessage> AutoResource for SendMessageQueue<G> {
+    fn new(_world: &mut specs::World) -> SendMessageQueue<G> {
+        SendMessageQueue {
+            queue: VecDeque::<SendMessage<G>>::new(),
+        }
+    }
 }
 
 /// Local identifier for a network peer.
@@ -147,4 +160,18 @@ pub struct NetworkPeer<G> {
 /// `World`-global resource for network peers.
 pub struct NetworkPeers<G> {
     pub peers: Vec<NetworkPeer<G>>,
+    // List of new peers for a single game-specific
+    // system to use.
+    // TODO: This makes yet another good use case for some kind
+    // of pub/sub event system.
+    pub new_peers: VecDeque<PeerId>,
+}
+
+impl<G: GameMessage> AutoResource for NetworkPeers<G> {
+    fn new(_world: &mut specs::World) -> NetworkPeers<G> {
+        NetworkPeers {
+            peers: Vec::<NetworkPeer<G>>::new(),
+            new_peers: VecDeque::<PeerId>::new(),
+        }
+    }
 }

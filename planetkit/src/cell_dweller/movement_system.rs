@@ -252,7 +252,6 @@ impl<'a> specs::System<'a> for MovementSystem {
             }
         };
 
-        let mut maybe_did_something = false;
 
         // Count down until we're allowed to move next.
         if cd.seconds_until_next_move > 0.0 {
@@ -269,7 +268,6 @@ impl<'a> specs::System<'a> for MovementSystem {
             } else {
                 ForwardOrBackward::Backward
             };
-            maybe_did_something = true;
             self.step_if_possible(cd, globe, forward_or_backward);
         }
 
@@ -283,12 +281,10 @@ impl<'a> specs::System<'a> for MovementSystem {
                 cd.turn(TurnDir::Left);
                 cd.seconds_until_next_turn = cd.seconds_between_turns;
                 trace!(self.log, "Turned left"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-                maybe_did_something = true;
             } else if self.turn_right && !self.turn_left {
                 cd.turn(TurnDir::Right);
                 cd.seconds_until_next_turn = cd.seconds_between_turns;
                 trace!(self.log, "Turned right"; "new_pos" => format!("{:?}", cd.pos()), "new_dir" => format!("{:?}", cd.dir()));
-                maybe_did_something = true;
             }
         }
 
@@ -298,20 +294,21 @@ impl<'a> specs::System<'a> for MovementSystem {
         // enemies shunting the cell dweller around, etc. that happen
         // after control.
         if cd.is_real_space_transform_dirty() {
-            // TEMPHACK: don't send if we definitely didn't move,
-            // because even though we're supposed to be broadcasting,
-            // I'm currently sending to peer 1, which might not exist yet.
-
             // TODO: better way of deciding whether
             // to send network message.
             // Tell all peers about our new position.
-            if maybe_did_something && send_message_queue.has_consumer {
+            if send_message_queue.has_consumer {
                 send_message_queue.queue.push_back(
                     SendMessage {
                         // TODO: this shouldn't actually be broadcast:
                         // it should be either broadcast if you're the master,
                         // or just tell the server if you're a client.
-                        destination: Destination::Broadcast,
+                        // OR: should there be a special convenience way
+                        // to ask "who is the server", and then you can
+                        // just _always_ send it to the server, even if
+                        // the server is you, and then the server always
+                        // forwards the message on? That might be a neater way.
+                        destination: Destination::EveryoneElse,
                         game_message: CellDwellerMessage::SetPos(SetPosMessage {
                             new_pos: cd.pos,
                             new_dir: cd.dir,
