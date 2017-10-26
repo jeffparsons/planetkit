@@ -4,11 +4,12 @@ use slog::Logger;
 
 use super::{
     CellDweller,
-    ActiveCellDweller,
     RecvMessageQueue,
     CellDwellerMessage,
 };
 use Spatial;
+
+use net::EntityIds;
 
 pub struct RecvSystem {
     log: Logger,
@@ -32,31 +33,37 @@ impl<'a> specs::System<'a> for RecvSystem {
     type SystemData = (
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
-        Fetch<'a, ActiveCellDweller>,
         FetchMut<'a, RecvMessageQueue>,
+        Fetch<'a, EntityIds>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         let (
             mut cell_dwellers,
             mut spatials,
-            active_cell_dweller_resource,
-            mut recv_message_queue
+            mut recv_message_queue,
+            entity_ids,
         ) = data;
 
         // Slurp all inbound messages.
         while let Some(message) = recv_message_queue.queue.pop_front() {
             match message.game_message {
                 CellDwellerMessage::SetPos(set_pos_message) => {
-                    let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
-                        Some(entity) => entity,
-                        None => return,
+                    // Look up the entity from its global ID.
+                    let cell_dweller_entity = match entity_ids.mapping.get(&set_pos_message.entity_id) {
+                        Some(ent) => ent,
+                        // We probably just don't know about it yet.
+                        None => {
+                            // TODO: demote to trace
+                            info!(self.log, "Heard about cell dweller we don't know about yet"; "entity_id" => set_pos_message.entity_id);
+                            continue;
+                        },
                     };
-                    let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect(
-                        "Someone deleted the controlled entity's CellDweller",
+                    let cd = cell_dwellers.get_mut(*cell_dweller_entity).expect(
+                        "Missing CellDweller",
                     );
-                    let spatial = spatials.get_mut(active_cell_dweller_entity).expect(
-                        "Someone deleted the controlled entity's Spatial",
+                    let spatial = spatials.get_mut(*cell_dweller_entity).expect(
+                        "Missing Spatial",
                     );
 
                     // TODO: demote to trace

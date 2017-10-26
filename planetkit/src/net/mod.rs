@@ -11,6 +11,8 @@ mod tests;
 use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::collections::vec_deque::VecDeque;
+use std::collections::HashMap;
+use std::ops::Range;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -174,4 +176,34 @@ impl<G: GameMessage> AutoResource for NetworkPeers<G> {
             new_peers: VecDeque::<PeerId>::new(),
         }
     }
+}
+
+/// `World`-global resource for global entity naming.
+pub struct EntityIds {
+    // Range of IDs this node can allocate for itself.
+    // The master will tell you what this should be.
+    pub range: Range<u64>,
+    // Only entities to be sent over the network should
+    // be given global identities in this mapping.
+    pub mapping: HashMap<u64, specs::Entity>,
+}
+
+impl AutoResource for EntityIds {
+    fn new(_world: &mut specs::World) -> EntityIds {
+        EntityIds {
+            // The master will tell us what our namespace is.
+            // TODO: make the master actually do that.
+            range: 0..100,
+            mapping: HashMap::new(),
+        }
+    }
+}
+
+pub struct NetMarker {
+    pub id: u64,
+    // TODO: sequence number so we can reject old updates?
+}
+
+impl specs::Component for NetMarker {
+    type Storage = specs::DenseVecStorage<Self>;
 }

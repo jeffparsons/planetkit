@@ -44,6 +44,7 @@ pub enum CellDwellerMessage {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct SetPosMessage {
+    pub entity_id: u64,
     pub new_pos: GridPoint3,
     pub new_dir: Dir,
     pub new_last_turn_bias: TurnDir,

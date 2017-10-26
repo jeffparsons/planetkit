@@ -28,6 +28,7 @@ impl Walker {
         world.register::<::cell_dweller::CellDweller>();
         world.register::<::Spatial>();
         world.register::<::globe::Globe>();
+        world.register::<::net::NetMarker>();
 
         // Initialize common resources.
         world.add_resource(TimeDeltaResource(0.0));

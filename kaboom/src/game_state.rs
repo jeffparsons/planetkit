@@ -15,6 +15,10 @@ pub struct GameState {
     // in practice we can be pretty sure clients will
     // hear about new players in order, but it's still not
     // the right kind of structure to store this in.
+    //
+    // TODO: is there any reason for players to not just
+    // be another kind of component? They do hold a local
+    // peer ID... but is that enough reason?
     pub players: Vec<Player>,
     // New players that have joined but haven't been initialized.
     // Only the server cares about this.

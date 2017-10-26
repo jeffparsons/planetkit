@@ -21,6 +21,7 @@ use ::net::{
     SendMessage,
     Transport,
     Destination,
+    NetMarker,
 };
 
 // TODO: own file?
@@ -207,6 +208,7 @@ impl<'a> specs::System<'a> for MovementSystem {
         ReadStorage<'a, Globe>,
         Fetch<'a, ActiveCellDweller>,
         FetchMut<'a, SendMessageQueue>,
+        ReadStorage<'a, NetMarker>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -217,7 +219,8 @@ impl<'a> specs::System<'a> for MovementSystem {
             mut spatials,
             globes,
             active_cell_dweller_resource,
-            mut send_message_queue
+            mut send_message_queue,
+            net_markers,
         ) = data;
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
@@ -298,8 +301,21 @@ impl<'a> specs::System<'a> for MovementSystem {
             // to send network message.
             // Tell all peers about our new position.
             if send_message_queue.has_consumer {
+                // If there's a network consumer, then presumably
+                // the entity has been given a global ID.
+                let entity_id = net_markers
+                    .get(active_cell_dweller_entity)
+                    .expect("Shouldn't be trying to tell peers about entities that don't have global IDs!")
+                    .id;
                 send_message_queue.queue.push_back(
                     SendMessage {
+                        // TODO: this shouldn't even be a network message;
+                        // it should be an EVENT on a pubsub thing (or similar...
+                        // you don't want to accidentally miss it this frame
+                        // if you're using asynchronous channels -- is this
+                        // actually a serious consideration?). Then if there's
+                        // a network system hooked up, then it can broadcast it.
+                        //
                         // TODO: this shouldn't actually be broadcast:
                         // it should be either broadcast if you're the master,
                         // or just tell the server if you're a client.
@@ -310,6 +326,7 @@ impl<'a> specs::System<'a> for MovementSystem {
                         // forwards the message on? That might be a neater way.
                         destination: Destination::EveryoneElse,
                         game_message: CellDwellerMessage::SetPos(SetPosMessage {
+                            entity_id: entity_id,
                             new_pos: cd.pos,
                             new_dir: cd.dir,
                             new_last_turn_bias: cd.last_turn_bias,

@@ -77,6 +77,7 @@ pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(
     world.register::<::Spatial>();
     world.register::<::globe::Globe>();
     world.register::<::globe::ChunkView>();
+    world.register::<::net::NetMarker>();
 
     // Initialize common resources.
     // These should be impossible to create from

@@ -23,6 +23,8 @@ pub enum PlayerMessage {
     // Tell a client about the new player ID created for them,
     // or the player they are taking over.
     YourPlayer(PlayerId),
+    NewFighter(u64),
+    YourFighter(u64),
 }
 
 /// `World`-global resource for inbound player-related network messages.
