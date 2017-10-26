@@ -177,7 +177,7 @@ impl ChunkViewSystem {
             // the entity itself up for deletion.
             visuals.remove(chunk_view_ent);
             chunk_views.remove(chunk_view_ent);
-            entities.delete(chunk_view_ent);
+            entities.delete(chunk_view_ent).expect("Somehow tried to use an entity with the wrong generation!");
 
             // TODO: maintain? Do we need to do that here?
             // Or are these entities immediately inaccessible?
