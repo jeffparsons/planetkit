@@ -161,8 +161,10 @@ impl App {
             }
 
             // Dispatch input events to any systems that care.
-            for adapter in &self.input_adapters {
-                adapter.handle(&e);
+            if let Event::Input(input) = e {
+                for adapter in &self.input_adapters {
+                    adapter.handle(&input);
+                }
             }
         }
 

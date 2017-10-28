@@ -24,17 +24,19 @@ impl MiningInputAdapter {
 
 impl input_adapter::InputAdapter for MiningInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{Button, PressEvent, ReleaseEvent};
+        use piston::input::{Button, ButtonState};
         use piston::input::keyboard::Key;
 
-        if let Some(Button::Keyboard(key)) = input_event.press_args() {
-            if key == Key::U {
-                self.sender.send(MiningEvent::PickUp(true)).unwrap();
-            }
-        }
-        if let Some(Button::Keyboard(key)) = input_event.release_args() {
-            if key == Key::U {
-                self.sender.send(MiningEvent::PickUp(false)).unwrap();
+        if let &Input::Button(button_args) = input_event {
+            if let Button::Keyboard(key) = button_args.button {
+                let is_down = match button_args.state {
+                    ButtonState::Press => true,
+                    ButtonState::Release => false,
+                };
+                match key {
+                    Key::U => self.sender.send(MiningEvent::PickUp(is_down)).unwrap(),
+                    _ => (),
+                }
             }
         }
     }

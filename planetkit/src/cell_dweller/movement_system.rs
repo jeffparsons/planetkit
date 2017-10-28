@@ -37,29 +37,22 @@ impl MovementInputAdapter {
 
 impl input_adapter::InputAdapter for MovementInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{Button, PressEvent, ReleaseEvent};
+        use piston::input::{Button, ButtonState};
         use piston::input::keyboard::Key;
 
-        if let Some(Button::Keyboard(key)) = input_event.press_args() {
-            match key {
-                Key::I => self.sender.send(MovementEvent::StepForward(true)).unwrap(),
-                Key::K => self.sender.send(MovementEvent::StepBackward(true)).unwrap(),
-                Key::J => self.sender.send(MovementEvent::TurnLeft(true)).unwrap(),
-                Key::L => self.sender.send(MovementEvent::TurnRight(true)).unwrap(),
-                _ => (),
-            }
-        }
-        if let Some(Button::Keyboard(key)) = input_event.release_args() {
-            match key {
-                Key::I => self.sender.send(MovementEvent::StepForward(false)).unwrap(),
-                Key::K => {
-                    self.sender
-                        .send(MovementEvent::StepBackward(false))
-                        .unwrap()
+        if let &Input::Button(button_args) = input_event {
+            if let Button::Keyboard(key) = button_args.button {
+                let is_down = match button_args.state {
+                    ButtonState::Press => true,
+                    ButtonState::Release => false,
+                };
+                match key {
+                    Key::I => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
+                    Key::K => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::J => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
+                    Key::L => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
+                    _ => (),
                 }
-                Key::J => self.sender.send(MovementEvent::TurnLeft(false)).unwrap(),
-                Key::L => self.sender.send(MovementEvent::TurnRight(false)).unwrap(),
-                _ => (),
             }
         }
     }
