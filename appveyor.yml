@@ -4,6 +4,9 @@ environment:
       COMPILER: msvc
     - TARGET: nightly-x86_64-pc-windows
       COMPILER: msvc
+configuration:
+  - debug
+  - release
 install:
   - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-${env:TARGET}-${env:COMPILER}.exe" -FileName "rust-install.exe"
   - ps: .\rust-install.exe /VERYSILENT /NORESTART /DIR="C:\rust" | Out-Null
@@ -11,6 +14,9 @@ install:
   - rustc -vV
   - cargo -vV
 build_script:
-  - cargo build --all
+  - ps: .\appveyor-build.ps1
 test_script:
-  - cargo test --all
+  - ps: .\appveyor-test.ps1
+artifacts:
+  - path: target/release/kaboom.exe
+    name: Kaboom
