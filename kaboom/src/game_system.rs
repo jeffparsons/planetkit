@@ -111,6 +111,24 @@ impl<'a> specs::System<'a> for GameSystem {
             net_markers,
         ) = data;
 
+        // TODO: eventually only the server should create this, and then describe it to clients.
+        // But for now, we need to make sure we create it _and_ it is realised before we try to
+        // process any network messages.
+        if game_state.globe_entity.is_none() {
+            // Create the globe first, because we'll need it to figure out where
+            // to place the player character.
+            game_state.globe_entity = Some(
+                planet::create(&entities, &updater)
+            );
+
+            // Don't do anything else in the GameSystem for the rest of the frame.
+            // All we're really trying to achieve here is to not process any messages
+            // about components that haven't been realised, but this is a temporary
+            // solution and it doesn't hurt to skip a frame. (...until I accidentally
+            // put something really important down below and it ruins everything!)
+            return;
+        }
+
         while let Some(message) = player_recv_message_queue.queue.pop_front() {
             match message.game_message {
                 PlayerMessage::NewPlayer(player_id) => {
@@ -233,16 +251,6 @@ impl<'a> specs::System<'a> for GameSystem {
             // TODO: instead first just create a player for them,
             // then tell them about all existing players,
             // and then which player is theirs.
-        }
-
-        // TODO: eventually only the server should create this,
-        // and then describe it to clients.
-        if game_state.globe_entity.is_none() {
-            // Create the globe first, because we'll need it to figure out where
-            // to place the player character.
-            game_state.globe_entity = Some(
-                planet::create(&entities, &updater)
-            );
         }
 
         // Create a new character for each new player.
