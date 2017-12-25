@@ -7,6 +7,8 @@ use grid::PosInOwningRoot;
 use super::{Globe, ChunkOrigin};
 use cell_dweller::CellDweller;
 
+// NOTE: this is currently all pretty awful. See comments throughout.
+
 /// Loads and unloads `Chunk`s for a `Globe`.
 ///
 /// The `Chunk`s may be loaded from disk, or generated fresh if
@@ -18,6 +20,15 @@ pub struct ChunkSystem {
     // ...we will unload chunks to leave only this many.
     // This is a kind of hysteresis. I haven't yet validated
     // that this actually improves performance _at all_.
+    //
+    // TODO: instead have a budget for chunks, have the chunk
+    // creation logic know what it is and _target_ it when creating
+    // new chunks, so that we never end up with thrashing by
+    // creating too many then immediately deleting them repeatedly
+    // each frame. (You should only go over if you won't do it again
+    // immediately after cleaning up.) Then also complain loudly
+    // if there's not enough budget left for the really essential chunks
+    // for a given CellDweller.
     cull_chunks_down_to: usize,
 }
 
@@ -33,8 +44,15 @@ impl ChunkSystem {
             // so we don't unnecessarily churn chunks.
             //
             // TODO: how to make sure this is automatically right?
-            max_chunks_loaded_per_globe: 200,
-            cull_chunks_down_to: 150,
+            // (See comments above; have a budget, work to that.)
+            // These values were originally 200 and 150 before I bumped
+            // it up to allow for 3 players. This solution really
+            // isn't going to fly very long. It's time to decouple what
+            // chunk _views_ exist from what chunks exist, so we can
+            // load the essential chunks for each player character,
+            // and the desirable views for each client. (Etc.)
+            max_chunks_loaded_per_globe: 300,
+            cull_chunks_down_to: 250,
         }
     }
 
@@ -46,29 +64,30 @@ impl ChunkSystem {
     ) {
         use super::globe::GlobeGuts;
 
-        if globe.chunks().len() < self.max_chunks_loaded_per_globe {
+        if globe.chunks().len() <= self.max_chunks_loaded_per_globe {
             // We're under the limit; nothing to do.
             return;
         }
 
-        // TEMP: assume only one cell dweller per globe.
-        // TODO: proper entities/points/volumes of interest system.
+        // Get all the CellDweller positions relative to the globe.
+        // We don't care which CellDweller is which, so just store
+        // them as a Vec of points.
         use specs::Join;
-        // Use the first CellDweller we find on this Globe.
-        let one_true_cd = match cds.join()
+        let cd_positions: Vec<_> = cds.join()
+            // Only consider CellDwellers from this globe.
             .filter(|cd| cd.globe_entity == Some(globe_entity))
-            .next() {
-            Some(cd) => cd,
-            // There are no cell dwellers, so no interesting terrain.
-            // (If a tree falls in a forest...)
-            None => return,
-        };
-        let one_true_cd_pos = one_true_cd
-            .real_transform_without_setting_clean()
-            .translation
-            .vector;
+            .map(|cd| {
+                cd.real_transform_without_setting_clean().translation.vector
+            })
+            .collect();
 
-        // Unload the most distant chunks.
+        // There are no cell dwellers, so no interesting terrain.
+        // (If a tree falls in a forest...)
+        if cd_positions.len() == 0 {
+            return;
+        }
+
+        // Unload the chunks that are most distant from their nearest CellDweller.
         //
         // TODO: Don't allocate memory all the time here.
         // At very least use a persistent scratch buffer instead
@@ -82,8 +101,12 @@ impl ChunkSystem {
                 // Or even a bounding sphere.
                 // (Cache this per Chunk).
                 let chunk_origin_pos = globe.spec().cell_bottom_center(*chunk_origin.pos());
-                let distance_from_one_true_cd = (one_true_cd_pos - chunk_origin_pos.coords).norm();
-                (*chunk_origin, distance_from_one_true_cd)
+                let distance_from_closest_cd = cd_positions.iter()
+                    // TODO: norm_squared; it'll be quicker.
+                    .map(|cd_pos| (cd_pos - chunk_origin_pos.coords).norm())
+                    .min_by(|a, b| a.partial_cmp(b).expect("Really shouldn't be possible to get NaN etc. here"))
+                    .expect("We already ensured there is at least one CellDweller");
+                (*chunk_origin, distance_from_closest_cd)
             })
             .collect();
         // Farthest away chunks come first.
@@ -134,6 +157,12 @@ impl ChunkSystem {
             // multiple cell jumps, e.g., stepping up a small ledge.
             //
             // TODO: this is all a bit finicky and fragile.
+
+            // TODO: this is also just plain wrong.
+            // You don't need the neighbouring chunks of the neighbouring chunks.
+            // You just need all the chunks containing neighbouring cells of
+            // neighbouring cells. No wonder there are so many chunks loaded
+            // at the moment. :)
             let cd_pos_in_owning_root = PosInOwningRoot::new(cd.pos, globe.spec().root_resolution);
             let chunk_origin = globe.origin_of_chunk_owning(cd_pos_in_owning_root);
             globe.ensure_chunk_present(chunk_origin);

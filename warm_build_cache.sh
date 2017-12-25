@@ -9,5 +9,5 @@
 # (Especially useful if you're about to hit the road soon and don't
 # want to burn through your battery life and/or mobile data quota.)
 
-cargo build --tests --benches
-cargo build --tests --benches --release
+cargo build --bins --tests --benches
+cargo build --bins --tests --benches --release

@@ -274,6 +274,8 @@ impl Chunk {
             // some way to explicitly list all the equivalent representations of
             // a pos and use that instead here, because looking at "neighbors"
             // here is actually just a hack workaround for not having that.
+            //
+            // TODO: that actually exists now! See `EquivalentPoints`.
             use grid::Neighbors;
             use super::origin_of_chunk_in_same_root_containing;
             let neighbors = Neighbors::new(corner_pos, root_resolution);

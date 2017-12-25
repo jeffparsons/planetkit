@@ -12,11 +12,11 @@ struct Walker {
     movement_input_sender: mpsc::Sender<cell_dweller::MovementEvent>,
     world: specs::World,
     dispatcher: specs::Dispatcher<'static, 'static>,
-    guy_entity: specs::Entity,
+    guy_entities: Vec<specs::Entity>,
 }
 
 impl Walker {
-    pub fn new() -> Walker {
+    pub fn new(walker_count: u16) -> Walker {
         // Log to nowhere.
         let drain = slog::Discard;
         let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
@@ -75,26 +75,25 @@ impl Walker {
             );
             globe.find_lowest_cell_containing(guy_pos, Material::Air)
         };
-        let guy_entity = world
-            .create_entity()
-            .with(cell_dweller::CellDweller::new(
-                guy_pos,
-                Dir::default(),
-                globe_spec,
-                Some(globe_entity),
-            ))
-            .with(::Spatial::new_root())
-            .build();
-        // Set our new character as the currently controlled cell dweller.
-        world
-            .write_resource::<cell_dweller::ActiveCellDweller>()
-            .maybe_entity = Some(guy_entity);
+
+        let guy_entities: Vec<_> = (0..walker_count).map(|_| {
+            world
+                .create_entity()
+                .with(cell_dweller::CellDweller::new(
+                    guy_pos,
+                    Dir::default(),
+                    globe_spec,
+                    Some(globe_entity),
+                ))
+                .with(::Spatial::new_root())
+                .build()
+        }).collect();
 
         Walker {
             movement_input_sender: movement_input_sender,
             world: world,
             dispatcher: dispatcher,
-            guy_entity: guy_entity,
+            guy_entities: guy_entities,
         }
     }
 
@@ -110,53 +109,77 @@ impl Walker {
         use rand::Rng;
         let mut rng = rand::thread_rng();
         for _ in 0..ticks {
-            // Maybe turn left or right.
-            let f: f32 = rng.gen();
-            if f < 0.02 {
-                // Turn left.
-                self.movement_input_sender
-                    .send(MovementEvent::TurnLeft(true))
-                    .unwrap();
-                self.movement_input_sender
-                    .send(MovementEvent::TurnRight(false))
-                    .unwrap();
-            } else if f < 0.01 {
-                // Turn right.
-                self.movement_input_sender
-                    .send(MovementEvent::TurnLeft(false))
-                    .unwrap();
-                self.movement_input_sender
-                    .send(MovementEvent::TurnRight(true))
-                    .unwrap();
-            } else {
-                // Walk straight.
-                self.movement_input_sender
-                    .send(MovementEvent::TurnLeft(false))
-                    .unwrap();
-                self.movement_input_sender
-                    .send(MovementEvent::TurnRight(false))
-                    .unwrap();
-            }
+            for guy_entity in &self.guy_entities {
+                // Set our new character as the currently controlled cell dweller.
+                self.world
+                    .write_resource::<cell_dweller::ActiveCellDweller>()
+                    .maybe_entity = Some(guy_entity.clone());
 
-            self.world.write_resource::<TimeDeltaResource>().0 = 0.1;
-            self.dispatcher.dispatch(&mut self.world.res);
-            self.world.maintain();
+                // Maybe turn left or right.
+                let f: f32 = rng.gen();
+                if f < 0.02 {
+                    // Turn left.
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnLeft(true))
+                        .unwrap();
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnRight(false))
+                        .unwrap();
+                } else if f < 0.01 {
+                    // Turn right.
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnLeft(false))
+                        .unwrap();
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnRight(true))
+                        .unwrap();
+                } else {
+                    // Walk straight.
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnLeft(false))
+                        .unwrap();
+                    self.movement_input_sender
+                        .send(MovementEvent::TurnRight(false))
+                        .unwrap();
+                }
+
+                self.world.write_resource::<TimeDeltaResource>().0 = 0.1;
+                self.dispatcher.dispatch(&mut self.world.res);
+                self.world.maintain();
+            }
         }
     }
 }
 
 #[test]
-fn random_walk() {
+fn random_walk_one_walker() {
     use grid::GridPoint3;
 
-    let mut walker = Walker::new();
+    let mut walker = Walker::new(1);
     walker.tick_lots(1000);
 
     // Walking should have taken us away from the origin.
-    let guy_entity = walker.guy_entity;
+    assert_eq!(walker.guy_entities.len(), 1);
+    let guy_entity = walker.guy_entities.first().unwrap();
     let cd_storage = walker.world.read::<::cell_dweller::CellDweller>();
-    let cd = cd_storage.get(guy_entity).unwrap();
+    let cd = cd_storage.get(guy_entity.clone()).unwrap();
     assert_ne!(cd.pos, GridPoint3::default());
+}
+
+#[test]
+fn random_walk_three_walkers() {
+    use grid::GridPoint3;
+
+    let mut walker = Walker::new(3);
+    walker.tick_lots(1000);
+
+    // Walking should have taken us away from the origin.
+    assert_eq!(walker.guy_entities.len(), 3);
+    for guy_entity in &walker.guy_entities {
+        let cd_storage = walker.world.read::<::cell_dweller::CellDweller>();
+        let cd = cd_storage.get(guy_entity.clone()).unwrap();
+        assert_ne!(cd.pos, GridPoint3::default());
+    }
 }
 
 #[cfg(feature = "nightly")]
@@ -175,8 +198,32 @@ pub mod benches {
     // NOTE: avoid premature fiddly optimisation through clever caching, or anything that makes
     // the design harder to work with; rather go for the optimisations that push all this
     // forward in general and make interfaces _more elegant_.
-    fn bench_random_walk(b: &mut Bencher) {
-        let mut walker = Walker::new();
-        b.iter(|| { walker.tick_lots(100); });
+    fn bench_random_walk_one_walker(b: &mut Bencher) {
+        let mut walker = Walker::new(1);
+        // Start by moving everyone away from the origin.
+        walker.tick_lots(1000);
+        b.iter(|| { walker.tick_lots(10); });
+    }
+
+    // These multi-walker tests are to make sure we don't get pathological performance
+    // from having multiple "points of interest" on the globe. (Thrashing loading and unloading
+    // chunks as each walker moves.)
+    //
+    // No prizes for guessing how this test was born... :)
+
+    #[bench]
+    fn bench_random_walk_two_walkers(b: &mut Bencher) {
+        let mut walker = Walker::new(2);
+        // Start by moving everyone away from the origin.
+        walker.tick_lots(1000);
+        b.iter(|| { walker.tick_lots(10); });
+    }
+
+    #[bench]
+    fn bench_random_walk_three_walkers(b: &mut Bencher) {
+        let mut walker = Walker::new(3);
+        // Start by moving everyone away from the origin.
+        walker.tick_lots(1000);
+        b.iter(|| { walker.tick_lots(10); });
     }
 }

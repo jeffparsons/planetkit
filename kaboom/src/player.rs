@@ -12,6 +12,11 @@ pub struct Player {
     pub id: PlayerId,
     // There could be many players per network peer,
     // e.g., if we ever get around to adding splitscreen.
+    //
+    // TODO: does this need to be a local peer ID?
+    // I don't see any reason this can't be a global one.
+    // E.g. node_id. Then we don't need to do any swizzling when
+    // transferring these entities around -- everyone gets a global ID.
     pub peer_id: PeerId,
     pub fighter_entity: Option<specs::Entity>,
 }
