@@ -6,4 +6,6 @@ members = [
     "woolgather",
     # Example multi-player game involving shooting each other with explosive weapons
     "kaboom",
+    # Demo of running parts of PlanetKit in a browser
+    "webdemo",
 ]

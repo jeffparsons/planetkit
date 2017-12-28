@@ -1,0 +1,14 @@
+[package]
+name = "webdemo"
+version = "0.0.1"
+authors = ["Jeff Parsons <jeff@parsons.io>"]
+
+[dependencies]
+planetkit = { path = "../planetkit", default-features = false, features = ["web"] }
+specs = "0.10.0"
+slog = "2.0.4"
+rand = "0.3.14"
+
+[patch.crates-io]
+# Fix building on emscripten
+shred = { git = "https://github.com/slide-rs/shred.git", rev = "7b2b9cb77d363772003852ff4a9f93d62b0c46ff" }
