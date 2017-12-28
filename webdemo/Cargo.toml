@@ -1,0 +1,8 @@
+[package]
+name = "webdemo"
+version = "0.0.1"
+authors = ["Jeff Parsons <jeff@parsons.io>"]
+
+[dependencies]
+planetkit = { path = "../planetkit", default-features = false, features = ["web"] }
+stdweb = "0.2.1"

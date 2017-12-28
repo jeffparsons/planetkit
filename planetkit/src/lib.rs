@@ -71,15 +71,16 @@ extern crate approx;
 extern crate froggy;
 extern crate arrayvec;
 extern crate futures;
-extern crate tokio_core;
-extern crate tokio_io;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-#[cfg(all(feature = "nightly", test))]
-extern crate test;
+// Stuff we can't run on the web yet.
+#[cfg(not(target_os="emscripten"))] extern crate tokio_core;
+#[cfg(not(target_os="emscripten"))] extern crate tokio_io;
+
+#[cfg(all(feature = "nightly", test))] extern crate test;
 
 pub mod input_adapter;
 pub mod grid;

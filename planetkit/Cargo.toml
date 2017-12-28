@@ -6,6 +6,10 @@ build = "build.rs"
 
 [features]
 nightly = []
+web = []
+default = ["desktop"]
+# All the stuff that won't work on the web.
+desktop = ["tokio-core", "tokio-io"]
 
 [lib]
 path = "src/lib.rs"
@@ -33,7 +37,7 @@ slog = "2.0.4"
 slog-term = "2.0.0"
 slog-async = "2.0.1"
 chrono = "0.4.0"
-shred = "0.5.0"
+shred = "0.5.1"
 specs = "0.10.0"
 num-traits = "0.1.36"
 itertools = "0.7.1"
@@ -42,11 +46,13 @@ approx = "0.1.1"
 froggy = "0.4.0"
 arrayvec = "0.4.5"
 futures = "0.1.14"
-tokio-core = "0.1.8"
-tokio-io = "0.1.3"
 serde = "1.0.10"
 serde_json = "1.0.2"
 serde_derive = "1.0.10"
+
+# Stuff we can't run on the web yet.
+tokio-core = { version = "0.1.8", optional = true }
+tokio-io = { version = "0.1.3", optional = true }
 
 [build-dependencies]
 rustc_version = "0.2.1"

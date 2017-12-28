@@ -1,4 +1,5 @@
 use piston_window::PistonWindow;
+use glutin_window::GlutinWindow;
 use slog::Logger;
 
 pub fn make_window(log: &Logger) -> PistonWindow {
@@ -17,6 +18,7 @@ pub fn make_window(log: &Logger) -> PistonWindow {
         .exit_on_esc(true)
         .build()
         .unwrap();
+
     window.set_capture_cursor(false);
     debug!(log, "Main window created");
 

@@ -1,9 +1,12 @@
-mod recv_system;
-mod send_system;
-mod server;
-mod server_resource;
-mod udp;
-mod tcp;
+// NOTE: Lots of this stuff doesn't work on the web yet.
+// Most of the module is disabled for Emscripten.
+
+#[cfg(not(target_os="emscripten"))] mod recv_system;
+#[cfg(not(target_os="emscripten"))] mod send_system;
+#[cfg(not(target_os="emscripten"))] mod server;
+#[cfg(not(target_os="emscripten"))] mod server_resource;
+#[cfg(not(target_os="emscripten"))] mod udp;
+#[cfg(not(target_os="emscripten"))] mod tcp;
 
 #[cfg(test)]
 mod tests;
@@ -20,10 +23,10 @@ use futures;
 use specs;
 
 use ::AutoResource;
-pub use self::recv_system::RecvSystem;
-pub use self::send_system::SendSystem;
-pub use self::server::Server;
-pub use self::server_resource::ServerResource;
+#[cfg(not(target_os="emscripten"))] pub use self::recv_system::RecvSystem;
+#[cfg(not(target_os="emscripten"))] pub use self::send_system::SendSystem;
+#[cfg(not(target_os="emscripten"))] pub use self::server::Server;
+#[cfg(not(target_os="emscripten"))] pub use self::server_resource::ServerResource;
 
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.
