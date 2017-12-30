@@ -3,6 +3,11 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=1" name="viewport" />
+    <style>
+        body { margin: 0; }
+        canvas { width: 100%; height: 100% }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
     <script>
         var Module = {};
         var __cargo_web = {};
@@ -17,9 +22,89 @@
                 return canvas;
             }
         });
+
+        Module.preRun = [
+            function() {
+                // ENV.RUST_BACKTRACE = "1";
+            }
+        ];
     </script>
 </head>
 <body>
+    <script>
+        // Set up canvas for ThreeJS.
+        var scene = new THREE.Scene();
+        window.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame( animate );
+
+            // Zoom camera back a bit each frame.
+            camera.position.z += 0.01;
+
+            renderer.render( scene, camera );
+        }
+        animate();
+
+        let firstMesh = undefined;
+
+        // Function to shovel meshes from PlanetKit into ThreeJS.
+        window.addMesh = function(pkMesh) {
+            console.log("Going to add mesh:", pkMesh);
+
+            // Shove it into ThreeJS.
+            var geometry = new THREE.BufferGeometry();
+            // Transform the data into a shape ThreeJS will be happy with.
+            var vertices = [];
+            var colors = []
+            for (var i = 0; i < pkMesh.indexes.length; i += 3) {
+                // For each vertex in the triangle...
+                for (var di = 0; di < 3; ++di) {
+                    let v = pkMesh.indexes[i + di];
+                    // x, y, z
+                    vertices.push(pkMesh.vertexes[v].pos[0]);
+                    vertices.push(pkMesh.vertexes[v].pos[1]);
+                    vertices.push(pkMesh.vertexes[v].pos[2]);
+                    // r, g, b
+                    colors.push(pkMesh.vertexes[v].color[0]);
+                    colors.push(pkMesh.vertexes[v].color[1]);
+                    colors.push(pkMesh.vertexes[v].color[2]);
+                }
+            }
+            geometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array(vertices), 3 ) );
+            geometry.addAttribute( 'color', new THREE.BufferAttribute( new Float32Array(colors), 3 ) );
+            var material = new THREE.MeshBasicMaterial({ vertexColors: THREE.VertexColors });
+            // var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+            var mesh = new THREE.Mesh( geometry, material );
+
+            mesh.position.set(
+                pkMesh.pos[0],
+                pkMesh.pos[1],
+                pkMesh.pos[2],
+            );
+
+            scene.add(mesh);
+
+            // TODO: position camera properly using relative coordinates, yada yada.
+            // Otherwise it's going to be super-awkward to deal with, and inaccurate.
+            // For now, just find the first mesh we added, and put it somewhere near that.
+            if (!firstMesh) {
+                firstMesh = mesh;
+
+                camera.position.set(
+                    mesh.position.x,
+                    mesh.position.y,
+                    mesh.position.z + 10,
+                );
+            }
+        };
+    </script>
     <script src="webdemo.js"></script>
 </body>
 </html>

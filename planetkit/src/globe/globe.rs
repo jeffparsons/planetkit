@@ -78,6 +78,11 @@ impl Globe {
         self.spec
     }
 
+    // TEMP HACKS: remove me.
+    pub fn chunk_count(&self) -> usize {
+        self.chunks.len()
+    }
+
     /// Copy shared cells owned by a chunk for any loaded downstream chunks
     /// that have an outdated copy.
     ///

@@ -8,6 +8,10 @@ planetkit = { path = "../planetkit", default-features = false, features = ["web"
 specs = "0.10.0"
 slog = "2.0.4"
 rand = "0.3.14"
+stdweb = "0.2.1"
+serde = "1.0.10"
+serde_json = "1.0.2"
+serde_derive = "1.0.10"
 
 [patch.crates-io]
 # Fix building on emscripten

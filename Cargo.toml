@@ -6,6 +6,11 @@ members = [
     "woolgather",
     # Example multi-player game involving shooting each other with explosive weapons
     "kaboom",
+]
+
+exclude = [
     # Demo of running parts of PlanetKit in a browser
+    # Don't actually include in workspace. We don't want to accidentally try to build
+    # it all the time on non-web targets.
     "webdemo",
 ]
