@@ -1072,7 +1072,7 @@ dependencies = [
  "piston2d-graphics 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston2d-opengl_graphics 0.49.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.74.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pistoncore-glutin_window 0.42.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pistoncore-glutin_window 0.43.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc_version 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
