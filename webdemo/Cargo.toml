@@ -12,7 +12,14 @@ stdweb = "0.2.1"
 serde = "1.0.10"
 serde_json = "1.0.2"
 serde_derive = "1.0.10"
+gfx = "0.16.0"
+gfx_device_gl = "0.14"
+gfx_window_glutin = "0.20"
+glutin = "0.12"
 
 [patch.crates-io]
 # Fix building on emscripten
 shred = { git = "https://github.com/slide-rs/shred.git", rev = "7b2b9cb77d363772003852ff4a9f93d62b0c46ff" }
+# TEMP until piston crates catch up
+gfx = { git = "https://github.com/gfx-rs/gfx", rev = "c7caa9ae2ee2759f29d604305d89f48f1b07fc24" }
+pistoncore-glutin_window = { version = "0.42.1", path = "/Users/jeff/Projects/crates/glutin_window" }

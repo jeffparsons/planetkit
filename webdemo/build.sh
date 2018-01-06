@@ -29,9 +29,9 @@ while [[ ! -z $1 ]]; do
 done
 
 if [[ ! -z "${maybe_release}" ]]; then
-    dest=../target/wasm32-unknown-emscripten/release/
+    dest=target/wasm32-unknown-emscripten/release/
 else
-    dest=../target/wasm32-unknown-emscripten/debug/
+    dest=target/wasm32-unknown-emscripten/debug/
 fi
 
 cargo $maybe_nightly build $maybe_release --target wasm32-unknown-emscripten

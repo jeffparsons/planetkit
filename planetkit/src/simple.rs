@@ -233,8 +233,14 @@ pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(
         mining_input_adapter,
     ) = new_populated_without_window(create_systems);
 
+    println!("before creating window");
+
     // Hand dispatcher off to a new App.
     let mut window = window::make_window(&log);
+
+    println!("after creating window");
+
+
     let mut app = app::App::new(&log, &mut window, world, dispatcher_builder);
     app.add_input_adapter(Box::new(movement_input_adapter));
     app.add_input_adapter(Box::new(mining_input_adapter));

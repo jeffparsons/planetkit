@@ -72,6 +72,8 @@ impl App {
             receiver: device_recv,
         };
 
+        println!("before creating command buffers");
+
         // Shove two encoders into the channel circuit.
         // This gives us "double-buffering" by having two encoders in flight.
         // This way the render system will always be able to populate
