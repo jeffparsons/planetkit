@@ -5,7 +5,7 @@ authors = ["Jeff Parsons <jeff@parsons.io>"]
 
 [dependencies]
 planetkit = { path = "../planetkit" }
-rand = "0.3.14"
+rand = "0.4.1"
 shred = "0.5.0"
 specs = "0.10.0"
 slog = "2.0.4"
