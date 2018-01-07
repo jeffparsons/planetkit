@@ -2,6 +2,7 @@ use shred;
 use specs::{World, FetchMut};
 
 // TODO: use for Systems, too?
+// Yes, that'll be pretty neat.
 
 /// `Resource`s that know how to ensure their existence
 /// using only a reference to a `World`.

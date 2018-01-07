@@ -104,5 +104,10 @@ pub use auto_resource::AutoResource;
 mod log_resource;
 pub use log_resource::LogResource;
 
+mod app_builder;
+
+// Public facade
+pub use app_builder::AppBuilder;
+
 #[cfg(test)]
 mod integration_tests;

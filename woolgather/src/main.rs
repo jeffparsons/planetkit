@@ -10,9 +10,12 @@ mod game_state;
 mod game_system;
 
 fn main() {
-    let (mut app, mut window) = pk::simple::new_empty(add_systems);
+    let mut app = pk::AppBuilder::new()
+        .add_common_systems()
+        .add_systems(add_systems)
+        .build_gui();
     create_entities(app.world_mut());
-    app.run(&mut window);
+    app.run();
 }
 
 fn add_systems(
@@ -29,6 +32,10 @@ fn add_systems(
 
 fn create_entities(world: &mut specs::World) {
     use pk::cell_dweller::ActiveCellDweller;
+
+    // TODO: this should all actually be done by a game system,
+    // rather than in the app builder. Because, e.g. if you change levels,
+    // it needs to know how to create all this.
 
     // Create the globe first, because we'll need it to figure out where
     // to place the shepherd (player character).

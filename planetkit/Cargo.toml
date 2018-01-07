@@ -14,10 +14,6 @@ desktop = ["tokio-core", "tokio-io"]
 [lib]
 path = "src/lib.rs"
 
-[[bin]]
-name = "demo"
-path = "src/bin/main.rs"
-
 [dependencies]
 bytes = "0.4.5"
 noise = "0.4.0"

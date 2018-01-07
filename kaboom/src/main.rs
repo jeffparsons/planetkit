@@ -49,7 +49,10 @@ fn main() {
         // a client to it.
         .get_matches();
 
-    let (mut app, mut window) = pk::simple::new_empty(add_systems);
+    let mut app = pk::AppBuilder::new()
+        .add_common_systems()
+        .add_systems(add_systems)
+        .build_gui();
 
     // Should we start a server or connect to one?
     // NLL SVP.
@@ -59,7 +62,7 @@ fn main() {
         use pk::net::ServerResource;
 
         // Systems we added will have ensured ServerResource is present.
-        let world = app.world_mut();
+        let (world, window) = app.world_and_window_mut();
         let server_resource = world.write_resource::<ServerResource<Message>>();
         let mut server = server_resource.server.lock().expect("Failed to lock server");
         if let Some(_matches) = matches.subcommand_matches("listen") {
@@ -79,7 +82,7 @@ fn main() {
         }
     }
 
-    app.run(&mut window);
+    app.run();
 }
 
 fn add_systems(

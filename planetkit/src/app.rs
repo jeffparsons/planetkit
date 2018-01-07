@@ -46,13 +46,14 @@ pub struct App {
         (gfx::format::D24_S8, gfx::format::Unorm),
     >,
     mesh_repo: Arc<Mutex<MeshRepository<gfx_device_gl::Resources>>>,
+    window: PistonWindow,
 }
 
 impl App {
     // Add all your systems before passing the dispatcher in.
     pub fn new(
         parent_log: &Logger,
-        window: &mut PistonWindow,
+        mut window: PistonWindow,
         mut world: specs::World,
         dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
     ) -> App {
@@ -94,7 +95,7 @@ impl App {
 
         let log = parent_log.new(o!());
 
-        let projection = Arc::new(Mutex::new(get_projection(window)));
+        let projection = Arc::new(Mutex::new(get_projection(&window)));
         let first_person = FirstPerson::new([0.5, 0.5, 4.0], FirstPersonSettings::keyboard_wasd());
         let first_person_mutex_arc = Arc::new(Mutex::new(first_person));
 
@@ -135,25 +136,26 @@ impl App {
             output_color: window.output_color.clone(),
             output_stencil: window.output_stencil.clone(),
             mesh_repo: mesh_repo_ptr,
+            window: window,
         }
     }
 
-    pub fn run(&mut self, mut window: &mut PistonWindow) {
+    pub fn run(&mut self) {
         use piston::input::*;
 
         info!(self.log, "Starting event loop");
 
-        let mut events = window.events;
-        while let Some(e) = events.next(window) {
+        let mut events = self.window.events;
+        while let Some(e) = events.next(&mut self.window) {
             self.first_person.lock().unwrap().event(&e);
 
             if let Some(r) = e.render_args() {
-                self.render(&r, &mut window);
+                self.render(&r);
             }
 
             if e.resize_args().is_some() {
                 let mut projection = self.projection.lock().unwrap();
-                *projection = get_projection(window);
+                *projection = get_projection(&self.window);
             }
 
             if let Some(u) = e.update_args() {
@@ -171,7 +173,7 @@ impl App {
         info!(self.log, "Quitting");
     }
 
-    fn render(&mut self, _args: &RenderArgs, window: &mut PistonWindow) {
+    fn render(&mut self, _args: &RenderArgs) {
         // TODO: Systems are currently run on the main thread,
         // so we need to `try_recv` to avoid deadlock.
         // This is only because I don't want to burn CPU, and I've yet
@@ -189,9 +191,9 @@ impl App {
         // TODO: what's make_current actually necessary for?
         // Do I even need to do this? (Ripped off `draw_3d`.)
         use piston::window::OpenGLWindow;
-        window.window.make_current();
+        self.window.window.make_current();
 
-        encoder.flush(&mut window.device);
+        encoder.flush(&mut self.window.device);
 
         self.encoder_channel.sender.send(encoder).unwrap();
     }
@@ -258,5 +260,10 @@ impl App {
 impl<'a> App {
     pub fn world_mut(&'a mut self) -> &'a mut specs::World {
         &mut self.world
+    }
+
+    // Hacks to get around borrowing App twice mutably.
+    pub fn world_and_window_mut(&'a mut self) -> (&'a mut specs::World, &'a mut PistonWindow) {
+        (&mut self.world, &mut self.window)
     }
 }

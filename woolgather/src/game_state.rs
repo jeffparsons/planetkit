@@ -22,12 +22,17 @@ impl GameState {
 }
 
 pub struct LevelState {
+    // Have we created everything for the level yet?
+    pub initialized: bool,
     pub level_outcome: LevelOutcome,
 }
 
 impl LevelState {
     pub fn new() -> LevelState {
-        LevelState { level_outcome: LevelOutcome::Pending }
+        LevelState {
+            initialized: false,
+            level_outcome: LevelOutcome::Pending,
+        }
     }
 }
 

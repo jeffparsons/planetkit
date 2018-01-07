@@ -1,245 +1,25 @@
-use std::sync::mpsc;
-
-use piston_window::PistonWindow;
-
-use slog;
-#[cfg(not(target_os="emscripten"))] use slog_term;
-#[cfg(not(target_os="emscripten"))] use slog_async;
-use shred;
 use specs;
 use specs::{Fetch, LazyUpdate, Entities};
 
 use types::*;
-use window;
-use app;
 use globe;
 use cell_dweller;
 use render;
-use super::LogResource;
 use camera::DefaultCamera;
 
-// TODO: This is all pretty gross.
-// Maybe replace it all with the builder pattern instead.
+// TODO: Retire most of this stuff. Or, rather, turn it into
+// a module (eventually split out into a separate crate) of easy-to-combine
+// bits and pieces, but still encouraging best practices.
+//
+// For example, pretty much all this stuff should be done inside
+// a system rather than executing outside of the normal game loop.
+// (So that it can interact with other systems, like networking,
+// load/save, etc.)
 
-pub fn noop_create_systems<'a, 'b>(
-    _logger: &slog::Logger,
-    _world: &mut specs::World,
-    dispatcher_builder: specs::DispatcherBuilder<'a, 'b>,
-) -> specs::DispatcherBuilder<'a, 'b> {
-    // No-op; just pass the DispatcherBuilder back.
-    dispatcher_builder
-}
-
-pub trait CreateSystemsFn<'a, 'b>
-    : Fn(&slog::Logger,
-   &mut specs::World,
-   specs::DispatcherBuilder<'a, 'b>)
-   -> specs::DispatcherBuilder<'a, 'b> {
-}
-
-impl<'a, 'b, F> CreateSystemsFn<'a, 'b> for F
-where
-    F: Fn(&slog::Logger,
-       &mut specs::World,
-       specs::DispatcherBuilder<'a, 'b>)
-       -> specs::DispatcherBuilder<'a, 'b>,
-{
-}
-
-/// Create a new simple PlanetKit world and Shred dispatcher.
-///
-/// Uses all default settings, logs to standard output, and registers most
-/// of the systems you're likely to want to use, but doesn't contain any GUI.
-///
-/// The given function `create_systems` will be called with references
-/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_empty_without_window<F: CreateSystemsFn<'static, 'static>>(
-    create_systems: F,
-) -> (
-    slog::Logger,
-    specs::World,
-    shred::DispatcherBuilder<'static, 'static>,
-    cell_dweller::MovementInputAdapter,
-    cell_dweller::MiningInputAdapter,
-) {
-    // TODO: this is a great use case for the builder pattern; just sub out a different logger.
-    #[cfg(not(target_os="emscripten"))]
-    let drain = {
-        use slog::Drain;
-
-        let decorator = slog_term::TermDecorator::new().build();
-        let drain = slog_term::FullFormat::new(decorator).build().fuse();
-        slog_async::Async::new(drain).build().fuse()
-    };
-    #[cfg(target_os="emscripten")]
-    let drain = slog::Discard;
-
-    let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-    let log = root_log;
-
-    // Set up input adapters.
-    use cell_dweller;
-    let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-    let movement_input_adapter = cell_dweller::MovementInputAdapter::new(movement_input_sender);
-
-    let (mining_input_sender, mining_input_receiver) = mpsc::channel();
-    let mining_input_adapter = cell_dweller::MiningInputAdapter::new(mining_input_sender);
-
-    // Create world and register all component types.
-    let mut world = specs::World::new();
-    world.register::<::cell_dweller::CellDweller>();
-    world.register::<::render::Visual>();
-    world.register::<::Spatial>();
-    world.register::<::globe::Globe>();
-    world.register::<::globe::ChunkView>();
-    world.register::<::net::NetMarker>();
-
-    // Initialize common resources.
-    // These should be impossible to create from
-    // just a `World`; `pk::Resource` should be
-    // preferred to ensure those.
-    world.add_resource(LogResource::new(&log));
-    // TODO: make every system that needs this
-    // ensure it is present.
-    world.add_resource(TimeDeltaResource(0.0));
-
-    // Initialize all systems.
-    // TODO: split out system initialization into helper functions.
-
-    let mut movement_sys = cell_dweller::MovementSystem::new(&mut world, movement_input_receiver, &log);
-    movement_sys.init(&mut world);
-
-    let mut mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &log);
-    mining_sys.init(&mut world);
-
-    let physics_sys = cell_dweller::PhysicsSystem::new(
-        &log,
-        0.1, // Seconds between falls
-    );
-
-    use globe;
-    let chunk_sys = globe::ChunkSystem::new(&log);
-
-    let chunk_view_sys = globe::ChunkViewSystem::new(
-        &log,
-        0.05, // Seconds between geometry creation
-    );
-
-    // TODO: export some default names and priorities for these...
-    let dispatcher_builder = specs::DispatcherBuilder::new()
-        // Try to get stuff most directly linked to input done first
-        // to avoid another frame of lag.
-        .add(movement_sys, "cd_movement", &[])
-        .add(mining_sys, "cd_mining", &["cd_movement"])
-        .add_barrier()
-        .add(physics_sys, "physics", &[])
-        .add(chunk_sys, "chunk", &[])
-        // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
-        // to be able to run it in parallel.
-        .add(chunk_view_sys, "chunk_view", &[]);
-
-    // Run any user-provided system creation code.
-    let dispatcher_builder = create_systems(&log, &mut world, dispatcher_builder);
-
-    (
-        log,
-        world,
-        dispatcher_builder,
-        movement_input_adapter,
-        mining_input_adapter,
-    )
-}
-
-/// Create a new simple PlanetKit app and window.
-///
-/// Uses all default settings, logs to standard output, and registers most
-/// of the systems you're likely to want to use.
-///
-/// The given function `create_systems` will be called with references
-/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_empty<F: CreateSystemsFn<'static, 'static>>(
-    create_systems: F,
-) -> (app::App, PistonWindow) {
-    let (
-        log,
-        world,
-        dispatcher_builder,
-        movement_input_adapter,
-        mining_input_adapter,
-    ) = new_empty_without_window(create_systems);
-
-    // Hand dispatcher off to a new App.
-    let mut window = window::make_window(&log);
-    let mut app = app::App::new(&log, &mut window, world, dispatcher_builder);
-    app.add_input_adapter(Box::new(movement_input_adapter));
-    app.add_input_adapter(Box::new(mining_input_adapter));
-
-    (app, window)
-}
-
-/// Create a new simple PlanetKit world with some example entities.
-///
-/// Creates a world using `new_empty` then populates it with some entities.
-/// Hack first, ask questions later.
-///
-/// The given function `create_systems` will be called with references
-/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_populated_without_window<F: CreateSystemsFn<'static, 'static>>(
-    create_systems: F,
-) -> (
-    slog::Logger,
-    specs::World,
-    shred::DispatcherBuilder<'static, 'static>,
-    cell_dweller::MovementInputAdapter,
-    cell_dweller::MiningInputAdapter,
-) {
-    let (
-        log,
-        mut world,
-        dispatcher_builder,
-        movement_input_adapter,
-        mining_input_adapter,
-    ) = new_empty_without_window(create_systems);
-
-    // Populate the world.
-    let globe_entity = create_simple_globe_now(&mut world);
-    let player_character_entity = create_simple_player_character_now(&mut world, globe_entity);
-    create_simple_chase_camera_now(&mut world, player_character_entity);
-
-    (
-        log,
-        world,
-        dispatcher_builder,
-        movement_input_adapter,
-        mining_input_adapter,
-    )
-}
-
-/// Create a new simple PlanetKit app and window with some example entities.
-///
-/// Creates a world using `new_empty` then populates it with some entities.
-/// Hack first, ask questions later.
-///
-/// The given function `create_systems` will be called with references
-/// to essential inputs, like a `slog::Logger`, `specs::World`, etc.
-pub fn new_populated<F: CreateSystemsFn<'static, 'static>>(
-    create_systems: F,
-) -> (app::App, PistonWindow) {
-    let (
-        log,
-        world,
-        dispatcher_builder,
-        movement_input_adapter,
-        mining_input_adapter,
-    ) = new_populated_without_window(create_systems);
-
-    // Hand dispatcher off to a new App.
-    let mut window = window::make_window(&log);
-    let mut app = app::App::new(&log, &mut window, world, dispatcher_builder);
-    app.add_input_adapter(Box::new(movement_input_adapter));
-    app.add_input_adapter(Box::new(mining_input_adapter));
-
-    (app, window)
+pub fn populate_world(world: &mut specs::World) {
+    let globe_entity = create_simple_globe_now(world);
+    let player_character_entity = create_simple_player_character_now(world, globe_entity);
+    create_simple_chase_camera_now(world, player_character_entity);
 }
 
 pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {

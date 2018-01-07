@@ -1,5 +1,4 @@
 use piston_window::PistonWindow;
-use glutin_window::GlutinWindow;
 use slog::Logger;
 
 pub fn make_window(log: &Logger) -> PistonWindow {
@@ -11,7 +10,7 @@ pub fn make_window(log: &Logger) -> PistonWindow {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    // Create an Glutin window.
+    // Create a Piston window.
     info!(log, "Creating main window");
     let mut window: PistonWindow = WindowSettings::new("planetkit", [800, 600])
         .opengl(opengl)
