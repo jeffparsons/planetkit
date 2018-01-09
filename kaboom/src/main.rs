@@ -71,8 +71,8 @@ fn main() {
             server.start_listen(62831);
 
             // Let the game know it's in charge of the world.
-            let mut client_state = world.write_resource::<client_state::ClientState>();
-            client_state.is_master = true;
+            let mut node_resource = world.write_resource::<pk::net::NodeResource>();
+            node_resource.is_master = true;
         } else if let Some(matches) = matches.subcommand_matches("connect") {
             window.set_title("Kaboom (client)".to_string());
             // TODO: make port configurable

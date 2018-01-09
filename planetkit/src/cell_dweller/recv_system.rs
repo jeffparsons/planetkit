@@ -79,6 +79,15 @@ impl<'a> specs::System<'a> for RecvSystem {
                     );
 
                     // TODO: tell all _other_ peers about this update.
+                    // IFF we are the server.
+                    // TODO: do we need some kind of pattern for an action,
+                    // where it's got rules for:
+                    // - how to turn it into a request if we're not the server.
+                    // - how to action it if we are the server.
+                    // - how to action it if we are a client. (Maybe it's just
+                    //   a different kind of message in that case.)
+                    // - how to forward it on if we're the server and we just
+                    //   acted on it.
 
                     // Update real-space coordinates if necessary.
                     // TODO: do this in a separate system; it needs to be done before

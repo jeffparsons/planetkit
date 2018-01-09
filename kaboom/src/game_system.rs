@@ -6,7 +6,7 @@ use pk;
 use pk::globe::Globe;
 use pk::cell_dweller::{CellDweller, ActiveCellDweller};
 use pk::camera::DefaultCamera;
-use pk::net::{PeerId, NetworkPeers, Destination, Transport, SendMessageQueue, SendMessage, EntityIds, NetMarker};
+use pk::net::{NodeResource, PeerId, NetworkPeers, Destination, Transport, SendMessageQueue, SendMessage, EntityIds, NetMarker};
 
 use ::player::{self, Player, PlayerId, PlayerMessage};
 use ::game_state::GameState;
@@ -27,6 +27,7 @@ impl GameSystem {
         use pk::AutoResource;
 
         // Ensure resources we use are present.
+        NodeResource::ensure(world);
         GameState::ensure(world);
         ClientState::ensure(world);
         player::RecvMessageQueue::ensure(world);
@@ -79,6 +80,7 @@ impl GameSystem {
 
 impl<'a> specs::System<'a> for GameSystem {
     type SystemData = (
+        Fetch<'a, NodeResource>,
         FetchMut<'a, GameState>,
         FetchMut<'a, ClientState>,
         Entities<'a>,
@@ -96,6 +98,7 @@ impl<'a> specs::System<'a> for GameSystem {
 
     fn run(&mut self, data: Self::SystemData) {
         let (
+            node_resource,
             mut game_state,
             mut client_state,
             entities,
@@ -138,7 +141,7 @@ impl<'a> specs::System<'a> for GameSystem {
                     // TODO: don't explode, just log a loud error,
                     // and kick the client who sent the bad message.
                     // You need a pattern for this.
-                    debug_assert!(!client_state.is_master);
+                    debug_assert!(!node_resource.is_master);
 
                     if (player_id.0 as usize) < game_state.players.len() {
                         // TODO: demote to debug
@@ -208,7 +211,7 @@ impl<'a> specs::System<'a> for GameSystem {
         // If we are the master, but we don't yet know what our player is,
         // then insert a new player for us now. We'll hear about it on the
         // next tick, and register it as our own.
-        if client_state.is_master && client_state.player_id.is_none() {
+        if node_resource.is_master && client_state.player_id.is_none() {
             self.create_and_broadcast_player(&mut game_state, &mut send_message_queue, PeerId(0));
         }
 
@@ -216,7 +219,7 @@ impl<'a> specs::System<'a> for GameSystem {
         // and maybe do something with them.
         while let Some(new_peer_id) = network_peers.new_peers.pop_front() {
             // As a client, we don't care; we just want to clean out the list.
-            if client_state.is_master {
+            if node_resource.is_master {
                 // Tell the new peer about all existing players.
                 for player in &game_state.players {
                     send_message_queue.queue.push_back(
@@ -254,7 +257,7 @@ impl<'a> specs::System<'a> for GameSystem {
         }
 
         // Create a new character for each new player.
-        if client_state.is_master {
+        if node_resource.is_master {
             if let Some(globe_entity) = game_state.globe_entity {
                 // We can only do this after the globe has been realized.
                 if let Some(mut globe) = globes.get_mut(globe_entity) {

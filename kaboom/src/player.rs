@@ -17,6 +17,9 @@ pub struct Player {
     // I don't see any reason this can't be a global one.
     // E.g. node_id. Then we don't need to do any swizzling when
     // transferring these entities around -- everyone gets a global ID.
+    //
+    // TODO: definitely revisit this once `specs::saveload` is released (0.11?)
+    // and you can start using that.
     pub peer_id: PeerId,
     pub fighter_entity: Option<specs::Entity>,
 }
