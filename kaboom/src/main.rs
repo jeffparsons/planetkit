@@ -98,7 +98,7 @@ fn add_systems(
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
     dispatcher_builder
-        .add(game_system, "woolgather_game", &[])
+        .add(game_system, "kaboom_game", &[])
         .add(recv_system, "net_recv", &[])
         .add(recv_demux_system, "recv_demux", &["net_recv"])
         .add_barrier()
