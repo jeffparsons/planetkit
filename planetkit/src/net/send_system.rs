@@ -2,7 +2,7 @@ use std;
 use std::sync::mpsc::TryRecvError;
 
 use specs;
-use specs::{FetchMut};
+use specs::{Fetch, FetchMut};
 use slog::Logger;
 use futures;
 
@@ -19,6 +19,7 @@ use super::{
     Destination,
     PeerId,
     Transport,
+    NodeResource,
 };
 
 pub struct SendSystem<G: GameMessage>{
@@ -99,6 +100,7 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
         FetchMut<'a, SendMessageQueue<G>>,
         FetchMut<'a, RecvMessageQueue<G>>,
         FetchMut<'a, NetworkPeers<G>>,
+        Fetch<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -106,6 +108,7 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
             mut send_message_queue,
             mut recv_message_queue,
             mut network_peers,
+            node_resource,
         ) = data;
 
         // TODO: does this stuff even belong here,
@@ -209,7 +212,25 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                             message.transport,
                         );
                     }
-                }
+                },
+                Destination::Master => {
+                    if node_resource.is_master {
+                        recv_message_queue.queue.push_back(
+                            RecvMessage {
+                                source: PeerId(0),
+                                game_message: message.game_message,
+                            }
+                        );
+                    } else {
+                        for peer in network_peers.peers.iter_mut() {
+                            self.send_message(
+                                message.game_message.clone(),
+                                peer,
+                                message.transport,
+                            );
+                        }
+                    }
+                },
             }
         }
     }

@@ -103,6 +103,8 @@ pub enum Destination {
     // Useful if you're the server and a client just told you
     // something that everyone else needs to know.
     EveryoneElseExcept(PeerId),
+    // Send to the master, whether that is someone else or this node itself.
+    Master,
     // TODO: consider adding a new one for "all including self"
     // so we can simplify some code paths that work differently
     // depending on whether you're the server or not.

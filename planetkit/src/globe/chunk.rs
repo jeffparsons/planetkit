@@ -4,7 +4,7 @@ use globe::ChunkOrigin;
 use globe::origin_of_chunk_owning;
 use globe::chunk_pair::PointPair;
 
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum Material {
     Air,
     Dirt,
@@ -17,7 +17,7 @@ pub enum Material {
 // sized partition of the world that would be loaded and
 // unloaded into the world as a unit.
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Cell {
     pub material: Material,
     pub shade: f32,

@@ -1,15 +1,24 @@
 use std::sync::mpsc;
 use specs;
-use specs::{WriteStorage, Fetch};
+use specs::{ReadStorage, WriteStorage, Fetch, FetchMut};
 use slog::Logger;
 use piston::input::Input;
 
-use super::{CellDweller, ActiveCellDweller};
-use movement::*;
-use grid::PosInOwningRoot;
+use super::{
+    CellDweller,
+    ActiveCellDweller,
+    SendMessageQueue,
+    CellDwellerMessage,
+    TryPickUpBlockMessage,
+};
 use globe::Globe;
-use globe::chunk::Material;
 use input_adapter;
+use ::net::{
+    SendMessage,
+    Transport,
+    Destination,
+    NetMarker,
+};
 
 // TODO: own file?
 pub struct MiningInputAdapter {
@@ -80,91 +89,27 @@ impl MiningSystem {
             }
         }
     }
-
-    fn pick_up_if_possible(&self, cd: &mut CellDweller, globe: &mut Globe) {
-        use globe::is_point_on_chunk_edge;
-
-        // Only allow picking stuff up if you're sitting above solid ground.
-        // (Or, rather, the stuff we consider to be solid for now,
-        // which is anything other than air.)
-        //
-        // TODO: abstract this whole thing... you need some kind of
-        // utilities for a globe.
-        if cd.pos.z < 0 {
-            // There's nothing below; someone built a silly globe.
-            return;
-        }
-        let under_pos = cd.pos.with_z(cd.pos.z - 1);
-        {
-            // Inner scope to fight borrowck.
-            let under_cell = globe.maybe_non_authoritative_cell(under_pos);
-            if under_cell.material != Material::Dirt {
-                return;
-            }
-        }
-
-        // Ask the globe if there's anything in front of us to "pick up".
-        let mut new_pos = cd.pos;
-        let mut new_dir = cd.dir;
-        move_forward(&mut new_pos, &mut new_dir, globe.spec().root_resolution)
-            .expect("CellDweller should have been in good state.");
-        let anything_to_pick_up = {
-            let cell = globe.maybe_non_authoritative_cell(new_pos);
-            cell.material == Material::Dirt
-        };
-        // Also require that there's air above the block;
-        // in my initial use case I don't want to allow mining below
-        // the surface.
-        let air_above_target = {
-            let above_new_pos = new_pos.with_z(new_pos.z + 1);
-            let cell = globe.maybe_non_authoritative_cell(above_new_pos);
-            cell.material == Material::Air
-        };
-        let can_pick_up = anything_to_pick_up && air_above_target;
-        if can_pick_up {
-            // TODO: make a special kind of thing you can pick up.
-            // TODO: accept that as a system argument, and have some builders
-            // that make it super-easy to configure.
-            // The goal here should be that the "block dude" game
-            // ends up both concise and legible.
-            let new_pos_in_owning_root =
-                PosInOwningRoot::new(new_pos, globe.spec().root_resolution);
-            globe
-                .authoritative_cell_mut(new_pos_in_owning_root)
-                .material = Material::Air;
-            // Some extra stuff is only relevant if the cell is on the edge of its chunk.
-            if is_point_on_chunk_edge(
-                *new_pos_in_owning_root.pos(),
-                globe.spec().chunk_resolution,
-            )
-            {
-                // Bump version of owned shared cells.
-                globe.increment_chunk_owned_edge_version_for_cell(new_pos_in_owning_root);
-                // Propagate change to neighbouring chunks.
-                let chunk_origin = globe.origin_of_chunk_owning(new_pos_in_owning_root);
-                globe.push_shared_cells_for_chunk(chunk_origin);
-            }
-            // Mark the view for the containing chunk and those containing each cell surrounding
-            // it as being dirty. (This cell might affect the visibility of cells in those chunks.)
-            // TODO: different API where you commit to changing a cell
-            // in a closure you get back that has a reference to it?
-            // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
-            globe.mark_chunk_views_affected_by_cell_as_dirty(new_pos);
-            // TODO: remember on the cell-dweller that it's carrying something?
-            // Or should that be a different kind of component?
-            debug!(self.log, "Picked up block"; "pos" => format!("{:?}", new_pos));
-        }
-    }
 }
 
 impl<'a> specs::System<'a> for MiningSystem {
-    type SystemData = (WriteStorage<'a, CellDweller>,
-     WriteStorage<'a, Globe>,
-     Fetch<'a, ActiveCellDweller>);
+    type SystemData = (
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Globe>,
+        Fetch<'a, ActiveCellDweller>,
+        FetchMut<'a, SendMessageQueue>,
+        ReadStorage<'a, NetMarker>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
-        let (mut cell_dwellers, mut globes, active_cell_dweller_resource) = data;
+
+        let (
+            mut cell_dwellers,
+            mut globes,
+            active_cell_dweller_resource,
+            mut send_message_queue,
+            net_markers,
+        ) = data;
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
             None => return,
@@ -195,8 +140,31 @@ impl<'a> specs::System<'a> for MiningSystem {
             }
         };
 
-        if self.pick_up {
-            self.pick_up_if_possible(cd, globe);
+        // If we're trying to pick up, and from our perspective (we might not be the server)
+        // we _can_ pick up, then request to the server to pick up the block.
+        if self.pick_up && super::mining::can_pick_up(cd, globe) {
+            // Post a message to the server (even if that's us)
+            // requesting to remove the block.
+            debug!(self.log, "Requesting to pick up a block");
+
+            if send_message_queue.has_consumer {
+                // If there's a network consumer, then presumably
+                // the entity has been given a global ID.
+                let cd_entity_id = net_markers
+                    .get(active_cell_dweller_entity)
+                    .expect("Shouldn't be trying to tell peers about entities that don't have global IDs!")
+                    .id;
+                send_message_queue.queue.push_back(
+                    SendMessage {
+                        // Send the request to the master node, including when that's us.
+                        destination: Destination::Master,
+                        game_message: CellDwellerMessage::TryPickUpBlock(TryPickUpBlockMessage {
+                            cd_entity_id: cd_entity_id,
+                        }),
+                        transport: Transport::TCP,
+                    }
+                )
+            }
         }
     }
 }
