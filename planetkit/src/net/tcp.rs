@@ -274,40 +274,49 @@ fn handle_tcp_stream<G: GameMessage>(
     // we've connected with a new peer.
     // TODO: how big is reasonable here? Unbounded? Probably...
     let (tcp_tx, tcp_rx) = futures::sync::mpsc::channel::<WireMessage<G>>(1000);
+    let (rtr_tx, rtr_rx) = futures::sync::oneshot::channel::<()>();
     let new_peer = NewPeer {
         tcp_sender: tcp_tx,
         socket_addr: peer_addr,
+        ready_to_receive_tx: rtr_tx,
     };
     send_system_new_peer_sender.send(new_peer).expect("Receiver hung up?");
-    // Throw away the source and sink when we're done; what else do we want with them? :)
+    // Throw away the source and sink after the connection closes;
+    // what else do we want with them? :)
+    // TODO: maybe we want to remove the peer... make a test for lots
+    // of clients connecting and leaving and spamming each other.
     let tx_f = sink.send_all(tcp_rx).map(|_| ());
     handle.spawn(tx_f);
 
     // Receiver future
     let peer_server_log = parent_log.new(o!("peer_addr" => format!("{}", peer_addr)));
     let peer_server_error_log = peer_server_log.clone();
-    let f = stream.filter(|recv_wire_message| {
-        // TODO: log
-        match recv_wire_message.message {
-            Result::Err(_) => {
-                println!("Got a bad message from peer");
-                false
+    // First wait for the RecvSystem to signal that it's registered
+    // the peer and is ready to receive.
+    let f = rtr_rx.then(|_| {
+        stream.filter(|recv_wire_message| {
+            // TODO: log
+            match recv_wire_message.message {
+                Result::Err(_) => {
+                    println!("Got a bad message from peer");
+                    false
+                }
+                _ => true,
             }
-            _ => true,
-        }
-    })
-    .for_each(move |recv_wire_message| {
-        trace!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+        })
+        .for_each(move |recv_wire_message| {
+            trace!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
-        // Send the message to net RecvSystem, to be interpreted and dispatched.
-        recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
+            // Send the message to net RecvSystem, to be interpreted and dispatched.
+            recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
 
-        futures::future::ok(())
-    }).or_else(move |error| {
-        // Got a bad message from the peer (I assume) so the
-        // connection is going to close.
-        info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
-        futures::future::ok(())
+            futures::future::ok(())
+        }).or_else(move |error| {
+            // Got a bad message from the peer (I assume) so the
+            // connection is going to close.
+            info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
+            futures::future::ok(())
+        })
     });
     Box::new(f)
 }

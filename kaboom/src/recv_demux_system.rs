@@ -44,6 +44,7 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
                     trace!(self.log, "Forwarding cell dweller message to its recv message queue"; "message" => format!("{:?}", cd_message));
                     cell_dweller_recv_queue.queue.push_back(
                         RecvMessage {
+                            source: message.source,
                             game_message: cd_message,
                         }
                     );
@@ -52,6 +53,7 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
                     trace!(self.log, "Forwarding player message to its recv message queue"; "message" => format!("{:?}", player_message));
                     player_recv_queue.queue.push_back(
                         RecvMessage {
+                            source: message.source,
                             game_message: player_message,
                         }
                     );

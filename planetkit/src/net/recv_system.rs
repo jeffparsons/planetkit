@@ -2,11 +2,18 @@ use std::sync::mpsc;
 use std::collections::vec_deque::VecDeque;
 
 use specs;
-use specs::{FetchMut};
+use specs::{Fetch, FetchMut};
 use shred;
 use slog::Logger;
 
-use super::{GameMessage, RecvMessage, WireMessage, RecvWireMessage, RecvMessageQueue};
+use super::{
+    GameMessage,
+    RecvMessage,
+    WireMessage,
+    RecvWireMessage,
+    RecvMessageQueue,
+    NetworkPeers,
+};
 
 pub struct RecvSystem<G: GameMessage>{
     log: Logger,
@@ -53,11 +60,16 @@ impl<G> RecvSystem<G>
 impl<'a, G> specs::System<'a> for RecvSystem<G>
     where G: GameMessage
 {
-    // TODO: require peer list as systemdata.
-    type SystemData = (FetchMut<'a, RecvMessageQueue<G>>,);
+    type SystemData = (
+        FetchMut<'a, RecvMessageQueue<G>>,
+        Fetch<'a, NetworkPeers<G>>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut recv_message_queue,) = data;
+        let (
+            mut recv_message_queue,
+            network_peers,
+        ) = data;
 
         // Slurp everything the server sent us.
         loop {
@@ -76,6 +88,22 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
                 }
             };
 
+            // Figure out who sent it. Do this after decoding the body so we
+            // can log some useful information about what was in the message.
+            //
+            // TODO: ruh roh, what if two clients connect from the same IP?
+            // We need to make peers always identify themselves in every message,
+            // (and then use the HMAC to validate identity and message).
+            let peer_id = match network_peers.peers.iter()
+                .find(|peer| peer.socket_addr == src)
+            {
+                Some(peer) => peer.id,
+                None => {
+                    warn!(self.log, "Got message from address we don't recognise; did they disconnect"; "peer_addr" => format!("{:?}", src), "message" => format!("{:?}", message));
+                    continue;
+                }
+            };
+
             let game_message = match message {
                 WireMessage::Game(game_message) => game_message,
                 _ => {
@@ -90,8 +118,8 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
             // at least HMAC.)
 
             // Re-wrap the message for consumption by other systems.
-            // TODO: tack on the peer ID.
             let recv_message = RecvMessage {
+                source: peer_id,
                 game_message: game_message,
             };
             recv_message_queue.queue.push_back(recv_message);

@@ -76,7 +76,7 @@ pub struct SendWireMessage<G> {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct RecvMessage<G> {
-    // TODO: sender peer id
+    pub source: PeerId,
     pub game_message: G,
 }
 
@@ -100,6 +100,9 @@ pub struct SendMessage<G> {
 pub enum Destination {
     One(PeerId),
     EveryoneElse,
+    // Useful if you're the server and a client just told you
+    // something that everyone else needs to know.
+    EveryoneElseExcept(PeerId),
     // TODO: consider adding a new one for "all including self"
     // so we can simplify some code paths that work differently
     // depending on whether you're the server or not.
@@ -153,6 +156,11 @@ pub struct PeerId(pub u16);
 pub struct NewPeer<G> {
     pub tcp_sender: futures::sync::mpsc::Sender<WireMessage<G>>,
     pub socket_addr: SocketAddr,
+    // Fires when the RecvSystem is ready to receive messages from
+    // the network. This gives it a chance to register the peer so
+    // that it can identify messages from it. Asynchronous programming
+    // is fuuuuun.
+    pub ready_to_receive_tx: futures::sync::oneshot::Sender<()>,
 }
 
 pub struct NetworkPeer<G> {

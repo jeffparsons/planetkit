@@ -291,7 +291,7 @@ impl<'a> specs::System<'a> for MovementSystem {
         // after control.
         if cd.is_real_space_transform_dirty() {
             // TODO: better way of deciding whether
-            // to send network message.
+            // to send network message. Using `is_real_space_transform_dirty` is a haaaack.
             // Tell all peers about our new position.
             if send_message_queue.has_consumer {
                 // If there's a network consumer, then presumably
@@ -300,23 +300,19 @@ impl<'a> specs::System<'a> for MovementSystem {
                     .get(active_cell_dweller_entity)
                     .expect("Shouldn't be trying to tell peers about entities that don't have global IDs!")
                     .id;
+                // TODO: this shouldn't even be a network message;
+                // it should be an EVENT on a pubsub thing (or similar...
+                // you don't want to accidentally miss it this frame
+                // if you're using asynchronous channels -- is this
+                // actually a serious consideration?). Then if there's
+                // a network system hooked up, then it can broadcast it.
                 send_message_queue.queue.push_back(
                     SendMessage {
-                        // TODO: this shouldn't even be a network message;
-                        // it should be an EVENT on a pubsub thing (or similar...
-                        // you don't want to accidentally miss it this frame
-                        // if you're using asynchronous channels -- is this
-                        // actually a serious consideration?). Then if there's
-                        // a network system hooked up, then it can broadcast it.
-                        //
-                        // TODO: this shouldn't actually be broadcast:
-                        // it should be either broadcast if you're the master,
-                        // or just tell the server if you're a client.
-                        // OR: should there be a special convenience way
-                        // to ask "who is the server", and then you can
-                        // just _always_ send it to the server, even if
-                        // the server is you, and then the server always
-                        // forwards the message on? That might be a neater way.
+                        // In practice, if you're the server this will mean "all clients"
+                        // because all of them need to know about the change, and if you're
+                        // a client then for now your only peer will be the server.
+                        // All of this will obviously need to be revisited if we allow
+                        // connecting to multiple servers, or to other non-server peers.
                         destination: Destination::EveryoneElse,
                         game_message: CellDwellerMessage::SetPos(SetPosMessage {
                             entity_id: entity_id,

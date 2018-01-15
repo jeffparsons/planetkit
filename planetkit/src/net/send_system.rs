@@ -95,7 +95,6 @@ impl<G> SendSystem<G>
 impl<'a, G> specs::System<'a> for SendSystem<G>
     where G: GameMessage
 {
-    // TODO: require peer list as systemdata.
     type SystemData = (
         FetchMut<'a, SendMessageQueue<G>>,
         FetchMut<'a, RecvMessageQueue<G>>,
@@ -129,9 +128,20 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                     };
                     network_peers.peers.push(peer);
 
+                    // Cool, we've registered the peer, so we can now
+                    // handle messages from the network. Let the network
+                    // bits know that.
+                    new_peer.ready_to_receive_tx.send(()).expect("Receiver hung up?");
+
                     // Leave a note about the new peer so game-specific
                     // systems can do whatever initialization they might
                     // need to do.
+                    //
+                    // TODO: don't do this until we've heard from the peer
+                    // that they are ready to receive messages. Otherwise
+                    // we might start sending them things over UDP that
+                    // they're not ready to receive, and they'll spew a bunch
+                    // of unnecessary warnings. :)
                     network_peers.new_peers.push_back(next_peer_id);
                 },
                 Err(err) => {
@@ -163,6 +173,7 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                     if peer_id.0 == 0 {
                         recv_message_queue.queue.push_back(
                             RecvMessage {
+                                source: peer_id,
                                 game_message: message.game_message,
                             }
                         );
@@ -176,6 +187,22 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                 },
                 Destination::EveryoneElse => {
                     for peer in network_peers.peers.iter_mut() {
+                        self.send_message(
+                            message.game_message.clone(),
+                            peer,
+                            message.transport,
+                        );
+                    }
+                },
+                Destination::EveryoneElseExcept(peer_id) => {
+                    // Everyone except yourself and another specified peer.
+                    // Useful if we just got an update (vs. polite request) from
+                    // a client that we don't intend to challenge (e.g. "I moved here" ... "ok"),
+                    // and just want to forward on to all other clients.
+                    for peer in network_peers.peers.iter_mut() {
+                        if peer.id == peer_id || peer.id.0 == 0 {
+                            continue;
+                        }
                         self.send_message(
                             message.game_message.clone(),
                             peer,

@@ -5,11 +5,18 @@ use slog::Logger;
 use super::{
     CellDweller,
     RecvMessageQueue,
+    SendMessageQueue,
     CellDwellerMessage,
+    SendMessage,
 };
 use Spatial;
 
-use net::EntityIds;
+use net::{
+    EntityIds,
+    NodeResource,
+    Destination,
+    Transport,
+};
 
 pub struct RecvSystem {
     log: Logger,
@@ -34,7 +41,9 @@ impl<'a> specs::System<'a> for RecvSystem {
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
         FetchMut<'a, RecvMessageQueue>,
+        FetchMut<'a, SendMessageQueue>,
         Fetch<'a, EntityIds>,
+        Fetch<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -42,7 +51,9 @@ impl<'a> specs::System<'a> for RecvSystem {
             mut cell_dwellers,
             mut spatials,
             mut recv_message_queue,
+            mut send_message_queue,
             entity_ids,
+            node_resource,
         ) = data;
 
         // Slurp all inbound messages.
@@ -66,28 +77,16 @@ impl<'a> specs::System<'a> for RecvSystem {
                         "Missing Spatial",
                     );
 
+                    // TODO: validate that they're allowed to move this cell dweller.
+
                     // TODO: demote to trace
                     info!(self.log, "Moving cell dweller because of received network message"; "message" => format!("{:?}", set_pos_message));
-
-                    // TODO: move a specific cell dweller,
-                    // not whichever one is active. :)
 
                     cd.set_cell_transform(
                         set_pos_message.new_pos,
                         set_pos_message.new_dir,
                         set_pos_message.new_last_turn_bias,
                     );
-
-                    // TODO: tell all _other_ peers about this update.
-                    // IFF we are the server.
-                    // TODO: do we need some kind of pattern for an action,
-                    // where it's got rules for:
-                    // - how to turn it into a request if we're not the server.
-                    // - how to action it if we are the server.
-                    // - how to action it if we are a client. (Maybe it's just
-                    //   a different kind of message in that case.)
-                    // - how to forward it on if we're the server and we just
-                    //   acted on it.
 
                     // Update real-space coordinates if necessary.
                     // TODO: do this in a separate system; it needs to be done before
@@ -96,6 +95,25 @@ impl<'a> specs::System<'a> for RecvSystem {
                     // after control.
                     if cd.is_real_space_transform_dirty() {
                         spatial.set_local_transform(cd.get_real_transform_and_mark_as_clean());
+                    }
+
+                    // Inform all peers that don't yet know about this action.
+                    // TODO: do we need some kind of pattern for an action,
+                    // where it's got rules for:
+                    // - how to turn it into a request if we're not the server.
+                    // - how to action it if we are the server.
+                    // - how to action it if we are a client. (Maybe it's just
+                    //   a different kind of message in that case.)
+                    // - how to forward it on if we're the server and we just
+                    //   acted on it.
+                    if node_resource.is_master {
+                        send_message_queue.queue.push_back(
+                            SendMessage {
+                                destination: Destination::EveryoneElseExcept(message.source),
+                                game_message: CellDwellerMessage::SetPos(set_pos_message),
+                                transport: Transport::UDP,
+                            }
+                        )
                     }
                 },
             }
