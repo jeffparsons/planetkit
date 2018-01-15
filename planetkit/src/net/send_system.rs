@@ -34,11 +34,11 @@ impl<G> SendSystem<G>
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> SendSystem<G> {
         use auto_resource::AutoResource;
 
-        // Ensure SendMessage ring buffer resource is registered.
+        // Ensure resources we use are present.
         SendMessageQueue::<G>::ensure(world);
-
-        // Ensure NetworkPeers resource is registered.
+        RecvMessageQueue::<G>::ensure(world);
         NetworkPeers::<G>::ensure(world);
+        NodeResource::ensure(world);
 
         // Ensure ServerResource is present, and fetch the
         // channel ends we need from it.

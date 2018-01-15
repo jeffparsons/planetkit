@@ -100,6 +100,19 @@ fn client_sends_udp_message_to_server() {
     let mut server_node = Node::new_server();
     let mut client_node = Node::new_client_connected_to(&server_node);
 
+    // Give the server a chance to register the new peer,
+    // so that when first check for a message, there's one
+    // already received from the TCP stack.
+    //
+    // Client node should do this shortly before it sends its message,
+    // because it gets a chance to dispatch anyway.
+    //
+    // These are pretty low-level tests, so this is ok here,
+    // but higher-level tests should all have sensible timeouts
+    // etc. instead.
+    std::thread::sleep(Duration::from_millis(10));
+    server_node.dispatch();
+
     // Put a message on the SendMessageQueue of the client node,
     // to be sent over UDP.
     client_node.enqueue_message(
@@ -135,6 +148,19 @@ fn client_sends_tcp_messages_to_server() {
     let mut server_node = Node::new_server();
     let mut client_node = Node::new_client_connected_to(&server_node);
 
+    // Give the server a chance to register the new peer,
+    // so that when first check for a message, there's one
+    // already received from the TCP stack.
+    //
+    // Client node should do this shortly before it sends its message,
+    // because it gets a chance to dispatch anyway.
+    //
+    // These are pretty low-level tests, so this is ok here,
+    // but higher-level tests should all have sensible timeouts
+    // etc. instead.
+    std::thread::sleep(Duration::from_millis(10));
+    server_node.dispatch();
+
     // Testing multiple TCP messages is kind of interesting
     // because we need to make sure we don't corrupt the
     // stream/buffer when receiving them, as opposed to UDP
@@ -160,7 +186,6 @@ fn client_sends_tcp_messages_to_server() {
         }
     );
 
-    // Step the world.
     // This should send the message.
     client_node.dispatch();
     // Sleep a while to make sure we receive the message.
@@ -185,6 +210,19 @@ fn server_sends_udp_message_to_client() {
     let mut server_node = Node::new_server();
     let mut client_node = Node::new_client_connected_to(&server_node);
 
+    // Give the client a chance to register the new peer,
+    // so that when first check for a message, there's one
+    // already received from the UDP stack.
+    //
+    // Server node should do this shortly before it sends its message,
+    // because it gets a chance to dispatch anyway.
+    //
+    // These are pretty low-level tests, so this is ok here,
+    // but higher-level tests should all have sensible timeouts
+    // etc. instead.
+    std::thread::sleep(Duration::from_millis(10));
+    client_node.dispatch();
+
     // Put a message on the SendMessageQueue of the server node,
     // to be sent over UDP.
     server_node.enqueue_message(
@@ -197,11 +235,6 @@ fn server_sends_udp_message_to_client() {
             transport: Transport::UDP,
         }
     );
-
-    // Sleep a while to make sure the server has
-    // registered the new client as a peer before
-    // trying to send to it.
-    std::thread::sleep(Duration::from_millis(10));
 
     // Step the world.
     // This should send the message.
@@ -224,6 +257,19 @@ fn server_sends_udp_message_to_client() {
 fn server_sends_tcp_messages_to_client() {
     let mut server_node = Node::new_server();
     let mut client_node = Node::new_client_connected_to(&server_node);
+
+    // Give the client a chance to register the new peer,
+    // so that when first check for a message, there's one
+    // already received from the UDP stack.
+    //
+    // Server node should do this shortly before it sends its message,
+    // because it gets a chance to dispatch anyway.
+    //
+    // These are pretty low-level tests, so this is ok here,
+    // but higher-level tests should all have sensible timeouts
+    // etc. instead.
+    std::thread::sleep(Duration::from_millis(10));
+    client_node.dispatch();
 
     // Testing multiple TCP messages is kind of interesting
     // because we need to make sure we don't corrupt the
@@ -249,11 +295,6 @@ fn server_sends_tcp_messages_to_client() {
             transport: Transport::TCP,
         }
     );
-
-    // Sleep a while to make sure the server has
-    // registered the new client as a peer before
-    // trying to send to it.
-    std::thread::sleep(Duration::from_millis(10));
 
     // Step the world.
     // This should send the message.

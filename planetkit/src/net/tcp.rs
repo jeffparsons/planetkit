@@ -420,7 +420,7 @@ mod tests {
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
         let (tx, rx) = std::sync::mpsc::channel::<RecvWireMessage<TestMessage>>();
-        let (new_peer_tx, _new_peer_rx) = std::sync::mpsc::channel::<NewPeer<TestMessage>>();
+        let (new_peer_tx, new_peer_rx) = std::sync::mpsc::channel::<NewPeer<TestMessage>>();
         let server_port = start_tcp_server(&log, tx, new_peer_tx, remote, None);
 
         // Connect to server.
@@ -430,7 +430,15 @@ mod tests {
         let handle = reactor.handle();
         let socket_future = TcpStream::connect(&connect_addr, &handle);
 
-        // Send to great messages together!
+        // Sleep a while to make sure the server hears about the new peer,
+        // so that we can say we're ready to receive messages from it.
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        // Declare that we're ready to receive.
+        // (Emulate what SendSystem/whatever does.)
+        let new_peer = new_peer_rx.try_recv().expect("Should've been a new peer connected");
+        new_peer.ready_to_receive_tx.send(()).expect("Receiver hung up?");
+
+        // Send two great messages together!
         let mut buf = BytesMut::with_capacity(1000);
         let f = socket_future.and_then(|tcp_stream| {
             let message = b"{\"Game\":{}}";

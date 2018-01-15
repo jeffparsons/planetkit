@@ -1,9 +1,7 @@
 use std::sync::mpsc;
-use std::collections::vec_deque::VecDeque;
 
 use specs;
 use specs::{Fetch, FetchMut};
-use shred;
 use slog::Logger;
 
 use super::{
@@ -30,15 +28,9 @@ impl<G> RecvSystem<G>
     ) -> RecvSystem<G> {
         use auto_resource::AutoResource;
 
-        // Ensure RecvMessage ring buffer resource is registered.
-        // TODO: make this a self-ensuring resource.
-        let res_id = shred::ResourceId::new::<RecvMessageQueue<G>>();
-        if !world.res.has_value(res_id) {
-            let recv_message_queue = RecvMessageQueue {
-                queue: VecDeque::<RecvMessage<G>>::new()
-            };
-            world.add_resource(recv_message_queue);
-        }
+        // Ensure resources we use are present.
+        RecvMessageQueue::<G>::ensure(world);
+        NetworkPeers::<G>::ensure(world);
 
         // Ensure ServerResource is present, and fetch the
         // wire message receiver from it.

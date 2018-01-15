@@ -116,6 +116,14 @@ pub struct RecvMessageQueue<G> {
     pub queue: VecDeque<RecvMessage<G>>,
 }
 
+impl<G: GameMessage> AutoResource for RecvMessageQueue<G> {
+    fn new(_world: &mut specs::World) -> RecvMessageQueue<G> {
+        RecvMessageQueue {
+            queue: VecDeque::<RecvMessage<G>>::new(),
+        }
+    }
+}
+
 /// `World`-global resource for game messages waiting to be sent
 /// to peers.
 pub struct SendMessageQueue<G> {
