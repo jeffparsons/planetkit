@@ -164,7 +164,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                     // Initially just trust the client is honest.
                     let maybe_cell_info = super::mining::pick_up_if_possible(cd, globe);
                     if let Some((new_pos_in_owning_root, cell)) = maybe_cell_info {
-                        info!(self.log, "Removed a block because a peer asked"; "pos" => format!("{:?}", new_pos_in_owning_root), "cell" => format!("{:?}", cell));
+                        debug!(self.log, "Removed a block because a peer asked"; "pos" => format!("{:?}", new_pos_in_owning_root), "cell" => format!("{:?}", cell));
 
                         // Tell everyone else what happened.
                         //
@@ -204,7 +204,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                         PosInOwningRoot::new(remove_block_message.pos, globe.spec().root_resolution);
                     let removed_cell = super::mining::remove_block(globe, pos_in_owning_root);
 
-                    info!(self.log, "Removed a block master told me to"; "pos" => format!("{:?}", remove_block_message.pos), "cell" => format!("{:?}", removed_cell));
+                    debug!(self.log, "Removed a block master told me to"; "pos" => format!("{:?}", remove_block_message.pos), "cell" => format!("{:?}", removed_cell));
                 },
             }
         }
