@@ -91,14 +91,20 @@ fn add_systems(
     dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
 ) -> specs::DispatcherBuilder<'static, 'static> {
     let game_system = game_system::GameSystem::new(logger, world);
+    let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
     let send_mux_system = SendMuxSystem::new(logger, world);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
+    // TODO: these barriers are probably a bad idea;
+    // we should be perfectly happy to render while we're sending
+    // things over the network. Maybe consider "dummy systems"
+    // used as lifecycle hooks instead.
     dispatcher_builder
         .add(game_system, "kaboom_game", &[])
+        .add(new_peer_system, "new_peer_system", &[])
         .add(recv_system, "net_recv", &[])
         .add(recv_demux_system, "recv_demux", &["net_recv"])
         .add_barrier()

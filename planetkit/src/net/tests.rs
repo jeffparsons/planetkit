@@ -36,13 +36,19 @@ impl Node {
         // preferred to ensure those.
         world.add_resource(LogResource::new(&root_log));
 
-        // Create sender and receiver systems.
+        // Create core network systems.
+        let new_peer_system = NewPeerSystem::<TestMessage>::new(&root_log, &mut world);
         let recv_system = RecvSystem::<TestMessage>::new(&root_log, &mut world);
         let send_system = SendSystem::<TestMessage>::new(&root_log, &mut world);
 
-        // Make a dispatcher.
+        // Make a dispatcher, with simplified execution order.
+        // TODO: replace this with waiting for specific things to be ready,
+        // so you don't need to fiddle with fine timings.
         let dispatcher = specs::DispatcherBuilder::new()
+            .add(new_peer_system, "new_peer", &[])
+            .add_barrier()
             .add(recv_system, "recv", &[])
+            .add_barrier()
             .add(send_system, "send", &[])
             .build();
 

@@ -3,6 +3,8 @@ use specs::{World, FetchMut};
 
 // TODO: use for Systems, too?
 // Yes, that'll be pretty neat.
+// They can get whatever inputs they need from _resources_.
+// If all bounds can be satisfied, this could include loggers, etc. :)
 
 /// `Resource`s that know how to ensure their existence
 /// using only a reference to a `World`.

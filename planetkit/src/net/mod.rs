@@ -3,6 +3,7 @@
 
 #[cfg(not(target_os="emscripten"))] mod recv_system;
 #[cfg(not(target_os="emscripten"))] mod send_system;
+#[cfg(not(target_os="emscripten"))] mod new_peer_system;
 #[cfg(not(target_os="emscripten"))] mod server;
 #[cfg(not(target_os="emscripten"))] mod server_resource;
 #[cfg(not(target_os="emscripten"))] mod udp;
@@ -25,6 +26,7 @@ use specs;
 use ::AutoResource;
 #[cfg(not(target_os="emscripten"))] pub use self::recv_system::RecvSystem;
 #[cfg(not(target_os="emscripten"))] pub use self::send_system::SendSystem;
+#[cfg(not(target_os="emscripten"))] pub use self::new_peer_system::NewPeerSystem;
 #[cfg(not(target_os="emscripten"))] pub use self::server::Server;
 #[cfg(not(target_os="emscripten"))] pub use self::server_resource::ServerResource;
 
