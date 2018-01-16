@@ -25,6 +25,8 @@ pub struct GameState {
     // (TODO: split it out into a ServerState or MasterState struct?
     // Maybe that's not worth it...)
     pub new_players: VecDeque<PlayerId>,
+    // Used for default player names when they are created.
+    pub next_unnamed_player_number: usize,
 }
 
 impl AutoResource for GameState {
@@ -33,6 +35,7 @@ impl AutoResource for GameState {
             globe_entity: None,
             players: Vec::<Player>::new(),
             new_players: VecDeque::<PlayerId>::new(),
+            next_unnamed_player_number: 1,
         }
     }
 }

@@ -22,17 +22,27 @@ pub struct Player {
     // and you can start using that.
     pub peer_id: PeerId,
     pub fighter_entity: Option<specs::Entity>,
+    pub name: String,
 }
 
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum PlayerMessage {
-    NewPlayer(PlayerId),
+    NewPlayer(NewPlayerMessage),
     // Tell a client about the new player ID created for them,
     // or the player they are taking over.
     YourPlayer(PlayerId),
     NewFighter(u64),
     YourFighter(u64),
+}
+
+// REVISIT: just serialize an entire player instead,
+// once everything in it is global? Only if there's
+// no privileged information in it.
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
+pub struct NewPlayerMessage {
+    pub id: PlayerId,
+    pub name: String,
 }
 
 /// `World`-global resource for inbound player-related network messages.

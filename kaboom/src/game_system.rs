@@ -45,11 +45,14 @@ impl GameSystem {
         peer_id: PeerId,
     ) {
         let next_player_id = PlayerId(game_state.players.len() as u16);
+        let player_name = format!("Unnamed player {}", game_state.next_unnamed_player_number);
+        game_state.next_unnamed_player_number += 1;
         game_state.players.push(
             Player {
                 id: next_player_id,
                 peer_id: peer_id,
                 fighter_entity: None,
+                name: player_name.clone(),
             }
         );
         game_state.new_players.push_back(next_player_id);
@@ -59,7 +62,12 @@ impl GameSystem {
             SendMessage {
                 destination: Destination::EveryoneElse,
                 game_message: Message::Player(
-                    PlayerMessage::NewPlayer(next_player_id)
+                    PlayerMessage::NewPlayer(
+                        player::NewPlayerMessage {
+                            id: next_player_id,
+                            name: player_name,
+                        }
+                    )
                 ),
                 transport: Transport::TCP,
             }
@@ -134,7 +142,7 @@ impl<'a> specs::System<'a> for GameSystem {
 
         while let Some(message) = player_recv_message_queue.queue.pop_front() {
             match message.game_message {
-                PlayerMessage::NewPlayer(player_id) => {
+                PlayerMessage::NewPlayer(new_player_message) => {
                     // Add the new player to our list.
 
                     // Master should never be told about new players.
@@ -143,9 +151,15 @@ impl<'a> specs::System<'a> for GameSystem {
                     // You need a pattern for this.
                     debug_assert!(!node_resource.is_master);
 
+                    let player_id = new_player_message.id;
                     if (player_id.0 as usize) < game_state.players.len() {
                         // TODO: demote to debug
-                        info!(self.log, "Heard about new player we already know about"; "player_id" => format!("{:?}", player_id));
+                        info!(
+                            self.log,
+                            "Heard about new player we already know about";
+                            "player_id" => format!("{:?}", player_id),
+                            "name" => format!("{:?}", new_player_message.name)
+                        );
                         continue;
                     }
 
@@ -154,20 +168,27 @@ impl<'a> specs::System<'a> for GameSystem {
                     assert!((player_id.0 as usize) <= game_state.players.len());
                     game_state.players.push(
                         Player {
-                            id: player_id,
+                            id: new_player_message.id,
                             // TODO: don't just make this up!
                             // TODO: make the network server tack on
                             // the ID of the peer that sent these messages!!!!!
                             peer_id: PeerId(1),
                             fighter_entity: None,
+                            name: new_player_message.name,
                         }
                     );
                 },
                 PlayerMessage::YourPlayer(player_id) => {
                     // We should already know about this player.
                     assert!((player_id.0 as usize) < game_state.players.len());
+                    let my_player = &game_state.players[player_id.0 as usize];
 
-                    info!(self.log, "Heard about our player"; "player_id" => format!("{:?}", player_id));
+                    info!(
+                        self.log,
+                        "Heard about our player";
+                        "player_id" => format!("{:?}", player_id),
+                        "name" => format!("{:?}", my_player.name)
+                    );
 
                     // Remember which player is ours.
                     client_state.player_id = Some(player_id);
@@ -226,7 +247,12 @@ impl<'a> specs::System<'a> for GameSystem {
                         SendMessage {
                             destination: Destination::One(new_peer_id),
                             game_message: Message::Player(
-                                PlayerMessage::NewPlayer(player.id)
+                                PlayerMessage::NewPlayer(
+                                    player::NewPlayerMessage {
+                                        id: player.id,
+                                        name: player.name.clone(),
+                                    }
+                                )
                             ),
                             transport: Transport::TCP,
                         }
