@@ -34,6 +34,16 @@ impl<G: GameMessage> Encoder for Codec<G> {
     fn encode(&mut self, message: WireMessage<G>, buf: &mut BytesMut) -> Result<(), io::Error> {
         use bytes::BufMut;
 
+        // We don't know how much space we're going to need in the buffer
+        // until we actually encode the message, so let's just be super-conservative
+        // and reserve a _lot_. This shouldn't be a problem, because we'll reuse
+        // this over and over, and calling `reserve` will let us re-use the earlier
+        // parts of the buffer that we're done with.
+        //
+        // REVISIT: the BytesMut docs say "In general, avoiding calls to reserve is preferable."
+        // Is there a better way to reclaim space?
+        buf.reserve(1024 * 1024);
+
         // Reserve space for the length prefix; we'll only know how long
         // the serialized form is after we write it out.
         let length_header_index = buf.len();
@@ -44,6 +54,9 @@ impl<G: GameMessage> Encoder for Codec<G> {
         {
             let reference = buf.by_ref();
             let writer = reference.writer();
+            // TODO: don't panic. Instead, log a very loud error about
+            // failing to encode the message, so we can diagnose why we're
+            // sending something so bloody huge.
             serde_json::to_writer(writer, &message).expect("Error encoding message");
         }
 
