@@ -580,6 +580,7 @@ name = "kaboom"
 version = "0.0.1"
 dependencies = [
  "clap 2.29.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston 0.35.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.74.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "planetkit 0.0.1",
  "rand 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
