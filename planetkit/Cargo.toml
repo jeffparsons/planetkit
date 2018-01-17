@@ -3,6 +3,11 @@ name = "planetkit"
 version = "0.0.1"
 authors = ["Jeff Parsons <jeff@parsons.io>"]
 build = "build.rs"
+license = "MIT/Apache-2.0"
+description = """
+High-level toolkit for building games based around voxel globes.
+"""
+repository = "https://github.com/jeffparsons/planetkit"
 
 [features]
 nightly = []
