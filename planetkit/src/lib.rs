@@ -94,6 +94,7 @@ pub mod cell_dweller;
 pub mod movement;
 pub mod camera;
 pub mod net;
+pub mod physics;
 
 mod spatial;
 pub use spatial::Spatial;
