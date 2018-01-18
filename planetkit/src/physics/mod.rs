@@ -5,6 +5,10 @@
 
 mod velocity;
 mod velocity_system;
+mod mass;
+mod gravity_system;
 
 pub use self::velocity::Velocity;
 pub use self::velocity_system::VelocitySystem;
+pub use self::mass::Mass;
+pub use self::gravity_system::GravitySystem;

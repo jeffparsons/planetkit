@@ -13,6 +13,7 @@ use pk::types::*;
 use pk::input_adapter;
 use pk::render;
 use pk::physics::Velocity;
+use pk::physics::Mass;
 use pk::Spatial;
 
 pub struct ShootInputAdapter {
@@ -145,8 +146,7 @@ impl<'a> specs::System<'a> for ShootSystem {
                 cd_spatial.local_transform(),
             );
 
-            // Start with an arbitrary small velocity, based on what
-            // direction the cell dweller is facing.
+            // Shoot the bullet slightly up and away from us.
             //
             // (TODO: turn panic into error log.)
             //
@@ -162,6 +162,7 @@ impl<'a> specs::System<'a> for ShootSystem {
             updater.insert(entity, bullet_visual);
             updater.insert(entity, bullet_spatial);
             updater.insert(entity, bullet_velocity);
+            updater.insert(entity, Mass{});
         }
     }
 }

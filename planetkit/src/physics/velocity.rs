@@ -27,6 +27,12 @@ impl Velocity {
     }
 }
 
+impl<'a> Velocity {
+    pub fn local_velocity_mut(&'a mut self) -> &'a mut Vec3 {
+        &mut self.local_velocity
+    }
+}
+
 impl specs::Component for Velocity {
     type Storage = specs::VecStorage<Velocity>;
 }

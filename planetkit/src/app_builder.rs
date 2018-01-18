@@ -56,6 +56,7 @@ impl AppBuilder {
         world.register::<::render::Visual>();
         world.register::<::Spatial>();
         world.register::<::physics::Velocity>();
+        world.register::<::physics::Mass>();
         world.register::<::globe::Globe>();
         world.register::<::globe::ChunkView>();
         world.register::<::net::NetMarker>();

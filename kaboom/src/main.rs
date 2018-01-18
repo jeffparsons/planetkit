@@ -110,6 +110,7 @@ fn add_systems(
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
     let shoot_system = shoot_system::ShootSystem::new(world, shoot_input_receiver, logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
+    let gravity_system = pk::physics::GravitySystem::new(logger);
     let send_mux_system = SendMuxSystem::new(logger, world);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
@@ -126,6 +127,7 @@ fn add_systems(
         .add(cd_recv_system, "cd_recv", &[])
         .add(shoot_system, "shoot", &[])
         .add(velocity_system, "velocity", &[])
+        .add(gravity_system, "gravity", &[])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that
