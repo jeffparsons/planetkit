@@ -55,6 +55,7 @@ impl AppBuilder {
         world.register::<::cell_dweller::CellDweller>();
         world.register::<::render::Visual>();
         world.register::<::Spatial>();
+        world.register::<::physics::Velocity>();
         world.register::<::globe::Globe>();
         world.register::<::globe::ChunkView>();
         world.register::<::net::NetMarker>();
