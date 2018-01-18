@@ -11,10 +11,9 @@ use pk::cell_dweller::{
 };
 use pk::types::*;
 use pk::input_adapter;
-use pk::render;
-use pk::physics::Velocity;
-use pk::physics::Mass;
 use pk::Spatial;
+
+use super::grenade::shoot_grenade;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,
@@ -105,14 +104,9 @@ impl<'a> specs::System<'a> for ShootSystem {
         if self.shoot {
             self.shoot = false;
 
-            info!(self.log, "Bang!");
+            info!(self.log, "Fire!");
 
             // TODO: send this as a network message instead:
-
-            // Make visual appearance of bullet.
-            // For now this is just an axes mesh.
-            let mut bullet_visual = render::Visual::new_empty();
-            bullet_visual.proto_mesh = Some(render::make_axes_mesh());
 
             // Place the bullet in the same location as the player,
             // relative to the same globe.
@@ -123,46 +117,15 @@ impl<'a> specs::System<'a> for ShootSystem {
                     return
                 },
             };
-            let cd = cell_dwellers.get(active_cell_dweller_entity).expect(
-                "Someone deleted the controlled entity's CellDweller",
-            );
-            let cd_spatial = spatials.get(active_cell_dweller_entity).expect(
-                "Someone deleted the controlled entity's Spatial",
-            );
-            // Get the associated globe entity, complaining loudly if we fail.
-            let globe_entity = match cd.globe_entity {
-                Some(globe_entity) => globe_entity,
-                None => {
-                    warn!(
-                        self.log,
-                        "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!"
-                    );
-                    return;
-                }
-            };
-            // Put bullet where player is.
-            let bullet_spatial = Spatial::new(
-                globe_entity,
-                cd_spatial.local_transform(),
-            );
 
-            // Shoot the bullet slightly up and away from us.
-            //
-            // (TODO: turn panic into error log.)
-            //
-            // NOTE: the `unwrap` here is not the normal meaning of unwrap;
-            // in this case it is a totally innocuous function for extracting
-            // the interior value of a unit vector.
-            let dir = &cd_spatial.local_transform().rotation;
-            let cd_relative_velocity = (Vec3::z_axis().unwrap() + Vec3::y_axis().unwrap()) * 7.0;
-            let bullet_velocity = Velocity::new(dir * cd_relative_velocity);
-
-            // Build the entity.
-            let entity = entities.create();
-            updater.insert(entity, bullet_visual);
-            updater.insert(entity, bullet_spatial);
-            updater.insert(entity, bullet_velocity);
-            updater.insert(entity, Mass{});
+            shoot_grenade(
+                &entities,
+                &updater,
+                &cell_dwellers,
+                active_cell_dweller_entity,
+                &spatials,
+                &self.log,
+            );
         }
     }
 }

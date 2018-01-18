@@ -20,7 +20,7 @@ mod planet;
 mod message;
 mod send_mux_system;
 mod recv_demux_system;
-mod shoot_system;
+mod weapon;
 
 use std::sync::mpsc;
 
@@ -55,7 +55,7 @@ fn main() {
 
     // Set up input adapters.
     let (shoot_input_sender, shoot_input_receiver) = mpsc::channel();
-    let shoot_input_adapter = Box::new(shoot_system::ShootInputAdapter::new(shoot_input_sender));
+    let shoot_input_adapter = Box::new(weapon::ShootInputAdapter::new(shoot_input_sender));
 
     let mut app = pk::AppBuilder::new()
         .add_common_systems()
@@ -101,14 +101,14 @@ fn add_systems(
     logger: &slog::Logger,
     world: &mut specs::World,
     dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
-    shoot_input_receiver: mpsc::Receiver<shoot_system::ShootEvent>,
+    shoot_input_receiver: mpsc::Receiver<weapon::ShootEvent>,
 ) -> specs::DispatcherBuilder<'static, 'static> {
     let game_system = game_system::GameSystem::new(logger, world);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
-    let shoot_system = shoot_system::ShootSystem::new(world, shoot_input_receiver, logger);
+    let shoot_system = weapon::ShootSystem::new(world, shoot_input_receiver, logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
     let send_mux_system = SendMuxSystem::new(logger, world);
