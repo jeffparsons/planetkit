@@ -103,12 +103,16 @@ fn add_systems(
     dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
     shoot_input_receiver: mpsc::Receiver<weapon::ShootEvent>,
 ) -> specs::DispatcherBuilder<'static, 'static> {
+    // TODO: systems should register these.
+    world.register::<weapon::Grenade>();
+
     let game_system = game_system::GameSystem::new(logger, world);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
     let shoot_system = weapon::ShootSystem::new(world, shoot_input_receiver, logger);
+    let explode_system = weapon::ExplodeSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
     let send_mux_system = SendMuxSystem::new(logger, world);
@@ -125,7 +129,8 @@ fn add_systems(
         .add(recv_demux_system, "recv_demux", &["net_recv"])
         .add_barrier()
         .add(cd_recv_system, "cd_recv", &[])
-        .add(shoot_system, "shoot", &[])
+        .add(shoot_system, "shoot_grenade", &[])
+        .add(explode_system, "explode_grenade", &[])
         .add(velocity_system, "velocity", &[])
         .add(gravity_system, "gravity", &[])
         // TODO: explicitly add all systems here,

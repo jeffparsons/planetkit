@@ -7,7 +7,6 @@ use piston::input::Input;
 use pk::cell_dweller::{
     CellDweller,
     ActiveCellDweller,
-    SendMessageQueue,
 };
 use pk::types::*;
 use pk::input_adapter;
@@ -59,8 +58,6 @@ impl ShootSystem {
         input_receiver: mpsc::Receiver<ShootEvent>,
         parent_log: &Logger,
     ) -> ShootSystem {
-        use pk::AutoResource;
-        SendMessageQueue::ensure(world);
         ActiveCellDweller::ensure_registered(world);
 
         ShootSystem {

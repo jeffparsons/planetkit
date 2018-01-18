@@ -1,4 +1,12 @@
-use specs::{Entity, Fetch, LazyUpdate, Entities, ReadStorage, WriteStorage};
+use specs::{
+    self,
+    Entity,
+    Fetch,
+    LazyUpdate,
+    Entities,
+    ReadStorage,
+    WriteStorage
+};
 use slog::Logger;
 
 use pk::types::*;
@@ -7,6 +15,28 @@ use pk::cell_dweller::CellDweller;
 use pk::physics::Velocity;
 use pk::physics::Mass;
 use pk::Spatial;
+
+/// Velocity relative to some parent entity.
+///
+/// Assumed to also be a `Spatial`. (That's where its parent
+/// reference is stored, and there's no meaning to velocity
+/// without position.)
+pub struct Grenade {
+    pub time_to_live_seconds: f64,
+}
+
+impl Grenade {
+    pub fn new() -> Grenade {
+        Grenade {
+            time_to_live_seconds: 1.5,
+        }
+    }
+}
+
+impl specs::Component for Grenade {
+    // TODO: more appropriate storage?
+    type Storage = specs::VecStorage<Grenade>;
+}
 
 /// Spawn a grenade travelling up and forward away from the player.
 pub fn shoot_grenade(
@@ -62,4 +92,5 @@ pub fn shoot_grenade(
     updater.insert(entity, bullet_spatial);
     updater.insert(entity, bullet_velocity);
     updater.insert(entity, Mass{});
+    updater.insert(entity, Grenade::new());
 }
