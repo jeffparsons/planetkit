@@ -7,6 +7,7 @@ use pk::grid;
 use pk::globe::Globe;
 use pk::render;
 use pk::cell_dweller;
+use pk::Health;
 
 /// Create the player character.
 pub fn create(
@@ -52,5 +53,7 @@ pub fn create(
     // The CellDweller's transformation will be set based
     // on its coordinates in cell space.
     updater.insert(entity, pk::Spatial::new(globe_entity, Iso3::identity()));
+    // Give the fighter some starting health.
+    updater.insert(entity, Health::new(100));
     entity
 }
