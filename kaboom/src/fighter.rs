@@ -9,15 +9,18 @@ use pk::render;
 use pk::cell_dweller;
 
 use ::health::Health;
+use ::player::PlayerId;
 
 pub struct Fighter {
+    pub player_id: PlayerId,
     pub seconds_between_shots: TimeDelta,
     pub seconds_until_next_shot: TimeDelta,
 }
 
 impl Fighter {
-    pub fn new() -> Fighter {
+    pub fn new(player_id: PlayerId) -> Fighter {
         Fighter {
+            player_id: player_id,
             // TODO: accept as parameter
             seconds_between_shots: 0.5,
             seconds_until_next_shot: 0.0,
@@ -36,6 +39,7 @@ pub fn create(
     updater: &Fetch<LazyUpdate>,
     globe_entity: specs::Entity,
     globe: &mut Globe,
+    player_id: PlayerId,
 ) -> specs::Entity {
     use rand::{XorShiftRng, SeedableRng};
 
@@ -76,6 +80,6 @@ pub fn create(
     updater.insert(entity, pk::Spatial::new(globe_entity, Iso3::identity()));
     // Give the fighter some starting health.
     updater.insert(entity, Health::new(100));
-    updater.insert(entity, ::fighter::Fighter::new());
+    updater.insert(entity, ::fighter::Fighter::new(player_id));
     entity
 }

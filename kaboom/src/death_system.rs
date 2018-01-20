@@ -1,11 +1,13 @@
 use specs;
-use specs::WriteStorage;
+use specs::{ReadStorage, WriteStorage, FetchMut};
 use slog::Logger;
 
 use pk::cell_dweller::CellDweller;
 use pk::globe::Globe;
 
 use ::health::Health;
+use ::fighter::Fighter;
+use ::game_state::GameState;
 
 /// Identifies fighters that have run out of health,
 /// awards points to their killer, and respawns the victim.
@@ -28,6 +30,8 @@ impl<'a> specs::System<'a> for DeathSystem {
         WriteStorage<'a, Health>,
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Globe>,
+        ReadStorage<'a, Fighter>,
+        FetchMut<'a, GameState>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -38,20 +42,46 @@ impl<'a> specs::System<'a> for DeathSystem {
             mut healths,
             mut cell_dwellers,
             mut globes,
+            fighters,
+            mut game_state,
         ) = data;
 
         // Find any dead fighters.
-        for (cd, health) in (&mut cell_dwellers, &mut healths).join() {
+        for (cd, fighter, health) in (&mut cell_dwellers, &fighters, &mut healths).join() {
             if health.hp <= 0 {
                 // If it was a player that caused them to be harmed,
                 // then award a point to that player.
                 // TODO: actually track points — and subtract points for a self-kill.
                 // TODO: track what player owns this fighter!
                 if let Some(last_damaged_by_player_id) = health.last_damaged_by_player_id {
+                    // Victim might have left the game.
+                    let players = &mut game_state.players;
+                    // Temp hacks to get around multi-borrowing.
+                    let victim = players.get(fighter.player_id.0 as usize)
+                        .map(|victim_player| (victim_player.id, victim_player.name.clone()));
+                    if let Some((victim_id, victim_name)) = victim {
+                        // There might not have been a killer (environmental damage)
+                        // or they might have left the game.
+                        if let Some(killer) = players.get_mut(last_damaged_by_player_id.0 as usize) {
+                            if killer.id == victim_id {
+                                // Oops. Lost points for a self-kill.
+                                killer.points -= 1;
+                                info!(self.log, "Fighter killed itself!"; "victim" => &killer.name);
+                                info!(self.log, "Killer lost a point"; "new_points" => killer.points);
+                            } else {
+                                // Yay, you win a point for killing someone!
+                                killer.points += 1;
+                                info!(self.log, "Fighter killed!"; "victim" => &victim_name, "killer" => &killer.name);
+                                info!(self.log, "Killer won a point"; "new_points" => killer.points);
+                            }
+                        } else {
+                            // Don't award any points.
+                            info!(self.log, "Fighter killed by environment!");
+                        }
+                    }
+
                     // TODO: state the name instead
-                    info!(self.log, "Fighter killed!"; "killer_player_id" => format!("{}", last_damaged_by_player_id.0));
                 } else {
-                    info!(self.log, "Fighter killed by environment!");
                 }
 
                 // Re-spawn the player.

@@ -19,6 +19,8 @@ pub struct GameState {
     // TODO: is there any reason for players to not just
     // be another kind of component? They do hold a local
     // peer ID... but is that enough reason?
+    //
+    // NO GOOD REASON. TODO: make it a component.
     pub players: Vec<Player>,
     // New players that have joined but haven't been initialized.
     // Only the server cares about this.

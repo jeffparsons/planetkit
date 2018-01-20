@@ -12,7 +12,7 @@ use ::player::{self, Player, PlayerId, PlayerMessage};
 use ::game_state::GameState;
 use ::client_state::ClientState;
 use ::planet;
-use ::fighter;
+use ::fighter::{self, Fighter};
 use ::message::Message;
 
 /// System to drive the top-level state machine for level and game state.
@@ -53,6 +53,7 @@ impl GameSystem {
                 peer_id: peer_id,
                 fighter_entity: None,
                 name: player_name.clone(),
+                points: 0,
             }
         );
         game_state.new_players.push_back(next_player_id);
@@ -96,6 +97,7 @@ impl<'a> specs::System<'a> for GameSystem {
         WriteStorage<'a, Globe>,
         FetchMut<'a, ActiveCellDweller>,
         WriteStorage<'a, CellDweller>,
+        ReadStorage<'a, Fighter>,
         FetchMut<'a, DefaultCamera>,
         FetchMut<'a, NetworkPeers<Message>>,
         FetchMut<'a, SendMessageQueue<Message>>,
@@ -114,6 +116,7 @@ impl<'a> specs::System<'a> for GameSystem {
             mut globes,
             mut active_cell_dweller,
             cell_dwellers,
+            fighters,
             mut default_camera,
             mut network_peers,
             mut send_message_queue,
@@ -175,6 +178,9 @@ impl<'a> specs::System<'a> for GameSystem {
                             peer_id: PeerId(1),
                             fighter_entity: None,
                             name: new_player_message.name,
+                            // TODO: again, don't just make this up;
+                            // the server should serialize the player object.
+                            points: 0,
                         }
                     );
                 },
@@ -193,8 +199,8 @@ impl<'a> specs::System<'a> for GameSystem {
                     // Remember which player is ours.
                     client_state.player_id = Some(player_id);
                 },
-                PlayerMessage::NewFighter(entity_id) => {
-                    debug!(self.log, "Heard about new fighter entity"; "entity_id" => entity_id);
+                PlayerMessage::NewFighter(entity_id, player_id) => {
+                    debug!(self.log, "Heard about new fighter entity"; "entity_id" => entity_id, "player_id" => player_id.0);
 
                     // TODO: make sure we initialize everything in the right order,
                     // and have some way to queue things up until the entities they
@@ -208,6 +214,7 @@ impl<'a> specs::System<'a> for GameSystem {
                         &updater,
                         globe_entity,
                         &mut globe,
+                        player_id,
                     );
                     updater.insert(
                         fighter_entity,
@@ -261,12 +268,12 @@ impl<'a> specs::System<'a> for GameSystem {
 
                 // Tell the new peer about all existing fighters.
                 use specs::Join;
-                for (_cd, net_marker) in (&cell_dwellers, &net_markers).join() {
+                for (_cd, net_marker, fighter) in (&cell_dwellers, &net_markers, &fighters).join() {
                     send_message_queue.queue.push_back(
                         SendMessage {
                             destination: Destination::One(new_peer_id),
                             game_message: Message::Player(
-                                PlayerMessage::NewFighter(net_marker.id)
+                                PlayerMessage::NewFighter(net_marker.id, fighter.player_id)
                             ),
                             transport: Transport::TCP,
                         }
@@ -296,6 +303,7 @@ impl<'a> specs::System<'a> for GameSystem {
                             &updater,
                             globe_entity,
                             &mut globe,
+                            player_id,
                         );
 
                         let player = &mut game_state.players[player_id.0 as usize];
@@ -316,7 +324,7 @@ impl<'a> specs::System<'a> for GameSystem {
                             SendMessage {
                                 destination: Destination::EveryoneElse,
                                 game_message: Message::Player(
-                                    PlayerMessage::NewFighter(entity_id)
+                                    PlayerMessage::NewFighter(entity_id, player_id)
                                 ),
                                 transport: Transport::TCP,
                             }

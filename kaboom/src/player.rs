@@ -23,8 +23,8 @@ pub struct Player {
     pub peer_id: PeerId,
     pub fighter_entity: Option<specs::Entity>,
     pub name: String,
+    pub points: i64,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum PlayerMessage {
@@ -32,7 +32,7 @@ pub enum PlayerMessage {
     // Tell a client about the new player ID created for them,
     // or the player they are taking over.
     YourPlayer(PlayerId),
-    NewFighter(u64),
+    NewFighter(u64, PlayerId),
     YourFighter(u64),
 }
 
