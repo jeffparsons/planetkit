@@ -105,6 +105,7 @@ fn add_systems(
 ) -> specs::DispatcherBuilder<'static, 'static> {
     // TODO: systems should register these.
     world.register::<weapon::Grenade>();
+    world.register::<fighter::Fighter>();
 
     let game_system = game_system::GameSystem::new(logger, world);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);

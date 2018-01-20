@@ -9,6 +9,26 @@ use pk::render;
 use pk::cell_dweller;
 use pk::Health;
 
+pub struct Fighter {
+    pub seconds_between_shots: TimeDelta,
+    pub seconds_until_next_shot: TimeDelta,
+}
+
+impl Fighter {
+    pub fn new() -> Fighter {
+        Fighter {
+            // TODO: accept as parameter
+            seconds_between_shots: 0.5,
+            seconds_until_next_shot: 0.0,
+        }
+    }
+}
+
+impl specs::Component for Fighter {
+    // TODO: more appropriate storage
+    type Storage = specs::VecStorage<Fighter>;
+}
+
 /// Create the player character.
 pub fn create(
     entities: &Entities,
@@ -55,5 +75,6 @@ pub fn create(
     updater.insert(entity, pk::Spatial::new(globe_entity, Iso3::identity()));
     // Give the fighter some starting health.
     updater.insert(entity, Health::new(100));
+    updater.insert(entity, ::fighter::Fighter::new());
     entity
 }

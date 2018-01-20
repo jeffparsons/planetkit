@@ -13,6 +13,7 @@ use pk::input_adapter;
 use pk::Spatial;
 
 use super::grenade::shoot_grenade;
+use ::fighter::Fighter;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,
@@ -85,35 +86,48 @@ impl<'a> specs::System<'a> for ShootSystem {
         ReadStorage<'a, CellDweller>,
         Fetch<'a, ActiveCellDweller>,
         WriteStorage<'a, Spatial>,
+        WriteStorage<'a, Fighter>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
         let (
-            _dt,
+            dt,
             entities,
             updater,
             cell_dwellers,
             active_cell_dweller_resource,
             spatials,
+            mut fighters,
         ) = data;
 
-        if self.shoot {
-            self.shoot = false;
+        // Find the active fighter, even if we're not currently trying to shoot;
+        // we might need to count down the time until we can next shoot.
+        let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
+            Some(entity) => entity,
+            None => {
+                warn!(self.log, "Trying to shoot without an active CellDweller");
+                return
+            },
+        };
+        // Assume it is a fighter, because those are the only cell dwellers
+        // you're allowed to control in this game.
+        let active_fighter = fighters.get_mut(active_cell_dweller_entity).expect("Cell dweller should have had a fighter attached!");
 
-            info!(self.log, "Fire!");
+        // Count down until we're allowed to shoot next.
+        if active_fighter.seconds_until_next_shot > 0.0 {
+            active_fighter.seconds_until_next_shot = (active_fighter.seconds_until_next_shot - dt.0).max(0.0);
+        }
+        let still_waiting_to_shoot = active_fighter.seconds_until_next_shot > 0.0;
+
+        if self.shoot && ! still_waiting_to_shoot{
+            self.shoot = false;
 
             // TODO: send this as a network message instead:
 
             // Place the bullet in the same location as the player,
             // relative to the same globe.
-            let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
-                Some(entity) => entity,
-                None => {
-                    warn!(self.log, "Trying to shoot without an active CellDweller");
-                    return
-                },
-            };
+            info!(self.log, "Fire!");
 
             shoot_grenade(
                 &entities,
@@ -123,6 +137,8 @@ impl<'a> specs::System<'a> for ShootSystem {
                 &spatials,
                 &self.log,
             );
+            // Reset time until we can shoot again.
+            active_fighter.seconds_until_next_shot = active_fighter.seconds_between_shots;
         }
     }
 }
