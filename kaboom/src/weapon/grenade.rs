@@ -5,7 +5,6 @@ use specs::{
     LazyUpdate,
     Entities,
     ReadStorage,
-    WriteStorage
 };
 use slog::Logger;
 
@@ -48,7 +47,7 @@ pub fn shoot_grenade(
     updater: &Fetch<LazyUpdate>,
     cell_dwellers: &ReadStorage<CellDweller>,
     cell_dweller_entity: Entity,
-    spatials: &WriteStorage<Spatial>,
+    spatials: &ReadStorage<Spatial>,
     log: &Logger,
     fired_by_player_id: PlayerId,
 ) {

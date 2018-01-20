@@ -10,6 +10,7 @@ use pk::net::{
 
 use ::message::Message;
 use ::player;
+use ::weapon;
 
 pub struct RecvDemuxSystem{
     log: Logger,
@@ -28,6 +29,7 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
         FetchMut<'a, RecvMessageQueue<Message>>,
         FetchMut<'a, cell_dweller::RecvMessageQueue>,
         FetchMut<'a, player::RecvMessageQueue>,
+        FetchMut<'a, weapon::RecvMessageQueue>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -35,6 +37,7 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
             mut recv_message_queue,
             mut cell_dweller_recv_queue,
             mut player_recv_queue,
+            mut weapon_recv_queue,
         ) = data;
 
         // Drain the recv message queue, and dispatch to system-specific queues.
@@ -55,6 +58,15 @@ impl<'a> specs::System<'a> for RecvDemuxSystem {
                         RecvMessage {
                             source: message.source,
                             game_message: player_message,
+                        }
+                    );
+                },
+                Message::Weapon(weapon_message) => {
+                    trace!(self.log, "Forwarding weapon message to its recv message queue"; "message" => format!("{:?}", weapon_message));
+                    weapon_recv_queue.queue.push_back(
+                        RecvMessage {
+                            source: message.source,
+                            game_message: weapon_message,
                         }
                     );
                 },

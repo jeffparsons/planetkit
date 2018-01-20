@@ -21,6 +21,7 @@ pub struct GameSystem {
 }
 
 // TODO: split most of this out into a "new player" system.
+// Or, rather, a PlayerRecvSystem.
 
 impl GameSystem {
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> GameSystem {

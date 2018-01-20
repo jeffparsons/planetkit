@@ -115,6 +115,7 @@ fn add_systems(
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
+    let weapon_recv_system = weapon::RecvSystem::new(logger, world);
     let shoot_system = weapon::ShootSystem::new(world, shoot_input_receiver, logger);
     let explode_system = weapon::ExplodeSystem::new(logger);
     let death_system = death_system::DeathSystem::new(logger);
@@ -134,6 +135,7 @@ fn add_systems(
         .add(recv_demux_system, "recv_demux", &["net_recv"])
         .add_barrier()
         .add(cd_recv_system, "cd_recv", &[])
+        .add(weapon_recv_system, "weapon_recv", &[])
         .add(shoot_system, "shoot_grenade", &[])
         .add(explode_system, "explode_grenade", &[])
         .add(death_system, "death", &[])

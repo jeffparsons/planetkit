@@ -1,20 +1,18 @@
 use std::sync::mpsc;
 use specs;
-use specs::{Fetch, LazyUpdate, Entities, ReadStorage, WriteStorage};
+use specs::{Fetch, FetchMut, ReadStorage, WriteStorage};
 use slog::Logger;
 use piston::input::Input;
 
-use pk::cell_dweller::{
-    CellDweller,
-    ActiveCellDweller,
-};
+use pk::cell_dweller::ActiveCellDweller;
 use pk::types::*;
 use pk::input_adapter;
-use pk::Spatial;
+use pk::net::{SendMessageQueue, Destination, Transport, SendMessage, NetMarker};
 
-use super::grenade::shoot_grenade;
+use super::{ShootGrenadeMessage, WeaponMessage};
 use ::fighter::Fighter;
 use ::client_state::ClientState;
+use ::message::Message;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,
@@ -82,26 +80,22 @@ impl ShootSystem {
 impl<'a> specs::System<'a> for ShootSystem {
     type SystemData = (
         Fetch<'a, TimeDeltaResource>,
-        Entities<'a>,
-        Fetch<'a, LazyUpdate>,
-        ReadStorage<'a, CellDweller>,
         Fetch<'a, ActiveCellDweller>,
-        WriteStorage<'a, Spatial>,
         WriteStorage<'a, Fighter>,
         Fetch<'a, ClientState>,
+        FetchMut<'a, SendMessageQueue<Message>>,
+        ReadStorage<'a, NetMarker>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
         self.consume_input();
         let (
             dt,
-            entities,
-            updater,
-            cell_dwellers,
             active_cell_dweller_resource,
-            spatials,
             mut fighters,
             client_state,
+            mut send_message_queue,
+            net_markers,
         ) = data;
 
         // Find the active fighter, even if we're not currently trying to shoot;
@@ -133,23 +127,30 @@ impl<'a> specs::System<'a> for ShootSystem {
         if self.shoot && ! still_waiting_to_shoot{
             self.shoot = false;
 
-            // TODO: send this as a network message instead:
-
             let fired_by_player_id = client_state.player_id.expect("There should be a current player.");
+            let fired_by_cell_dweller_entity_id = net_markers.get(active_cell_dweller_entity).expect("Active cell dweller should have global identity").id;
 
             // Place the bullet in the same location as the player,
             // relative to the same globe.
             info!(self.log, "Fire!");
 
-            shoot_grenade(
-                &entities,
-                &updater,
-                &cell_dwellers,
-                active_cell_dweller_entity,
-                &spatials,
-                &self.log,
-                fired_by_player_id,
+            // Ask the server/master to spawn a grenade.
+            // (TODO: really need to decide on termonology around server/master/client/peer/etc.)
+            send_message_queue.queue.push_back(
+                SendMessage {
+                    destination: Destination::Master,
+                    game_message: Message::Weapon(
+                        WeaponMessage::ShootGrenade(
+                            ShootGrenadeMessage {
+                                fired_by_player_id: fired_by_player_id,
+                                fired_by_cell_dweller_entity_id: fired_by_cell_dweller_entity_id,
+                            }
+                        )
+                    ),
+                    transport: Transport::UDP,
+                }
             );
+
             // Reset time until we can shoot again.
             active_fighter.seconds_until_next_shot = active_fighter.seconds_between_shots;
         }
