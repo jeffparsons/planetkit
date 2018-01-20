@@ -16,6 +16,8 @@ use pk::physics::Velocity;
 use pk::physics::Mass;
 use pk::Spatial;
 
+use ::player::PlayerId;
+
 /// Velocity relative to some parent entity.
 ///
 /// Assumed to also be a `Spatial`. (That's where its parent
@@ -23,12 +25,14 @@ use pk::Spatial;
 /// without position.)
 pub struct Grenade {
     pub time_to_live_seconds: f64,
+    pub fired_by_player_id: PlayerId,
 }
 
 impl Grenade {
-    pub fn new() -> Grenade {
+    pub fn new(fired_by_player_id: PlayerId) -> Grenade {
         Grenade {
             time_to_live_seconds: 1.5,
+            fired_by_player_id: fired_by_player_id,
         }
     }
 }
@@ -46,6 +50,7 @@ pub fn shoot_grenade(
     cell_dweller_entity: Entity,
     spatials: &WriteStorage<Spatial>,
     log: &Logger,
+    fired_by_player_id: PlayerId,
 ) {
     // Make visual appearance of bullet.
     // For now this is just an axes mesh.
@@ -92,5 +97,5 @@ pub fn shoot_grenade(
     updater.insert(entity, bullet_spatial);
     updater.insert(entity, bullet_velocity);
     updater.insert(entity, Mass{});
-    updater.insert(entity, Grenade::new());
+    updater.insert(entity, Grenade::new(fired_by_player_id));
 }

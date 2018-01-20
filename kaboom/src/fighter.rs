@@ -7,7 +7,8 @@ use pk::grid;
 use pk::globe::Globe;
 use pk::render;
 use pk::cell_dweller;
-use pk::Health;
+
+use ::health::Health;
 
 pub struct Fighter {
     pub seconds_between_shots: TimeDelta,

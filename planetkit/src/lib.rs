@@ -109,8 +109,5 @@ pub use log_resource::LogResource;
 mod app_builder;
 pub use app_builder::AppBuilder;
 
-mod health;
-pub use health::Health;
-
 #[cfg(test)]
 mod integration_tests;

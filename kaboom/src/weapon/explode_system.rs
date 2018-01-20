@@ -3,8 +3,9 @@ use specs::{Fetch, Entities, ReadStorage, WriteStorage};
 use slog::Logger;
 
 use pk::types::*;
-use pk::{Health, Spatial};
+use pk::Spatial;
 
+use ::health::Health;
 use super::grenade::Grenade;
 
 pub struct ExplodeSystem {
@@ -58,7 +59,8 @@ impl<'a> specs::System<'a> for ExplodeSystem {
 
                     if distance_squared <= blast_radius_squared {
                         health.hp -= 100;
-                        info!(self.log, "Damaged something!");
+                        health.last_damaged_by_player_id = Some(grenade.fired_by_player_id);
+                        debug!(self.log, "Damaged something!");
                     }
                 }
             }

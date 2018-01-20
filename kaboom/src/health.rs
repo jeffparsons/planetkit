@@ -1,5 +1,7 @@
 use specs;
 
+use ::player::PlayerId;
+
 /// Health points, which can be depleted by incurring damage.
 ///
 /// Health may go below zero if an damage causes greater than
@@ -8,12 +10,14 @@ use specs;
 /// below zero.
 pub struct Health {
     pub hp: i32,
+    pub last_damaged_by_player_id: Option<PlayerId>,
 }
 
 impl Health {
     pub fn new(initial_hp: i32) -> Health {
         Health {
             hp: initial_hp,
+            last_damaged_by_player_id: None,
         }
     }
 }

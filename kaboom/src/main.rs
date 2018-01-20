@@ -21,6 +21,8 @@ mod message;
 mod send_mux_system;
 mod recv_demux_system;
 mod weapon;
+mod health;
+mod death_system;
 
 use std::sync::mpsc;
 
@@ -106,6 +108,7 @@ fn add_systems(
     // TODO: systems should register these.
     world.register::<weapon::Grenade>();
     world.register::<fighter::Fighter>();
+    world.register::<::health::Health>();
 
     let game_system = game_system::GameSystem::new(logger, world);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);
@@ -114,6 +117,7 @@ fn add_systems(
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
     let shoot_system = weapon::ShootSystem::new(world, shoot_input_receiver, logger);
     let explode_system = weapon::ExplodeSystem::new(logger);
+    let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
     let send_mux_system = SendMuxSystem::new(logger, world);
@@ -132,6 +136,7 @@ fn add_systems(
         .add(cd_recv_system, "cd_recv", &[])
         .add(shoot_system, "shoot_grenade", &[])
         .add(explode_system, "explode_grenade", &[])
+        .add(death_system, "death", &[])
         .add(velocity_system, "velocity", &[])
         .add(gravity_system, "gravity", &[])
         // TODO: explicitly add all systems here,

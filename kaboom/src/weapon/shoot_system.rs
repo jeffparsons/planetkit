@@ -14,6 +14,7 @@ use pk::Spatial;
 
 use super::grenade::shoot_grenade;
 use ::fighter::Fighter;
+use ::client_state::ClientState;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,
@@ -87,6 +88,7 @@ impl<'a> specs::System<'a> for ShootSystem {
         Fetch<'a, ActiveCellDweller>,
         WriteStorage<'a, Spatial>,
         WriteStorage<'a, Fighter>,
+        Fetch<'a, ClientState>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -99,17 +101,25 @@ impl<'a> specs::System<'a> for ShootSystem {
             active_cell_dweller_resource,
             spatials,
             mut fighters,
+            client_state,
         ) = data;
 
         // Find the active fighter, even if we're not currently trying to shoot;
         // we might need to count down the time until we can next shoot.
+        // If there isn't one, then just silently move on.
         let active_cell_dweller_entity = match active_cell_dweller_resource.maybe_entity {
             Some(entity) => entity,
-            None => {
-                warn!(self.log, "Trying to shoot without an active CellDweller");
-                return
-            },
+            None => return,
         };
+
+        if !fighters.get(active_cell_dweller_entity).is_some() {
+            // This entity hasn't been realised yet;
+            // can't do anything else with it this frame.
+            // TODO: isn't this was `is_alive` is supposed to achieve?
+            // And yet it doesn't seem to...
+            return;
+        }
+
         // Assume it is a fighter, because those are the only cell dwellers
         // you're allowed to control in this game.
         let active_fighter = fighters.get_mut(active_cell_dweller_entity).expect("Cell dweller should have had a fighter attached!");
@@ -125,6 +135,8 @@ impl<'a> specs::System<'a> for ShootSystem {
 
             // TODO: send this as a network message instead:
 
+            let fired_by_player_id = client_state.player_id.expect("There should be a current player.");
+
             // Place the bullet in the same location as the player,
             // relative to the same globe.
             info!(self.log, "Fire!");
@@ -136,6 +148,7 @@ impl<'a> specs::System<'a> for ShootSystem {
                 active_cell_dweller_entity,
                 &spatials,
                 &self.log,
+                fired_by_player_id,
             );
             // Reset time until we can shoot again.
             active_fighter.seconds_until_next_shot = active_fighter.seconds_between_shots;
