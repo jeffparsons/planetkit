@@ -3,11 +3,12 @@ use specs::{Fetch, FetchMut, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
 
 use pk::Spatial;
-use pk::net::{EntityIds};
+use pk::net::{EntityIds, SendMessageQueue, Destination, Transport, SendMessage};
 use pk::cell_dweller::CellDweller;
 
+use ::message::Message;
 use super::RecvMessageQueue;
-use super::WeaponMessage;
+use super::{WeaponMessage, NewGrenadeMessage};
 use super::grenade::shoot_grenade;
 
 pub struct RecvSystem {
@@ -30,6 +31,7 @@ impl RecvSystem {
 impl<'a> specs::System<'a> for RecvSystem {
     type SystemData = (
         FetchMut<'a, RecvMessageQueue>,
+        FetchMut<'a, SendMessageQueue<Message>>,
         Entities<'a>,
         Fetch<'a, LazyUpdate>,
         ReadStorage<'a, Spatial>,
@@ -40,6 +42,7 @@ impl<'a> specs::System<'a> for RecvSystem {
     fn run(&mut self, data: Self::SystemData) {
         let (
             mut recv_message_queue,
+            mut send_message_queue,
             entities,
             updater,
             spatials,
@@ -52,15 +55,38 @@ impl<'a> specs::System<'a> for RecvSystem {
                 WeaponMessage::ShootGrenade(shoot_grenade_message) => {
                     // TODO: verify that we're the master
 
-                    // TODO: demote to trace
-                    info!(self.log, "Firing grenade because a peer asked me to"; "message" => format!("{:?}", shoot_grenade_message));
+                    trace!(self.log, "Firing grenade because a peer asked me to"; "message" => format!("{:?}", shoot_grenade_message));
+
+                    // NOTE: Hacks until we have saveload;
+                    // just tell everyone including ourself to fire the grenade,
+                    // and then only the server will actually trigger an explosion
+                    // when the grenade runs out of time.
+                    // TODO: not this!
+                    send_message_queue.queue.push_back(
+                        SendMessage {
+                            destination: Destination::EveryoneIncludingSelf,
+                            game_message: Message::Weapon(
+                                WeaponMessage::NewGrenade(
+                                    NewGrenadeMessage {
+                                        fired_by_player_id: shoot_grenade_message.fired_by_player_id,
+                                        fired_by_cell_dweller_entity_id: shoot_grenade_message.fired_by_cell_dweller_entity_id,
+                                    }
+                                )
+                            ),
+                            // TODO: does it matter if we miss one — maybe UDP?
+                            transport: Transport::TCP,
+                        }
+                    );
+                },
+                WeaponMessage::NewGrenade(new_grenade_message) => {
+                    trace!(self.log, "Spawning grenade because server asked me to"; "message" => format!("{:?}", new_grenade_message));
 
                     // Look up the entity from its global ID.
-                    let cell_dweller_entity = match entity_ids.mapping.get(&shoot_grenade_message.fired_by_cell_dweller_entity_id) {
+                    let cell_dweller_entity = match entity_ids.mapping.get(&new_grenade_message.fired_by_cell_dweller_entity_id) {
                         Some(ent) => ent.clone(),
                         // We probably just don't know about it yet.
                         None => {
-                            debug!(self.log, "Unknown CellDweller fired a grenade"; "entity_id" => shoot_grenade_message.fired_by_cell_dweller_entity_id);
+                            debug!(self.log, "Unknown CellDweller fired a grenade"; "entity_id" => new_grenade_message.fired_by_cell_dweller_entity_id);
                             continue;
                         },
                     };
@@ -72,10 +98,8 @@ impl<'a> specs::System<'a> for RecvSystem {
                         cell_dweller_entity,
                         &spatials,
                         &self.log,
-                        shoot_grenade_message.fired_by_player_id,
+                        new_grenade_message.fired_by_player_id,
                     );
-
-                    // TODO: tell everyone else that it exists.
                 },
             }
         }

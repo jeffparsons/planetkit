@@ -141,7 +141,11 @@ impl MovementSystem {
             return;
         }
         let under_pos = cd.pos.with_z(cd.pos.z - 1);
-        let under_cell = globe.maybe_non_authoritative_cell(under_pos);
+        let under_cell = match globe.maybe_non_authoritative_cell(under_pos) {
+            Ok(cell) => cell,
+            // Chunk not loaded; wait until it is before attempting to move.
+            Err(_) => return,
+        };
         if under_cell.material != Material::Dirt {
             return;
         }
@@ -174,7 +178,11 @@ impl MovementSystem {
         // Usually we'll allow climbing a maximum of one block, but especially in certain tests
         // we want to let you climb higher!
         for _ in 0..(self.max_step_height + 1) {
-            let cell = globe.maybe_non_authoritative_cell(new_pos);
+            let cell = match globe.maybe_non_authoritative_cell(new_pos) {
+                Ok(cell) => cell,
+                // Chunk not loaded; wait until it is before attempting to move.
+                Err(_) => return,
+            };
             let can_move_to_cell = cell.material != Material::Dirt;
 
             if !can_move_to_cell {

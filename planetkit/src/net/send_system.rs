@@ -169,6 +169,23 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                         }
                     }
                 },
+                Destination::EveryoneIncludingSelf => {
+                    // Send to everyone else.
+                    for peer in network_peers.peers.iter_mut() {
+                        self.send_message(
+                            message.game_message.clone(),
+                            peer,
+                            message.transport,
+                        );
+                    }
+                    // Send to self.
+                    recv_message_queue.queue.push_back(
+                        RecvMessage {
+                            source: PeerId(0),
+                            game_message: message.game_message,
+                        }
+                    );
+                }
             }
         }
     }

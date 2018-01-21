@@ -1,13 +1,15 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, FetchMut};
+use specs::{ReadStorage, WriteStorage, Fetch, FetchMut};
 use slog::Logger;
 
-use pk::cell_dweller::CellDweller;
+use pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
 use pk::globe::Globe;
+use pk::net::{SendMessageQueue, NodeResource, Destination, Transport, SendMessage, NetMarker};
 
 use ::health::Health;
 use ::fighter::Fighter;
 use ::game_state::GameState;
+use ::message::Message;
 
 /// Identifies fighters that have run out of health,
 /// awards points to their killer, and respawns the victim.
@@ -32,6 +34,9 @@ impl<'a> specs::System<'a> for DeathSystem {
         WriteStorage<'a, Globe>,
         ReadStorage<'a, Fighter>,
         FetchMut<'a, GameState>,
+        Fetch<'a, NodeResource>,
+        FetchMut<'a, SendMessageQueue<Message>>,
+        ReadStorage<'a, NetMarker>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -44,15 +49,21 @@ impl<'a> specs::System<'a> for DeathSystem {
             mut globes,
             fighters,
             mut game_state,
+            node_resource,
+            mut send_message_queue,
+            net_markers,
         ) = data;
 
+        // Don't try to kill anyone off unless we own the world.
+        if !node_resource.is_master {
+            return;
+        }
+
         // Find any dead fighters.
-        for (cd, fighter, health) in (&mut cell_dwellers, &fighters, &mut healths).join() {
+        for (cd, fighter, health, net_marker) in (&mut cell_dwellers, &fighters, &mut healths, &net_markers).join() {
             if health.hp <= 0 {
                 // If it was a player that caused them to be harmed,
                 // then award a point to that player.
-                // TODO: actually track points — and subtract points for a self-kill.
-                // TODO: track what player owns this fighter!
                 if let Some(last_damaged_by_player_id) = health.last_damaged_by_player_id {
                     // Victim might have left the game.
                     let players = &mut game_state.players;
@@ -60,8 +71,7 @@ impl<'a> specs::System<'a> for DeathSystem {
                     let victim = players.get(fighter.player_id.0 as usize)
                         .map(|victim_player| (victim_player.id, victim_player.name.clone()));
                     if let Some((victim_id, victim_name)) = victim {
-                        // There might not have been a killer (environmental damage)
-                        // or they might have left the game.
+                        // Killer might have left the game.
                         if let Some(killer) = players.get_mut(last_damaged_by_player_id.0 as usize) {
                             if killer.id == victim_id {
                                 // Oops. Lost points for a self-kill.
@@ -76,12 +86,12 @@ impl<'a> specs::System<'a> for DeathSystem {
                             }
                         } else {
                             // Don't award any points.
-                            info!(self.log, "Fighter killed by environment!");
+                            info!(self.log, "Fighter killed by disconnected player!");
                         }
                     }
-
-                    // TODO: state the name instead
                 } else {
+                    // Don't award any points.
+                    info!(self.log, "Fighter killed by environment!");
                 }
 
                 // Re-spawn the player.
@@ -120,9 +130,9 @@ impl<'a> specs::System<'a> for DeathSystem {
                         &mut thread_rng(),
                         2, // Min air cells above
                         5, // Max distance from starting point
-                        5, // Max attempts
+                        50, // Max attempts
                     )
-                    // TODO: don't explode! Just give up and try again on another tick
+                    // TODO: don't panic! Just give up and try again on another tick
                     // if it takes too long on this tick! (Leave the player dead for a while;
                     // we'll probably want to do that soon, anyway: make the screen red for
                     // a couple of seconds while they wait to respawn.)
@@ -131,6 +141,27 @@ impl<'a> specs::System<'a> for DeathSystem {
                     );
 
                 cd.set_grid_point(new_fighter_pos);
+
+                // Tell everyone else that the "respawned" player was been moved.
+                send_message_queue.queue.push_back(
+                    SendMessage {
+                        // In practice, if you're the server this will mean "all clients"
+                        // because all of them need to know about the change, and if you're
+                        // a client then for now your only peer will be the server.
+                        // All of this will obviously need to be revisited if we allow
+                        // connecting to multiple servers, or to other non-server peers.
+                        destination: Destination::EveryoneElse,
+                        game_message: Message::CellDweller(
+                            CellDwellerMessage::SetPos(SetPosMessage {
+                                entity_id: net_marker.id,
+                                new_pos: cd.pos,
+                                new_dir: cd.dir,
+                                new_last_turn_bias: cd.last_turn_bias,
+                            })
+                        ),
+                        transport: Transport::UDP,
+                    }
+                );
             }
         }
     }

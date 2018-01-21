@@ -4,6 +4,7 @@ use slog::Logger;
 
 use pk::types::*;
 use pk::Spatial;
+use pk::net::NodeResource;
 
 use ::health::Health;
 use super::grenade::Grenade;
@@ -29,6 +30,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         WriteStorage<'a, Grenade>,
         WriteStorage<'a, Health>,
         ReadStorage<'a, Spatial>,
+        Fetch<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -41,6 +43,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             mut grenades,
             mut healths,
             spatials,
+            node_resource,
         ) = data;
 
         for (grenade_entity, grenade) in (&*entities, &mut grenades).join() {
@@ -50,6 +53,11 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             if grenade.time_to_live_seconds <= 0.0 {
                 info!(self.log, "Kaboom!");
                 entities.delete(grenade_entity).expect("Wrong entity generation!");
+
+                // NOTE: Hacks until we have saveload and figure out how to do networking better.
+                if !node_resource.is_master {
+                    continue;
+                }
 
                 // Damage anything nearby that can take damage.
                 for (living_thing_entity, health, _spatial) in (&*entities, &mut healths, &spatials).join() {

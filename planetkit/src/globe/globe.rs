@@ -463,12 +463,13 @@ impl<'a> Globe {
         chunk.cell_mut(pos.into())
     }
 
-    pub fn maybe_non_authoritative_cell(&'a self, pos: GridPoint3) -> &'a Cell {
+    // TODO: proper error type
+    // Panic message formerly "Uh oh, I don't know how to handle chunks that aren't loaded yet."
+    pub fn maybe_non_authoritative_cell(&'a self, pos: GridPoint3) -> Result<&'a Cell, ()> {
         let chunk_origin = self.origin_of_chunk_in_same_root_containing(pos);
-        let chunk = self.chunks.get(&chunk_origin).expect(
-            "Uh oh, I don't know how to handle chunks that aren't loaded yet.",
-        );
-        chunk.cell(pos)
+        self.chunks.get(&chunk_origin).map(|chunk| {
+            chunk.cell(pos)
+        }).ok_or(())
     }
 }
 

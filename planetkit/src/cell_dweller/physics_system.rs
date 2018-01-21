@@ -31,7 +31,12 @@ impl PhysicsSystem {
             return;
         }
         let under_pos = cd.pos.with_z(cd.pos.z - 1);
-        let under_cell = globe.maybe_non_authoritative_cell(under_pos);
+        let under_cell = match globe.maybe_non_authoritative_cell(under_pos) {
+            Ok(cell) => cell,
+            // Chunk not loaded; wait until it is before attempting to fall.
+            Err(_) => return,
+        };
+
         if under_cell.material == Material::Dirt {
             // Reset time until we can fall to the time
             // between falls; we don't want to instantly

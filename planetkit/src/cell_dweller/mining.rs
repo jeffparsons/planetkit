@@ -20,7 +20,11 @@ pub fn can_pick_up(cd: &mut CellDweller, globe: &mut Globe) -> bool {
     let under_pos = cd.pos.with_z(cd.pos.z - 1);
     {
         // Inner scope to fight borrowck.
-        let under_cell = globe.maybe_non_authoritative_cell(under_pos);
+        let under_cell = match globe.maybe_non_authoritative_cell(under_pos) {
+            Ok(cell) => cell,
+            // Chunk not loaded; wait until it is before attempting to pick up.
+            Err(_) => return false,
+        };
         if under_cell.material != Material::Dirt {
             return false;
         }
@@ -32,16 +36,20 @@ pub fn can_pick_up(cd: &mut CellDweller, globe: &mut Globe) -> bool {
     move_forward(&mut new_pos, &mut new_dir, globe.spec().root_resolution)
         .expect("CellDweller should have been in good state.");
     let anything_to_pick_up = {
-        let cell = globe.maybe_non_authoritative_cell(new_pos);
-        cell.material == Material::Dirt
+        // Chunk might not be loaded; in that case assume nothing to pick up.
+        globe.maybe_non_authoritative_cell(new_pos).map(|cell| {
+            cell.material == Material::Dirt
+        }).unwrap_or(false)
     };
     // Also require that there's air above the block;
     // in my initial use case I don't want to allow mining below
     // the surface.
     let air_above_target = {
+        // Chunk might not be loaded; in that case assume not air above block.
         let above_new_pos = new_pos.with_z(new_pos.z + 1);
-        let cell = globe.maybe_non_authoritative_cell(above_new_pos);
-        cell.material == Material::Air
+        globe.maybe_non_authoritative_cell(above_new_pos).map(|cell| {
+            cell.material == Material::Air
+        }).unwrap_or(false)
     };
     anything_to_pick_up && air_above_target
 }

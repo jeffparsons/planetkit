@@ -19,6 +19,7 @@ use specs;
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum WeaponMessage {
     ShootGrenade(ShootGrenadeMessage),
+    NewGrenade(NewGrenadeMessage),
     // TODO: Can this become a generic when the specs
     // release with 'saveload' comes along?
     // DeleteGrenade(...),
@@ -26,6 +27,12 @@ pub enum WeaponMessage {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct ShootGrenadeMessage {
+    fired_by_player_id: ::player::PlayerId,
+    fired_by_cell_dweller_entity_id: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
+pub struct NewGrenadeMessage {
     fired_by_player_id: ::player::PlayerId,
     fired_by_cell_dweller_entity_id: u64,
 }

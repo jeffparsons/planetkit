@@ -107,9 +107,7 @@ pub enum Destination {
     EveryoneElseExcept(PeerId),
     // Send to the master, whether that is someone else or this node itself.
     Master,
-    // TODO: consider adding a new one for "all including self"
-    // so we can simplify some code paths that work differently
-    // depending on whether you're the server or not.
+    EveryoneIncludingSelf,
 }
 
 /// `World`-global resource for game messages waiting to be dispatched

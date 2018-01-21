@@ -138,6 +138,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                     );
 
                     // Get the associated globe, complaining loudly if we fail.
+                    // TODO: again, need a pattern for this that isn't awful.
                     let globe_entity = match cd.globe_entity {
                         Some(globe_entity) => globe_entity,
                         None => {
@@ -145,7 +146,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                                 self.log,
                                 "There was no associated globe entity or it wasn't actually a Globe! Can't proceed!"
                             );
-                            return;
+                            continue;
                         }
                     };
                     let globe = match globes.get_mut(globe_entity) {
@@ -155,7 +156,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                                 self.log,
                                 "The globe associated with this CellDweller is not alive! Can't proceed!"
                             );
-                            return;
+                            continue;
                         }
                     };
 
