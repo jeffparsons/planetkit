@@ -59,6 +59,9 @@ impl<R: gfx::Resources> Mesh<R> {
         let (_, texture_view) = factory
             .create_texture_immutable::<gfx::format::Rgba8>(
                 gfx::texture::Kind::D2(1, 1, gfx::texture::AaMode::Single),
+                // TODO: When we actually have pixmap textures,
+                // this is probably going to matter.
+                gfx::texture::Mipmap::Provided,
                 &[&texels],
             )
             .unwrap();
