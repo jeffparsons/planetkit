@@ -38,4 +38,5 @@ cargo $maybe_nightly build $maybe_release --target wasm32-unknown-emscripten
 
 cp index.html "$dest"
 pushd "$dest"
+echo "Trying to serve up cool stuff on http://localhost:8123..."
 python -m SimpleHTTPServer 8123

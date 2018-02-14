@@ -52,8 +52,8 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
-        let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
-        let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
+        let vs_bytes = include_bytes!("../shaders/copypasta_300.glslv");
+        let ps_bytes = include_bytes!("../shaders/copypasta_300.glslf");
         let program = factory.link_program(vs_bytes, ps_bytes).unwrap();
         let pso = factory
             .create_pipeline_from_program(
