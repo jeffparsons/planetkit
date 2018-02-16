@@ -5,12 +5,4 @@ authors = ["Jeff Parsons <jeff@parsons.io>"]
 
 [dependencies]
 planetkit = { path = "../planetkit", default-features = false, features = ["web"] }
-stdweb = "0.2.1"
-
-
-# TODO: this is copied from the planetkit lib version
-[patch.crates-io]
-piston2d-opengl_graphics = { path = "../../crates/opengl_graphics" }
-piston_window = { path = "../../crates/piston_window" }
-piston2d-gfx_graphics = { path = "../../crates/gfx_graphics" }
-pistoncore-glutin_window = { path = "../../crates/glutin_window" }
+stdweb = "0.3.0"
