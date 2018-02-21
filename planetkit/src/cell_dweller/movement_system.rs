@@ -47,10 +47,21 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
                     ButtonState::Release => false,
                 };
                 match key {
+                    // Arrow keys.
+                    Key::Up => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
+                    Key::Down => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::Left => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
+                    Key::Right => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
+                    // Vi keys.
                     Key::I => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
                     Key::K => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
                     Key::J => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
                     Key::L => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
+                    // WASD keys.
+                    Key::W => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
+                    Key::S => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::A => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
+                    Key::D => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
                     _ => (),
                 }
             }
