@@ -52,7 +52,7 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
                     Key::Down => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
                     Key::Left => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
                     Key::Right => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
-                    // Vi keys.
+                    // IJKL keys.
                     Key::I => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
                     Key::K => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
                     Key::J => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
