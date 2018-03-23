@@ -6,7 +6,7 @@ use vecmath;
 use camera_controllers;
 use specs;
 use specs::Entities;
-use specs::{ReadStorage, Fetch};
+use specs::{Fetch, ReadStorage};
 use slog::Logger;
 
 use super::default_pipeline::pipe;
@@ -52,9 +52,18 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
 
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
-        let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
-        let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
-        let program = factory.link_program(vs_bytes, ps_bytes).unwrap();
+        #[cfg(not(target_os = "emscripten"))]
+        let program = {
+            let vs_bytes = include_bytes!("../shaders/copypasta_150.glslv");
+            let ps_bytes = include_bytes!("../shaders/copypasta_150.glslf");
+            factory.link_program(vs_bytes, ps_bytes).unwrap()
+        };
+        #[cfg(target_os = "emscripten")]
+        let program = {
+            let vs_bytes = include_bytes!("../shaders/copypasta_300_es.glslv");
+            let ps_bytes = include_bytes!("../shaders/copypasta_300_es.glslf");
+            factory.link_program(vs_bytes, ps_bytes).unwrap()
+        };
         let pso = factory
             .create_pipeline_from_program(
                 &program,
@@ -174,10 +183,12 @@ where
     R: 'static + gfx::Resources,
     C: 'static + gfx::CommandBuffer<R> + Send,
 {
-    type SystemData = (Entities<'a>,
-     Fetch<'a, DefaultCamera>,
-     ReadStorage<'a, Visual>,
-     ReadStorage<'a, Spatial>);
+    type SystemData = (
+        Entities<'a>,
+        Fetch<'a, DefaultCamera>,
+        ReadStorage<'a, Visual>,
+        ReadStorage<'a, Spatial>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         let (entities, default_camera, visuals, spatials) = data;
