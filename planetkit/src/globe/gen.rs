@@ -19,7 +19,7 @@ use super::chunk::{Cell, Material};
 /// a distant blob in the sky, to a shiny dot in the distance.
 pub struct Gen {
     spec: Spec,
-    terrain_noise: noise::Fbm<f64>,
+    terrain_noise: noise::Fbm,
 }
 
 impl Gen {
@@ -38,14 +38,14 @@ impl Gen {
         // TODO: even more pressing now that the noise API has
         // changed to deprecate PermutationTable; is it now stored
         // within Fbm? This might be super-slow now...
-        let terrain_noise = noise::Fbm::<f64>::new()
+        let terrain_noise = noise::Fbm::new()
         // TODO: make wavelength etc. part of spec;
         // the octaves and wavelength of noise you want
         // will probably depend on planet size.
             .set_octaves(6)
             .set_frequency(1.0 / 700.0)
             // TODO: probably allow a bigger seed; what's the smallest usize on any real platform?
-            .set_seed(spec.seed as usize);
+            .set_seed(spec.seed);
         Gen {
             spec: spec,
             terrain_noise: terrain_noise,
@@ -53,7 +53,7 @@ impl Gen {
     }
 
     pub fn land_height(&self, column: GridPoint2) -> f64 {
-        use noise::NoiseModule;
+        use noise::NoiseFn;
 
         // Calculate height for this cell from world spec.
         // To do this, project the cell onto a sea-level sphere
