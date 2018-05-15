@@ -6,7 +6,7 @@ use vecmath;
 use camera_controllers;
 use specs;
 use specs::Entities;
-use specs::{Fetch, ReadStorage};
+use specs::{ReadExpect, ReadStorage};
 use slog::Logger;
 
 use super::default_pipeline::pipe;
@@ -185,7 +185,7 @@ where
 {
     type SystemData = (
         Entities<'a>,
-        Fetch<'a, DefaultCamera>,
+        ReadExpect<'a, DefaultCamera>,
         ReadStorage<'a, Visual>,
         ReadStorage<'a, Spatial>,
     );

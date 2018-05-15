@@ -17,7 +17,6 @@ pub use self::mining_system::{MiningSystem, MiningEvent, MiningInputAdapter};
 pub use self::physics_system::PhysicsSystem;
 pub use self::recv_system::RecvSystem;
 
-use shred;
 use specs;
 
 /// `World`-global resource for finding the current cell-dwelling entity being controlled
@@ -31,8 +30,7 @@ pub struct ActiveCellDweller {
 impl ActiveCellDweller {
     // TODO: replace with AutoResource
     pub fn ensure_registered(world: &mut specs::World) {
-        let res_id = shred::ResourceId::new::<ActiveCellDweller>();
-        if !world.res.has_value(res_id) {
+        if !world.res.has_value::<ActiveCellDweller>() {
             world.add_resource(ActiveCellDweller { maybe_entity: None });
         }
     }

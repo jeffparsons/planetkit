@@ -1,5 +1,5 @@
 use specs;
-use specs::{Fetch, FetchMut, Entities, LazyUpdate, ReadStorage};
+use specs::{ReadExpect, WriteExpect, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
 
 use pk::Spatial;
@@ -30,13 +30,13 @@ impl RecvSystem {
 
 impl<'a> specs::System<'a> for RecvSystem {
     type SystemData = (
-        FetchMut<'a, RecvMessageQueue>,
-        FetchMut<'a, SendMessageQueue<Message>>,
+        WriteExpect<'a, RecvMessageQueue>,
+        WriteExpect<'a, SendMessageQueue<Message>>,
         Entities<'a>,
-        Fetch<'a, LazyUpdate>,
+        ReadExpect<'a, LazyUpdate>,
         ReadStorage<'a, Spatial>,
         ReadStorage<'a, CellDweller>,
-        Fetch<'a, EntityIds>,
+        ReadExpect<'a, EntityIds>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -74,6 +74,8 @@ impl<'a> specs::System<'a> for RecvSystem {
                                 )
                             ),
                             // TODO: does it matter if we miss one — maybe UDP?
+                            // TCP for now, then solve this by having TTL on some entities.
+                            // Or a standard "TTL / clean-me-up" component type! :)
                             transport: Transport::TCP,
                         }
                     );

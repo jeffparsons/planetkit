@@ -135,14 +135,14 @@ impl AppBuilder {
             dispatcher_builder
                 // Try to get stuff most directly linked to input done first
                 // to avoid another frame of lag.
-                .add(movement_sys, "cd_movement", &[])
-                .add(mining_sys, "cd_mining", &["cd_movement"])
-                .add_barrier()
-                .add(physics_sys, "physics", &[])
-                .add(chunk_sys, "chunk", &[])
+                .with(movement_sys, "cd_movement", &[])
+                .with(mining_sys, "cd_mining", &["cd_movement"])
+                .with_barrier()
+                .with(physics_sys, "physics", &[])
+                .with(chunk_sys, "chunk", &[])
                 // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
                 // to be able to run it in parallel.
-                .add(chunk_view_sys, "chunk_view", &[])
+                .with(chunk_view_sys, "chunk_view", &[])
         })
     }
 }

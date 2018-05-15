@@ -129,23 +129,23 @@ fn add_systems(
     // things over the network. Maybe consider "dummy systems"
     // used as lifecycle hooks instead.
     dispatcher_builder
-        .add(game_system, "kaboom_game", &[])
-        .add(new_peer_system, "new_peer_system", &[])
-        .add(recv_system, "net_recv", &[])
-        .add(recv_demux_system, "recv_demux", &["net_recv"])
-        .add_barrier()
-        .add(cd_recv_system, "cd_recv", &[])
-        .add(weapon_recv_system, "weapon_recv", &[])
-        .add(shoot_system, "shoot_grenade", &[])
-        .add(explode_system, "explode_grenade", &[])
-        .add(death_system, "death", &[])
-        .add(velocity_system, "velocity", &[])
-        .add(gravity_system, "gravity", &[])
+        .with(game_system, "kaboom_game", &[])
+        .with(new_peer_system, "new_peer_system", &[])
+        .with(recv_system, "net_recv", &[])
+        .with(recv_demux_system, "recv_demux", &["net_recv"])
+        .with_barrier()
+        .with(cd_recv_system, "cd_recv", &[])
+        .with(weapon_recv_system, "weapon_recv", &[])
+        .with(shoot_system, "shoot_grenade", &[])
+        .with(explode_system, "explode_grenade", &[])
+        .with(death_system, "death", &[])
+        .with(velocity_system, "velocity", &[])
+        .with(gravity_system, "gravity", &[])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that
         // could add unnecessary latency to receiving/sending messages.
-        .add_barrier()
-        .add(send_mux_system, "send_mux", &[])
-        .add(send_system, "net_send", &["send_mux"])
+        .with_barrier()
+        .with(send_mux_system, "send_mux", &[])
+        .with(send_system, "net_send", &["send_mux"])
 }

@@ -1,5 +1,5 @@
 use specs;
-use specs::{WriteStorage, Fetch, FetchMut};
+use specs::{WriteStorage, ReadExpect, WriteExpect};
 use slog::Logger;
 
 use super::{
@@ -43,10 +43,10 @@ impl<'a> specs::System<'a> for RecvSystem {
         WriteStorage<'a, Globe>,
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
-        FetchMut<'a, RecvMessageQueue>,
-        FetchMut<'a, SendMessageQueue>,
-        Fetch<'a, EntityIds>,
-        Fetch<'a, NodeResource>,
+        WriteExpect<'a, RecvMessageQueue>,
+        WriteExpect<'a, SendMessageQueue>,
+        ReadExpect<'a, EntityIds>,
+        ReadExpect<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

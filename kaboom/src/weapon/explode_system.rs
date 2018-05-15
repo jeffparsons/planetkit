@@ -1,5 +1,5 @@
 use specs;
-use specs::{Fetch, Entities, ReadStorage, WriteStorage};
+use specs::{ReadExpect, Entities, ReadStorage, WriteStorage};
 use slog::Logger;
 
 use pk::types::*;
@@ -25,12 +25,12 @@ impl ExplodeSystem {
 
 impl<'a> specs::System<'a> for ExplodeSystem {
     type SystemData = (
-        Fetch<'a, TimeDeltaResource>,
+        ReadExpect<'a, TimeDeltaResource>,
         Entities<'a>,
         WriteStorage<'a, Grenade>,
         WriteStorage<'a, Health>,
         ReadStorage<'a, Spatial>,
-        Fetch<'a, NodeResource>,
+        ReadExpect<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

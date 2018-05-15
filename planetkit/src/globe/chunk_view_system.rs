@@ -1,6 +1,6 @@
 use na;
 use specs;
-use specs::{WriteStorage, Fetch};
+use specs::{WriteStorage, ReadExpect};
 use specs::Entities;
 use slog::Logger;
 
@@ -212,19 +212,24 @@ impl ChunkViewSystem {
             let empty_visual = ::render::Visual::new_empty();
             // TODO: Use `create_later_build`, now that it exists?
             // Updated TODO: figure out what the new API is for that.
+            // ^^ YES, definitely use that.
             let new_ent = entities.create();
             // TODO: run `maintain`? When do we have to do that?
+            // Nope, that is run outside of systems.
             chunk.view_entity = Some(new_ent);
-            chunk_views.insert(new_ent, chunk_view);
-            visuals.insert(new_ent, empty_visual);
-            spatials.insert(new_ent, Spatial::new(globe_entity, chunk_transform));
+            chunk_views.insert(new_ent, chunk_view)
+                .expect("Inserting chunk view failed");
+            visuals.insert(new_ent, empty_visual)
+                .expect("Inserting empty visual failed");
+            spatials.insert(new_ent, Spatial::new(globe_entity, chunk_transform))
+                .expect("Inserting spatial failed");
         }
     }
 }
 
 impl<'a> specs::System<'a> for ChunkViewSystem {
     type SystemData = (Entities<'a>,
-     Fetch<'a, TimeDeltaResource>,
+     ReadExpect<'a, TimeDeltaResource>,
      WriteStorage<'a, Globe>,
      WriteStorage<'a, Visual>,
      WriteStorage<'a, Spatial>,

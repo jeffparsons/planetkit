@@ -45,11 +45,11 @@ impl Node {
         // TODO: replace this with waiting for specific things to be ready,
         // so you don't need to fiddle with fine timings.
         let dispatcher = specs::DispatcherBuilder::new()
-            .add(new_peer_system, "new_peer", &[])
-            .add_barrier()
-            .add(recv_system, "recv", &[])
-            .add_barrier()
-            .add(send_system, "send", &[])
+            .with(new_peer_system, "new_peer", &[])
+            .with_barrier()
+            .with(recv_system, "recv", &[])
+            .with_barrier()
+            .with(send_system, "send", &[])
             .build();
 
         Node {

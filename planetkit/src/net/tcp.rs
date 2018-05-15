@@ -47,7 +47,7 @@ impl<G: GameMessage> Encoder for Codec<G> {
         // Reserve space for the length prefix; we'll only know how long
         // the serialized form is after we write it out.
         let length_header_index = buf.len();
-        buf.put_u16::<BigEndian>(0);
+        buf.put_u16_be(0);
 
         // Write the message itself.
         // NLL SVP.
@@ -389,13 +389,13 @@ mod tests {
         let mut buf2 = BytesMut::with_capacity(1000);
         let f = socket_future.and_then(|tcp_stream| {
             let message = b"\"hello\"";
-            buf.put_u16::<BigEndian>(message.len() as u16);
+            buf.put_u16_be(message.len() as u16);
             buf.put_slice(message);
             write_all(tcp_stream, &mut buf)
         }).and_then(|stream_and_buffer| {
             let tcp_stream = stream_and_buffer.0;
             let message = b"{\"Game\":{}}";
-            buf2.put_u16::<BigEndian>(message.len() as u16);
+            buf2.put_u16_be(message.len() as u16);
             buf2.put_slice(message);
             write_all(tcp_stream, &mut buf2)
         });
@@ -456,9 +456,9 @@ mod tests {
         let f = socket_future.and_then(|tcp_stream| {
             let message = b"{\"Game\":{}}";
             // Put the message twice in a row.
-            buf.put_u16::<BigEndian>(message.len() as u16);
+            buf.put_u16_be(message.len() as u16);
             buf.put_slice(message);
-            buf.put_u16::<BigEndian>(message.len() as u16);
+            buf.put_u16_be(message.len() as u16);
             buf.put_slice(message);
 
             // Write the whole thing to the TCP stream.

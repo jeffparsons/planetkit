@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use specs;
-use specs::{Fetch, FetchMut};
+use specs::{ReadExpect, WriteExpect};
 use slog::Logger;
 
 use super::{
@@ -53,8 +53,8 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
     where G: GameMessage
 {
     type SystemData = (
-        FetchMut<'a, RecvMessageQueue<G>>,
-        Fetch<'a, NetworkPeers<G>>,
+        WriteExpect<'a, RecvMessageQueue<G>>,
+        ReadExpect<'a, NetworkPeers<G>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
