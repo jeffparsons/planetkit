@@ -11,8 +11,8 @@ mod game_system;
 
 fn main() {
     let mut app = pk::AppBuilder::new()
-        .add_common_systems()
-        .add_systems(add_systems)
+        .with_common_systems()
+        .with_systems(add_systems)
         .build_gui();
     create_entities(app.world_mut());
     app.run();

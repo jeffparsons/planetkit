@@ -60,8 +60,8 @@ fn main() {
     let shoot_input_adapter = Box::new(weapon::ShootInputAdapter::new(shoot_input_sender));
 
     let mut app = pk::AppBuilder::new()
-        .add_common_systems()
-        .add_systems(|logger: &slog::Logger, world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
+        .with_common_systems()
+        .with_systems(|logger: &slog::Logger, world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
             add_systems(logger, world, dispatcher_builder, shoot_input_receiver)
         })
         .build_gui();
