@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, Fetch, FetchMut};
+use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect};
 use slog::Logger;
 
 use pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
@@ -33,9 +33,9 @@ impl<'a> specs::System<'a> for DeathSystem {
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Globe>,
         ReadStorage<'a, Fighter>,
-        FetchMut<'a, GameState>,
-        Fetch<'a, NodeResource>,
-        FetchMut<'a, SendMessageQueue<Message>>,
+        WriteExpect<'a, GameState>,
+        ReadExpect<'a, NodeResource>,
+        WriteExpect<'a, SendMessageQueue<Message>>,
         ReadStorage<'a, NetMarker>,
     );
 

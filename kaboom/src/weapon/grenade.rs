@@ -1,7 +1,7 @@
 use specs::{
     self,
     Entity,
-    Fetch,
+    ReadExpect,
     LazyUpdate,
     Entities,
     ReadStorage,
@@ -44,7 +44,7 @@ impl specs::Component for Grenade {
 /// Spawn a grenade travelling up and forward away from the player.
 pub fn shoot_grenade(
     entities: &Entities,
-    updater: &Fetch<LazyUpdate>,
+    updater: &ReadExpect<LazyUpdate>,
     cell_dwellers: &ReadStorage<CellDweller>,
     cell_dweller_entity: Entity,
     spatials: &ReadStorage<Spatial>,

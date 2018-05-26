@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, Fetch, FetchMut, LazyUpdate, Entities};
+use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect, LazyUpdate, Entities};
 use slog::Logger;
 
 use pk;
@@ -41,8 +41,8 @@ impl GameSystem {
 
     fn create_and_broadcast_player(
         &mut self,
-        game_state: &mut FetchMut<GameState>,
-        send_message_queue: &mut FetchMut<SendMessageQueue<Message>>,
+        game_state: &mut WriteExpect<GameState>,
+        send_message_queue: &mut WriteExpect<SendMessageQueue<Message>>,
         peer_id: PeerId,
     ) {
         let next_player_id = PlayerId(game_state.players.len() as u16);
@@ -90,20 +90,20 @@ impl GameSystem {
 
 impl<'a> specs::System<'a> for GameSystem {
     type SystemData = (
-        Fetch<'a, NodeResource>,
-        FetchMut<'a, GameState>,
-        FetchMut<'a, ClientState>,
+        ReadExpect<'a, NodeResource>,
+        WriteExpect<'a, GameState>,
+        WriteExpect<'a, ClientState>,
         Entities<'a>,
-        Fetch<'a, LazyUpdate>,
+        ReadExpect<'a, LazyUpdate>,
         WriteStorage<'a, Globe>,
-        FetchMut<'a, ActiveCellDweller>,
+        WriteExpect<'a, ActiveCellDweller>,
         WriteStorage<'a, CellDweller>,
         ReadStorage<'a, Fighter>,
-        FetchMut<'a, DefaultCamera>,
-        FetchMut<'a, NetworkPeers<Message>>,
-        FetchMut<'a, SendMessageQueue<Message>>,
-        FetchMut<'a, player::RecvMessageQueue>,
-        FetchMut<'a, EntityIds>,
+        WriteExpect<'a, DefaultCamera>,
+        WriteExpect<'a, NetworkPeers<Message>>,
+        WriteExpect<'a, SendMessageQueue<Message>>,
+        WriteExpect<'a, player::RecvMessageQueue>,
+        WriteExpect<'a, EntityIds>,
         ReadStorage<'a, NetMarker>,
     );
 

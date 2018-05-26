@@ -1,5 +1,5 @@
 use specs;
-use specs::{FetchMut};
+use specs::{WriteExpect};
 use slog::Logger;
 
 use pk::cell_dweller;
@@ -26,10 +26,10 @@ impl RecvDemuxSystem {
 
 impl<'a> specs::System<'a> for RecvDemuxSystem {
     type SystemData = (
-        FetchMut<'a, RecvMessageQueue<Message>>,
-        FetchMut<'a, cell_dweller::RecvMessageQueue>,
-        FetchMut<'a, player::RecvMessageQueue>,
-        FetchMut<'a, weapon::RecvMessageQueue>,
+        WriteExpect<'a, RecvMessageQueue<Message>>,
+        WriteExpect<'a, cell_dweller::RecvMessageQueue>,
+        WriteExpect<'a, player::RecvMessageQueue>,
+        WriteExpect<'a, weapon::RecvMessageQueue>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

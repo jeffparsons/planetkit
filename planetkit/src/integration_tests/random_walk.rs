@@ -52,9 +52,9 @@ impl Walker {
 
         // Make a dispatcher and add all our systems.
         let dispatcher = specs::DispatcherBuilder::new()
-            .add(movement_sys, "cd_movement", &[])
-            .add(physics_sys, "cd_physics", &[])
-            .add(chunk_sys, "chunk", &[])
+            .with(movement_sys, "cd_movement", &[])
+            .with(physics_sys, "cd_physics", &[])
+            .with(chunk_sys, "chunk", &[])
             .build();
 
         // Use an Earth-scale globe to make it likely we're constantly
@@ -69,7 +69,7 @@ impl Walker {
         use globe::chunk::Material;
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
-            let mut globes = world.write::<globe::Globe>();
+            let mut globes = world.write_storage::<globe::Globe>();
             let globe = globes.get_mut(globe_entity).expect(
                 "Uh oh, where did our Globe go?",
             );
@@ -161,7 +161,7 @@ fn random_walk_one_walker() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 1);
     let guy_entity = walker.guy_entities.first().unwrap();
-    let cd_storage = walker.world.read::<::cell_dweller::CellDweller>();
+    let cd_storage = walker.world.read_storage::<::cell_dweller::CellDweller>();
     let cd = cd_storage.get(guy_entity.clone()).unwrap();
     assert_ne!(cd.pos, GridPoint3::default());
 }
@@ -176,7 +176,7 @@ fn random_walk_three_walkers() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 3);
     for guy_entity in &walker.guy_entities {
-        let cd_storage = walker.world.read::<::cell_dweller::CellDweller>();
+        let cd_storage = walker.world.read_storage::<::cell_dweller::CellDweller>();
         let cd = cd_storage.get(guy_entity.clone()).unwrap();
         assert_ne!(cd.pos, GridPoint3::default());
     }

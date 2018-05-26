@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use specs;
-use specs::{Fetch, FetchMut, ReadStorage, WriteStorage};
+use specs::{ReadExpect, WriteExpect, ReadStorage, WriteStorage};
 use slog::Logger;
 use piston::input::Input;
 
@@ -79,11 +79,11 @@ impl ShootSystem {
 
 impl<'a> specs::System<'a> for ShootSystem {
     type SystemData = (
-        Fetch<'a, TimeDeltaResource>,
-        Fetch<'a, ActiveCellDweller>,
+        ReadExpect<'a, TimeDeltaResource>,
+        ReadExpect<'a, ActiveCellDweller>,
         WriteStorage<'a, Fighter>,
-        Fetch<'a, ClientState>,
-        FetchMut<'a, SendMessageQueue<Message>>,
+        ReadExpect<'a, ClientState>,
+        WriteExpect<'a, SendMessageQueue<Message>>,
         ReadStorage<'a, NetMarker>,
     );
 

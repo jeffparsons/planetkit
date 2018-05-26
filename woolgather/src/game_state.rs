@@ -1,4 +1,3 @@
-use shred;
 use specs;
 
 /// `World`-global resource for game, including any global state relating
@@ -10,8 +9,7 @@ pub struct GameState {
 
 impl GameState {
     pub fn ensure_registered(world: &mut specs::World) {
-        let res_id = shred::ResourceId::new::<GameState>();
-        if !world.res.has_value(res_id) {
+        if !world.res.has_value::<GameState>() {
             world.add_resource(GameState::new());
         }
     }

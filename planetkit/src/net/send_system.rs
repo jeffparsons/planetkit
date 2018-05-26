@@ -1,5 +1,5 @@
 use specs;
-use specs::{Fetch, FetchMut};
+use specs::{ReadExpect, WriteExpect};
 use slog::Logger;
 use futures;
 
@@ -86,10 +86,10 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
     where G: GameMessage
 {
     type SystemData = (
-        FetchMut<'a, SendMessageQueue<G>>,
-        FetchMut<'a, RecvMessageQueue<G>>,
-        FetchMut<'a, NetworkPeers<G>>,
-        Fetch<'a, NodeResource>,
+        WriteExpect<'a, SendMessageQueue<G>>,
+        WriteExpect<'a, RecvMessageQueue<G>>,
+        WriteExpect<'a, NetworkPeers<G>>,
+        ReadExpect<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

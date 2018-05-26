@@ -1,5 +1,5 @@
 use specs;
-use specs::{Fetch, LazyUpdate, Entities};
+use specs::{ReadExpect, LazyUpdate, Entities};
 
 use types::*;
 use globe;
@@ -40,7 +40,7 @@ pub fn create_simple_player_character_now(
     // Find a suitable spawn point for the player character at the globe surface.
     use grid::Dir;
     let (globe_spec, player_character_pos) = {
-        let mut globe_storage = world.write::<globe::Globe>();
+        let mut globe_storage = world.write_storage::<globe::Globe>();
         let globe = globe_storage.get_mut(globe_entity).expect(
             "Uh oh, it looks like our Globe went missing.",
         );
@@ -105,7 +105,7 @@ pub fn create_simple_chase_camera_now(
 
 pub fn create_simple_chase_camera(
     entities: &Entities,
-    updater: &Fetch<LazyUpdate>,
+    updater: &ReadExpect<LazyUpdate>,
     player_character_entity: specs::Entity,
     default_camera: &mut DefaultCamera,
 ) -> specs::Entity {

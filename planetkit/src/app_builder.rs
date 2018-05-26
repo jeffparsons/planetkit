@@ -94,14 +94,14 @@ impl AppBuilder {
         app
     }
 
-    pub fn add_systems<F: AddSystemsFn<'static, 'static>>(mut self, add_systems_fn: F) -> Self {
+    pub fn with_systems<F: AddSystemsFn<'static, 'static>>(mut self, add_systems_fn: F) -> Self {
         self.dispatcher_builder = add_systems_fn(&self.root_log, &mut self.world, self.dispatcher_builder);
         self
     }
 
     /// Add a few systems that you're likely to want, especially if you're just getting
     /// started with PlanetKit and want to get up and running quickly.
-    pub fn add_common_systems(mut self) -> Self {
+    pub fn with_common_systems(mut self) -> Self {
         use ::globe;
 
         // Set up input adapters.
@@ -131,18 +131,18 @@ impl AppBuilder {
             0.05, // Seconds between geometry creation
         );
 
-        self.add_systems(|_logger: &slog::Logger, _world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
+        self.with_systems(|_logger: &slog::Logger, _world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
             dispatcher_builder
                 // Try to get stuff most directly linked to input done first
                 // to avoid another frame of lag.
-                .add(movement_sys, "cd_movement", &[])
-                .add(mining_sys, "cd_mining", &["cd_movement"])
-                .add_barrier()
-                .add(physics_sys, "physics", &[])
-                .add(chunk_sys, "chunk", &[])
+                .with(movement_sys, "cd_movement", &[])
+                .with(mining_sys, "cd_mining", &["cd_movement"])
+                .with_barrier()
+                .with(physics_sys, "physics", &[])
+                .with(chunk_sys, "chunk", &[])
                 // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
                 // to be able to run it in parallel.
-                .add(chunk_view_sys, "chunk_view", &[])
+                .with(chunk_view_sys, "chunk_view", &[])
         })
     }
 }

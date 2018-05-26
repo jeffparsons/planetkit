@@ -120,8 +120,8 @@ impl App {
 
         let dispatcher_builder = dispatcher_builder
             // Wait for unknown systems to finish before rendering.
-            .add_barrier()
-            .add(render_sys, "render", &[]);
+            .with_barrier()
+            .with(render_sys, "render", &[]);
 
         App {
             t: 0.0,
@@ -219,7 +219,7 @@ impl App {
         // Otherwise we could dead-lock against, e.g., the render
         // system while it's trying to lock the mesh repository.
         let mut mesh_repo = self.mesh_repo.lock().unwrap();
-        let mut visuals = self.world.write::<Visual>();
+        let mut visuals = self.world.write_storage::<Visual>();
         use specs::Join;
         for visual in (&mut visuals).join() {
             // Even if there's a realized mesh already, the presence of

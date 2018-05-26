@@ -1,5 +1,5 @@
 use specs;
-use specs::{Fetch, LazyUpdate, Entities};
+use specs::{ReadExpect, LazyUpdate, Entities};
 
 use pk;
 use pk::types::*;
@@ -36,7 +36,7 @@ impl specs::Component for Fighter {
 /// Create the player character.
 pub fn create(
     entities: &Entities,
-    updater: &Fetch<LazyUpdate>,
+    updater: &ReadExpect<LazyUpdate>,
     globe_entity: specs::Entity,
     globe: &mut Globe,
     player_id: PlayerId,

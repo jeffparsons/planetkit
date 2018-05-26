@@ -1,5 +1,5 @@
 use specs;
-use specs::{FetchMut};
+use specs::{WriteExpect};
 use slog::Logger;
 
 use pk::cell_dweller;
@@ -32,8 +32,8 @@ impl SendMuxSystem {
 
 impl<'a> specs::System<'a> for SendMuxSystem {
     type SystemData = (
-        FetchMut<'a, SendMessageQueue<Message>>,
-        FetchMut<'a, cell_dweller::SendMessageQueue>,
+        WriteExpect<'a, SendMessageQueue<Message>>,
+        WriteExpect<'a, cell_dweller::SendMessageQueue>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

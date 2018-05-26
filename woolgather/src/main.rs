@@ -11,8 +11,8 @@ mod game_system;
 
 fn main() {
     let mut app = pk::AppBuilder::new()
-        .add_common_systems()
-        .add_systems(add_systems)
+        .with_common_systems()
+        .with_systems(add_systems)
         .build_gui();
     create_entities(app.world_mut());
     app.run();
@@ -27,7 +27,7 @@ fn add_systems(
     GameState::ensure_registered(world);
 
     let game_system = game_system::GameSystem::new(logger);
-    dispatcher_builder.add(game_system, "woolgather_game", &[])
+    dispatcher_builder.with(game_system, "woolgather_game", &[])
 }
 
 fn create_entities(world: &mut specs::World) {

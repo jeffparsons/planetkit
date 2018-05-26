@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ReadStorage, WriteStorage, Fetch, FetchMut};
+use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect};
 use slog::Logger;
 use piston::input::Input;
 
@@ -95,8 +95,8 @@ impl<'a> specs::System<'a> for MiningSystem {
     type SystemData = (
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Globe>,
-        Fetch<'a, ActiveCellDweller>,
-        FetchMut<'a, SendMessageQueue>,
+        ReadExpect<'a, ActiveCellDweller>,
+        WriteExpect<'a, SendMessageQueue>,
         ReadStorage<'a, NetMarker>,
     );
 

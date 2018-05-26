@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, Fetch, Entities};
+use specs::{ReadStorage, WriteStorage, ReadExpect, Entities};
 use slog::Logger;
 
 use types::*;
@@ -24,7 +24,7 @@ impl GravitySystem {
 
 impl<'a> specs::System<'a> for GravitySystem {
     type SystemData = (
-        Fetch<'a, TimeDeltaResource>,
+        ReadExpect<'a, TimeDeltaResource>,
         Entities<'a>,
         ReadStorage<'a, Spatial>,
         WriteStorage<'a, Velocity>,

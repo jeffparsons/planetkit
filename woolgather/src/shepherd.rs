@@ -13,7 +13,7 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
 
     // Find a suitable spawn point for the player character at the globe surface.
     let (globe_spec, shepherd_pos) = {
-        let mut globe_storage = world.write::<globe::Globe>();
+        let mut globe_storage = world.write_storage::<globe::Globe>();
         let globe = globe_storage.get_mut(globe_entity).expect(
             "Uh oh, it looks like our Globe went missing.",
         );
