@@ -249,6 +249,8 @@ pub fn origin_of_chunk_owning(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
     if pos.x == 0 && pos.y == 0 {
         // Chunk at (0, 0) owns north pole.
+        // (Note that we know we're already looking at the owning root,
+        // so we don't need to force this to be the first root.)
         ChunkOrigin::new(
             GridPoint3::new(pos.root, 0, 0, chunk_origin_z),
             root_resolution,
@@ -256,6 +258,8 @@ pub fn origin_of_chunk_owning(
         )
     } else if pos.x == end_x && pos.y == end_y {
         // Chunk at (last_chunk_x, last_chunk_y) owns south pole.
+        // (Note that we know we're already looking at the owning root,
+        // so we don't need to force this to be the last root.)
         ChunkOrigin::new(
             GridPoint3::new(pos.root, last_chunk_x, last_chunk_y, chunk_origin_z),
             root_resolution,
