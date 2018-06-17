@@ -179,6 +179,7 @@ impl Globe {
 
         // For each of this chunk's upstream neighbors, see if it has a newer copy of the data
         // we share with that neighbor. Otherwise, copy it into the sink chunk.
+        let mut sink_chunk_view_dirty = false;
         for upstream_neighbor in &upstream_neighbors {
             let source_chunk = match self.chunks.get_mut(&upstream_neighbor.origin) {
                 None => {
@@ -216,7 +217,12 @@ impl Globe {
                 .owned_edge_version;
 
             // If we got this far, then it means we needed to update something.
-            // So mark the downstream chunk as having its view out-of-date.
+            sink_chunk_view_dirty = true;
+        }
+
+        // If we actually updated anything, then mark the downstream chunk
+        // as having its view out-of-date.
+        if sink_chunk_view_dirty {
             sink_chunk.mark_view_as_dirty();
         }
 
