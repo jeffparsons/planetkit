@@ -1,7 +1,7 @@
 use specs;
 use grid::{GridCoord, GridPoint3, PosInOwningRoot};
 use globe::ChunkOrigin;
-use globe::origin_of_chunk_owning;
+use globe::{origin_of_chunk_owning, chunks_containing_point};
 use globe::chunk_pair::PointPair;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -102,9 +102,7 @@ impl Chunk {
     ///
     /// Panics if called more than once; it is for initialization only.
     fn populate_neighboring_chunks(&mut self, root_resolution: [GridCoord; 2]) {
-        use grid::EquivalentPoints;
         use grid::semi_arbitrary_compare;
-        use globe::ChunksInSameRootContainingPoint;
 
         if self.upstream_neighbors.len() > 0 || self.downstream_neighbors.len() > 0 {
             panic!("Tried to initialize chunk multiple times.");
@@ -131,52 +129,42 @@ impl Chunk {
             );
             let we_own_this_point = owning_chunk_origin == self.origin;
 
-            // TODO: wrap this up as an `AllChunksContainingPoint` iterator.
-            // TODO: this is perfect as an "easy"-tagged github issue. Maybe try carving some of these off.
-            let equivalent_points = EquivalentPoints::new(our_point, root_resolution);
-            for equivalent_point in equivalent_points {
-                let containing_chunks = ChunksInSameRootContainingPoint::new(
-                    equivalent_point,
-                    root_resolution,
-                    self.chunk_resolution,
-                );
-                for chunk_origin in containing_chunks {
-                    if chunk_origin == self.origin {
-                        // We're looking at the same chunk; we'll never need to copy to/from self!
-                        continue;
-                    }
+            for (chunk_origin, equivalent_point) in chunks_containing_point(our_point, root_resolution, self.chunk_resolution) {
+                if chunk_origin == self.origin {
+                    // We're looking at the same chunk; we'll never need to copy to/from self!
+                    continue;
+                }
 
-                    if we_own_this_point {
-                        // We own the cell; ensure there's a record for the downstream chunk,
-                        // and then add the pair of representations of the same point to the list
-                        // of cells that need to be synced.
-                        let downstream_neighbor = downstream_neighbors_by_origin
-                            .entry(chunk_origin)
-                            .or_insert(DownstreamNeighbor {
-                                origin: chunk_origin,
-                                shared_cells: Vec::new(),
-                            });
-                        downstream_neighbor.shared_cells.push(PointPair {
-                            source: our_point_in_owning_root,
-                            sink: equivalent_point,
+                if we_own_this_point {
+                    // We own the cell; ensure there's a record for the downstream chunk,
+                    // and then add the pair of representations of the same point to the list
+                    // of cells that need to be synced.
+                    let downstream_neighbor = downstream_neighbors_by_origin
+                        .entry(chunk_origin)
+                        .or_insert(DownstreamNeighbor {
+                            origin: chunk_origin,
+                            shared_cells: Vec::new(),
                         });
-                    } else if owning_chunk_origin == chunk_origin {
-                        // The other chunk owns the cell; ensure there's a record for the upstream chunk,
-                        // and then add the pair of representations of the same point to the list
-                        // of cells that need to be synced.
-                        let upstream_neighbor = upstream_neighbors_by_origin
-                            .entry(chunk_origin)
-                            .or_insert(UpstreamNeighbor {
-                                origin: chunk_origin,
-                                shared_cells: Vec::new(),
-                            });
-                        let equivalent_point_in_owning_root =
-                            PosInOwningRoot::new(equivalent_point, root_resolution);
-                        upstream_neighbor.shared_cells.push(PointPair {
-                            source: equivalent_point_in_owning_root,
-                            sink: our_point,
+                    downstream_neighbor.shared_cells.push(PointPair {
+                        source: our_point_in_owning_root,
+                        sink: equivalent_point,
+                    });
+                } else if owning_chunk_origin == chunk_origin {
+                    // The other chunk owns the cell; ensure there's a record for the upstream chunk,
+                    // and then add the pair of representations of the same point to the list
+                    // of cells that need to be synced.
+                    let upstream_neighbor = upstream_neighbors_by_origin
+                        .entry(chunk_origin)
+                        .or_insert(UpstreamNeighbor {
+                            origin: chunk_origin,
+                            shared_cells: Vec::new(),
                         });
-                    }
+                    let equivalent_point_in_owning_root =
+                        PosInOwningRoot::new(equivalent_point, root_resolution);
+                    upstream_neighbor.shared_cells.push(PointPair {
+                        source: equivalent_point_in_owning_root,
+                        sink: our_point,
+                    });
                 }
             }
         }

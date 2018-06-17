@@ -166,6 +166,31 @@ impl Iterator for ChunksInSameRootContainingPoint {
     }
 }
 
+/// Iterate over all the origins of chunks (in all roots) that contain the
+/// given point.
+///
+/// Produces tuples containing:
+/// - The chunk origin
+/// - The given point expressed in that chunk's root
+pub fn chunks_containing_point(
+    point: GridPoint3,
+    root_resolution: [GridCoord; 2],
+    chunk_resolution: [GridCoord; 3]
+) -> impl Iterator<Item = (ChunkOrigin, GridPoint3)> {
+    use ::grid::EquivalentPoints;
+    use super::ChunksInSameRootContainingPoint;
+
+    EquivalentPoints::new(point, root_resolution).flat_map(move |equivalent_point|
+        ChunksInSameRootContainingPoint::new(
+            equivalent_point,
+            root_resolution,
+            chunk_resolution,
+        ).map(move |chunk_origin|
+            (chunk_origin, equivalent_point)
+        )
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

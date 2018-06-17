@@ -109,7 +109,7 @@ pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> C
     // TODO: different API where you commit to changing a cell
     // in a closure you get back that has a reference to it?
     // Or contains a _wrapper_ around it so it knows if you mutated it? Ooooh.
-    globe.mark_chunk_views_affected_by_cell_as_dirty(pos_in_owning_root.into());
+    globe.mark_chunk_views_affected_by_cell_as_dirty(pos_in_owning_root);
     // TODO: remember on the cell-dweller that it's carrying something?
     // Or should that be a different kind of component?
 

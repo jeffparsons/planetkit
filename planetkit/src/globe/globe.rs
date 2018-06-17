@@ -250,15 +250,8 @@ impl Globe {
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk (or something else affecting its visibility) has been modified
     /// since the view was last updated.
-    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos: GridPoint3) {
-        // Translate into owning root.
-        // TODO: wrapper types so we don't have to do
-        // this sort of thing defensively!
-        // TODO: is it even necessary at all here? All we really care about
-        // is consistency in which chunk we look at for the centre cell,
-        // and the one.....
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos_in_owning_root: PosInOwningRoot) {
         // TODO: really, just rewrite this whole function. It doesn't really work.
-        let pos_in_owning_root = PosInOwningRoot::new(pos, self.spec.root_resolution);
 
         // TODO: this (Vec) is super slow! Replace with a less brain-dead solution.
         // Just committing this one now to patch over a kinda-regression in that
