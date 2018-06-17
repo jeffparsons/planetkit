@@ -135,6 +135,18 @@ impl Globe {
 
             // If we got this far, then it means we needed to update something.
             // So mark the downstream chunk as having its view out-of-date.
+            //
+            // TODO: This isn't good enough; we sometimes decide
+            // not to render cells (or parts thereof) on the edge
+            // of a chunk based on what's next to them _vertically_,
+            // so it's not enough to mark the sink chunk as dirty;
+            // this needs to be a separate concept.
+            //
+            // Oh... there is totally a thing for that.
+            // It's done in `remove_block` at the moment.
+            // Sigh... we really need to clarify who's responsible
+            // for what operations in this globe thing,
+            // what what consistutes "edge cell" etc.
             sink_chunk.mark_view_as_dirty();
         }
 

@@ -49,6 +49,9 @@ pub struct Chunk {
     pub upstream_neighbors: Vec<UpstreamNeighbor>,
     // Neighbors that share some cells on the border of this chunk but don't own them.
     pub downstream_neighbors: Vec<DownstreamNeighbor>,
+    // TODO: this is a terrible place to store this.
+    // The chunk shouldn't be keeping track of anything like this;
+    // who sets it? It should probably be the globe tracking it.
     pub is_view_dirty: bool,
     // Chunks that are directly accessible from the given chunk via a single,
     // step between cells, including this chunk itself.

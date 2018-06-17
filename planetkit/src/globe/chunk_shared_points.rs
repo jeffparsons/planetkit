@@ -59,6 +59,11 @@ impl Iterator for ChunkSharedPoints {
             // Only return points that are on x=0, y=0, x=max, or y=max.
             let is_x_lim = x == self.x_min || x == self.x_max;
             let is_y_lim = y == self.y_min || y == self.y_max;
+            // TODO: use `is_point_shared` instead.
+            //
+            // TODO: Rewrite this whole file to use a pre-computed
+            // list for a given chunk size. (Or just cached on the Globe).
+            // Because this whole thing is just terribly slow.
             let is_shared_point = is_x_lim || is_y_lim;
             if is_shared_point {
                 // It's an x-edge or y-edge point.

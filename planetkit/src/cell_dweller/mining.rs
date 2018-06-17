@@ -81,7 +81,7 @@ pub fn pick_up_if_possible(cd: &mut CellDweller, globe: &mut Globe) -> Option<(P
 }
 
 pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> Cell {
-    use globe::is_point_on_chunk_edge;
+    use globe::is_point_shared;
 
     // Keep for later, so we can return what was in it.
     let cloned_cell = {
@@ -90,8 +90,10 @@ pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> C
         cell.material = Material::Air;
         cs
     };
-    // Some extra stuff is only relevant if the cell is on the edge of its chunk.
-    if is_point_on_chunk_edge(
+
+    // Some extra stuff is only relevant if the cell is shared
+    // with another chunk (horizontal edges).
+    if is_point_shared(
         *pos_in_owning_root.pos(),
         globe.spec().chunk_resolution,
     )
