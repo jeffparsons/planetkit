@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use specs;
 
-use grid::{GridPoint3, PosInOwningRoot, Neighbors};
+use grid::{GridPoint3, PosInOwningRoot};
 use super::{origin_of_chunk_owning, origin_of_chunk_in_same_root_containing};
 use super::ChunkOrigin;
 use super::chunk::{Chunk, Cell};
@@ -250,39 +250,31 @@ impl Globe {
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk (or something else affecting its visibility) has been modified
     /// since the view was last updated.
-    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, pos_in_owning_root: PosInOwningRoot) {
-        // TODO: really, just rewrite this whole function. It doesn't really work.
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, point: GridPoint3) {
+        use super::chunks_containing_point;
 
-        // TODO: this (Vec) is super slow! Replace with a less brain-dead solution.
-        // Just committing this one now to patch over a kinda-regression in that
-        // the existing bug of not doing this at all just become a lot more
-        // obvious now that I'm doing a better job of culling cells.
-        let mut dirty_cells: Vec<PosInOwningRoot> = Vec::new();
-        dirty_cells.push(pos_in_owning_root);
-        dirty_cells.extend(
-            Neighbors::new(pos_in_owning_root.into(), self.spec.root_resolution)
-                .map(|neighbor_pos| {
-                    PosInOwningRoot::new(neighbor_pos, self.spec.root_resolution)
-                }),
-        );
-        // Gah, filthy hacks. This is to get around not having a way to query for
-        // "all chunks containing this cell".
+        // Currently the views that can be affected are for:
         //
-        // TODO: replace now that you DO have that. See other comment about `AllChunksContainingPoint`.
-        let mut cells_in_dirty_chunks: Vec<PosInOwningRoot> = Vec::new();
-        for dirty_cell in dirty_cells {
-            cells_in_dirty_chunks.extend(
-                Neighbors::new(dirty_cell.into(), self.spec.root_resolution)
-                    .map(|neighbor_pos| {
-                        PosInOwningRoot::new(neighbor_pos, self.spec.root_resolution)
-                    }),
-            );
-        }
-        for dirty_pos in cells_in_dirty_chunks {
-            let chunk_origin = self.origin_of_chunk_owning(dirty_pos);
-            // It's fine for the chunk to not be loaded.
-            if let Some(chunk) = self.chunks.get_mut(&chunk_origin) {
-                chunk.mark_view_as_dirty();
+        // - Any chunk that contains this cell
+        // - Any chunk that contains a cell immediately
+        //   above or below this one, because the lack of shared
+        //   cells vertically means that removing a block might mean
+        //   we need to draw a cell wall that was previously elided.
+        //
+        // NOTE: These rules will have to change if we change the way
+        // we render chunks, e.g., doing smoothing that requires knowledge
+        // of more distant cells.
+        for z_d in &[-1, 0, 1] {
+            let p = point.with_z(point.z + z_d);
+            for (chunk_origin, _equivalent_point) in chunks_containing_point(
+                    p,
+                    self.spec.root_resolution,
+                    self.spec.chunk_resolution
+            ) {
+                // It's fine for the chunk to not be loaded; just ignore it.
+                if let Some(chunk) = self.chunks.get_mut(&chunk_origin) {
+                    chunk.mark_view_as_dirty();
+                }
             }
         }
     }
