@@ -30,8 +30,10 @@ impl Walker {
         world.register::<::globe::Globe>();
         world.register::<::net::NetMarker>();
 
-        // Initialize common resources.
-        world.add_resource(TimeDeltaResource(0.0));
+        // Ensure TimeDeltaResource is present; we're going to mess
+        // around with it before it is automatically ensured through
+        // normal System runs.
+        world.setup::<specs::Read<TimeDeltaResource>>();
 
         // Create systems.
         let chunk_sys = globe::ChunkSystem::new(&root_log);

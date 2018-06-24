@@ -1,6 +1,6 @@
 use na;
 use specs;
-use specs::{WriteStorage, ReadExpect};
+use specs::{WriteStorage, Read};
 use specs::Entities;
 use slog::Logger;
 
@@ -229,7 +229,7 @@ impl ChunkViewSystem {
 
 impl<'a> specs::System<'a> for ChunkViewSystem {
     type SystemData = (Entities<'a>,
-     ReadExpect<'a, TimeDeltaResource>,
+     Read<'a, TimeDeltaResource>,
      WriteStorage<'a, Globe>,
      WriteStorage<'a, Visual>,
      WriteStorage<'a, Spatial>,

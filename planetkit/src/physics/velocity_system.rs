@@ -1,6 +1,6 @@
 use na;
 use specs;
-use specs::{ReadStorage, WriteStorage, ReadExpect};
+use specs::{ReadStorage, WriteStorage, Read};
 use slog::Logger;
 
 use types::*;
@@ -21,7 +21,7 @@ impl VelocitySystem {
 
 impl<'a> specs::System<'a> for VelocitySystem {
     type SystemData = (
-        ReadExpect<'a, TimeDeltaResource>,
+        Read<'a, TimeDeltaResource>,
         WriteStorage<'a, Spatial>,
         ReadStorage<'a, Velocity>,
     );

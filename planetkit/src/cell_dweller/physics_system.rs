@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, ReadExpect};
+use specs::{ReadStorage, WriteStorage, Read};
 use slog::Logger;
 
 use types::*;
@@ -63,7 +63,7 @@ impl PhysicsSystem {
 }
 
 impl<'a> specs::System<'a> for PhysicsSystem {
-    type SystemData = (ReadExpect<'a, TimeDeltaResource>,
+    type SystemData = (Read<'a, TimeDeltaResource>,
      WriteStorage<'a, CellDweller>,
      WriteStorage<'a, Spatial>,
      ReadStorage<'a, Globe>);

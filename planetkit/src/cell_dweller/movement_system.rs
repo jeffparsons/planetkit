@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect};
+use specs::{Read, ReadStorage, WriteStorage, ReadExpect, WriteExpect};
 use slog::Logger;
 use piston::input::Input;
 
@@ -214,7 +214,7 @@ impl MovementSystem {
 
 impl<'a> specs::System<'a> for MovementSystem {
     type SystemData = (
-        ReadExpect<'a, TimeDeltaResource>,
+        Read<'a, TimeDeltaResource>,
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
         ReadStorage<'a, Globe>,

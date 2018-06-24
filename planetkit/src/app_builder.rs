@@ -6,7 +6,6 @@ use slog;
 use shred;
 use specs;
 
-use ::types::*;
 use ::app::App;
 use ::cell_dweller;
 use ::window;
@@ -66,9 +65,11 @@ impl AppBuilder {
         // just a `World`; `pk::Resource` should be
         // preferred to ensure those.
         world.add_resource(LogResource::new(&root_log));
-        // TODO: make every system that needs this
-        // ensure it is present.
-        world.add_resource(TimeDeltaResource(0.0));
+
+        // Ensure TimeDeltaResource is present; we're going to mess
+        // around with it before it is automatically ensured through
+        // normal System runs.
+        world.setup::<specs::Read<::types::TimeDeltaResource>>();
 
         AppBuilder {
             root_log: root_log,
