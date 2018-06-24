@@ -123,11 +123,16 @@ impl App {
             .with_barrier()
             .with(render_sys, "render", &[]);
 
+        let mut dispatcher = dispatcher_builder.build();
+        // We'll be wanting to poke things into queues before we first
+        // call `dispatch`, so ensure all resources exist.
+        dispatcher.setup(&mut world.res);
+
         App {
             t: 0.0,
             log: log,
             world: world,
-            dispatcher: dispatcher_builder.build(),
+            dispatcher: dispatcher,
             encoder_channel: device_encoder_channel,
             input_adapters: Vec::new(),
             projection: projection,

@@ -1,5 +1,5 @@
 use specs;
-use specs::{WriteExpect};
+use specs::{Write, WriteExpect};
 use slog::Logger;
 
 use pk::cell_dweller;
@@ -32,7 +32,7 @@ impl SendMuxSystem {
 
 impl<'a> specs::System<'a> for SendMuxSystem {
     type SystemData = (
-        WriteExpect<'a, SendMessageQueue<Message>>,
+        Write<'a, SendMessageQueue<Message>>,
         WriteExpect<'a, cell_dweller::SendMessageQueue>,
     );
 

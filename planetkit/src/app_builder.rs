@@ -66,11 +66,6 @@ impl AppBuilder {
         // preferred to ensure those.
         world.add_resource(LogResource::new(&root_log));
 
-        // Ensure TimeDeltaResource is present; we're going to mess
-        // around with it before it is automatically ensured through
-        // normal System runs.
-        world.setup::<specs::Read<::types::TimeDeltaResource>>();
-
         AppBuilder {
             root_log: root_log,
             world: world,

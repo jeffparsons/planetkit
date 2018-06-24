@@ -52,6 +52,11 @@ impl Node {
             .with(send_system, "send", &[])
             .build();
 
+        // There's no system ensuring these exist in tests,
+        // so we'll need to do it ourselves.
+        world.setup::<specs::Write<SendMessageQueue<TestMessage>>>();
+        world.setup::<specs::Write<RecvMessageQueue<TestMessage>>>();
+
         Node {
             world: world,
             dispatcher: dispatcher,

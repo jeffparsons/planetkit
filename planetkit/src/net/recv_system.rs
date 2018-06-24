@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use specs;
-use specs::{ReadExpect, WriteExpect};
+use specs::{ReadExpect, Write};
 use slog::Logger;
 
 use super::{
@@ -29,7 +29,6 @@ impl<G> RecvSystem<G>
         use auto_resource::AutoResource;
 
         // Ensure resources we use are present.
-        RecvMessageQueue::<G>::ensure(world);
         NetworkPeers::<G>::ensure(world);
 
         // Ensure ServerResource is present, and fetch the
@@ -53,7 +52,7 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
     where G: GameMessage
 {
     type SystemData = (
-        WriteExpect<'a, RecvMessageQueue<G>>,
+        Write<'a, RecvMessageQueue<G>>,
         ReadExpect<'a, NetworkPeers<G>>,
     );
 

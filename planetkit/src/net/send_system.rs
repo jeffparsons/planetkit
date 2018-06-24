@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadExpect, WriteExpect};
+use specs::{ReadExpect, Write, WriteExpect};
 use slog::Logger;
 use futures;
 
@@ -30,8 +30,6 @@ impl<G> SendSystem<G>
         use auto_resource::AutoResource;
 
         // Ensure resources we use are present.
-        SendMessageQueue::<G>::ensure(world);
-        RecvMessageQueue::<G>::ensure(world);
         NetworkPeers::<G>::ensure(world);
         NodeResource::ensure(world);
 
@@ -86,8 +84,8 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
     where G: GameMessage
 {
     type SystemData = (
-        WriteExpect<'a, SendMessageQueue<G>>,
-        WriteExpect<'a, RecvMessageQueue<G>>,
+        Write<'a, SendMessageQueue<G>>,
+        Write<'a, RecvMessageQueue<G>>,
         WriteExpect<'a, NetworkPeers<G>>,
         ReadExpect<'a, NodeResource>,
     );
