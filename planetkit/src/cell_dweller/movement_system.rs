@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use specs;
-use specs::{Read, ReadStorage, WriteStorage, ReadExpect, WriteExpect};
+use specs::{Read, ReadStorage, WriteStorage, WriteExpect};
 use slog::Logger;
 use piston::input::Input;
 
@@ -111,14 +111,6 @@ impl MovementSystem {
         }
     }
 
-    // TODO: move into special trait, e.g., `PlanetKitSystem`, and require all systems to be
-    // added through my interface. We can then specialise that to automatically call this initialisation
-    // code if the system happens to provide it.
-    pub fn init(&mut self, world: &mut specs::World) {
-        // TODO: move this into `new`.
-        ActiveCellDweller::ensure_registered(world);
-    }
-
     // Pretty much only for tests.
     pub fn set_step_height(&mut self, new_max_step_height: u8) {
         self.max_step_height = new_max_step_height;
@@ -218,7 +210,7 @@ impl<'a> specs::System<'a> for MovementSystem {
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
         ReadStorage<'a, Globe>,
-        ReadExpect<'a, ActiveCellDweller>,
+        Read<'a, ActiveCellDweller>,
         WriteExpect<'a, SendMessageQueue>,
         ReadStorage<'a, NetMarker>,
     );

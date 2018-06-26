@@ -1,6 +1,6 @@
 use std::sync::mpsc;
 use specs;
-use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect};
+use specs::{ReadStorage, WriteStorage, Read, WriteExpect};
 use slog::Logger;
 use piston::input::Input;
 
@@ -74,13 +74,6 @@ impl MiningSystem {
         }
     }
 
-    // TODO: move into special trait, e.g., `PlanetKitSystem`, and require all systems to be
-    // added through my interface. We can then specialise that to automatically call this initialisation
-    // code if the system happens to provide it.
-    pub fn init(&mut self, world: &mut specs::World) {
-        ActiveCellDweller::ensure_registered(world);
-    }
-
     fn consume_input(&mut self) {
         loop {
             match self.input_receiver.try_recv() {
@@ -95,7 +88,7 @@ impl<'a> specs::System<'a> for MiningSystem {
     type SystemData = (
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Globe>,
-        ReadExpect<'a, ActiveCellDweller>,
+        Read<'a, ActiveCellDweller>,
         WriteExpect<'a, SendMessageQueue>,
         ReadStorage<'a, NetMarker>,
     );

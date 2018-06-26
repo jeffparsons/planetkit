@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, ReadExpect, WriteExpect, LazyUpdate, Entities};
+use specs::{ReadStorage, WriteStorage, ReadExpect, Write, WriteExpect, LazyUpdate, Entities};
 use slog::Logger;
 
 use pk;
@@ -96,7 +96,7 @@ impl<'a> specs::System<'a> for GameSystem {
         Entities<'a>,
         ReadExpect<'a, LazyUpdate>,
         WriteStorage<'a, Globe>,
-        WriteExpect<'a, ActiveCellDweller>,
+        Write<'a, ActiveCellDweller>,
         WriteStorage<'a, CellDweller>,
         ReadStorage<'a, Fighter>,
         WriteExpect<'a, DefaultCamera>,

@@ -30,10 +30,15 @@ impl Walker {
         world.register::<::globe::Globe>();
         world.register::<::net::NetMarker>();
 
-        // Ensure TimeDeltaResource is present; we're going to mess
+        // Ensure some resources we use are present; we're going to mess
         // around with it before it is automatically ensured through
         // normal System runs.
+        //
+        // TODO: We should actually just call setup on our dispatcher
+        // before we poke things in; that'd be less fragile.
+        // Do this across the board wherever you're doing `world.setup`!
         world.setup::<specs::Read<TimeDeltaResource>>();
+        world.setup::<specs::Read<cell_dweller::ActiveCellDweller>>();
 
         // Create systems.
         let chunk_sys = globe::ChunkSystem::new(&root_log);
@@ -41,7 +46,6 @@ impl Walker {
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
         let mut movement_sys =
             cell_dweller::MovementSystem::new(&mut world, movement_input_receiver, &root_log);
-        movement_sys.init(&mut world);
         // Stop the player from getting stuck on cliffs; we want to test what
         // happens when they walk really aggressively all around the world, not what
         // happens when they fall into a hole and don't move anywhere.

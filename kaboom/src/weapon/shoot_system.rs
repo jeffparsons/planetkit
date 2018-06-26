@@ -54,12 +54,9 @@ pub struct ShootSystem {
 
 impl ShootSystem {
     pub fn new(
-        world: &mut specs::World,
         input_receiver: mpsc::Receiver<ShootEvent>,
         parent_log: &Logger,
     ) -> ShootSystem {
-        ActiveCellDweller::ensure_registered(world);
-
         ShootSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
@@ -80,7 +77,7 @@ impl ShootSystem {
 impl<'a> specs::System<'a> for ShootSystem {
     type SystemData = (
         Read<'a, TimeDeltaResource>,
-        ReadExpect<'a, ActiveCellDweller>,
+        Read<'a, ActiveCellDweller>,
         WriteStorage<'a, Fighter>,
         ReadExpect<'a, ClientState>,
         WriteExpect<'a, SendMessageQueue<Message>>,

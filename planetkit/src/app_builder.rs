@@ -107,13 +107,9 @@ impl AppBuilder {
         let (mining_input_sender, mining_input_receiver) = mpsc::channel();
         self.mining_input_adapter = Some(Box::new(cell_dweller::MiningInputAdapter::new(mining_input_sender)));
 
-        let mut movement_sys = cell_dweller::MovementSystem::new(&mut self.world, movement_input_receiver, &self.root_log);
-        // TODO: move into AutoSystem
-        movement_sys.init(&mut self.world);
+        let movement_sys = cell_dweller::MovementSystem::new(&mut self.world, movement_input_receiver, &self.root_log);
 
-        let mut mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &self.root_log);
-        // TODO: move into AutoSystem
-        mining_sys.init(&mut self.world);
+        let mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &self.root_log);
 
         let physics_sys = cell_dweller::PhysicsSystem::new(
             &self.root_log,

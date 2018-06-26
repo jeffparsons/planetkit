@@ -23,17 +23,9 @@ use specs;
 /// by the player, if any.
 ///
 /// TODO: make this a more general "controlled entity" somewhere?
+#[derive(Default)]
 pub struct ActiveCellDweller {
     pub maybe_entity: Option<specs::Entity>,
-}
-
-impl ActiveCellDweller {
-    // TODO: replace with AutoResource
-    pub fn ensure_registered(world: &mut specs::World) {
-        if !world.res.has_value::<ActiveCellDweller>() {
-            world.add_resource(ActiveCellDweller { maybe_entity: None });
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]

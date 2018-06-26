@@ -116,7 +116,7 @@ fn add_systems(
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
     let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
     let weapon_recv_system = weapon::RecvSystem::new(logger, world);
-    let shoot_system = weapon::ShootSystem::new(world, shoot_input_receiver, logger);
+    let shoot_system = weapon::ShootSystem::new(shoot_input_receiver, logger);
     let explode_system = weapon::ExplodeSystem::new(logger);
     let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
