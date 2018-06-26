@@ -6,7 +6,7 @@ use vecmath;
 use camera_controllers;
 use specs;
 use specs::Entities;
-use specs::{ReadExpect, ReadStorage};
+use specs::{Read, ReadStorage};
 use slog::Logger;
 
 use super::default_pipeline::pipe;
@@ -33,7 +33,6 @@ pub struct System<R: gfx::Resources, C: gfx::CommandBuffer<R>> {
 
 impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
     pub fn new<F: gfx::Factory<R>>(
-        world: &mut specs::World,
         factory: &mut F,
         encoder_channel: EncoderChannel<R, C>,
         output_color: gfx::handle::RenderTargetView<R, gfx::format::Srgba8>,
@@ -42,13 +41,8 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         parent_log: &Logger,
         mesh_repo: Arc<Mutex<MeshRepository<R>>>,
     ) -> System<R, C> {
-        use auto_resource::AutoResource;
-
         let log = parent_log.new(o!("system" => "render"));
         debug!(log, "Initialising");
-
-        // Ensure DefaultCamera resource is present.
-        DefaultCamera::ensure(world);
 
         // Create pipeline state object.
         use gfx::traits::FactoryExt;
@@ -185,7 +179,7 @@ where
 {
     type SystemData = (
         Entities<'a>,
-        ReadExpect<'a, DefaultCamera>,
+        Read<'a, DefaultCamera>,
         ReadStorage<'a, Visual>,
         ReadStorage<'a, Spatial>,
     );

@@ -108,7 +108,6 @@ impl App {
         let factory = &mut window.factory.clone();
         let mesh_repo_ptr = Arc::new(Mutex::new(mesh_repo));
         let render_sys = render::System::new(
-            &mut world,
             factory,
             render_sys_encoder_channel,
             window.output_color.clone(),
