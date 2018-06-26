@@ -110,12 +110,12 @@ fn add_systems(
     world.register::<fighter::Fighter>();
     world.register::<::health::Health>();
 
-    let game_system = game_system::GameSystem::new(logger, world);
+    let game_system = game_system::GameSystem::new(logger);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);
     let recv_system = pk::net::RecvSystem::<Message>::new(logger, world);
     let recv_demux_system = RecvDemuxSystem::new(logger, world);
-    let cd_recv_system = pk::cell_dweller::RecvSystem::new(world, logger);
-    let weapon_recv_system = weapon::RecvSystem::new(logger, world);
+    let cd_recv_system = pk::cell_dweller::RecvSystem::new(logger);
+    let weapon_recv_system = weapon::RecvSystem::new(logger);
     let shoot_system = weapon::ShootSystem::new(shoot_input_receiver, logger);
     let explode_system = weapon::ExplodeSystem::new(logger);
     let death_system = death_system::DeathSystem::new(logger);

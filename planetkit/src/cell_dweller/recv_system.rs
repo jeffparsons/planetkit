@@ -1,5 +1,5 @@
 use specs;
-use specs::{WriteStorage, Read, WriteExpect};
+use specs::{WriteStorage, Read, Write};
 use slog::Logger;
 
 use super::{
@@ -25,13 +25,7 @@ pub struct RecvSystem {
 }
 
 impl RecvSystem {
-    pub fn new(
-        world: &mut specs::World,
-        parent_log: &Logger,
-    ) -> RecvSystem {
-        use ::AutoResource;
-        RecvMessageQueue::ensure(world);
-
+    pub fn new(parent_log: &Logger) -> RecvSystem {
         RecvSystem {
             log: parent_log.new(o!()),
         }
@@ -43,8 +37,8 @@ impl<'a> specs::System<'a> for RecvSystem {
         WriteStorage<'a, Globe>,
         WriteStorage<'a, CellDweller>,
         WriteStorage<'a, Spatial>,
-        WriteExpect<'a, RecvMessageQueue>,
-        WriteExpect<'a, SendMessageQueue>,
+        Write<'a, RecvMessageQueue>,
+        Write<'a, SendMessageQueue>,
         Read<'a, EntityIds>,
         Read<'a, NodeResource>,
     );

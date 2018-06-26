@@ -20,12 +20,9 @@ fn main() {
 
 fn add_systems(
     logger: &slog::Logger,
-    world: &mut specs::World,
+    _world: &mut specs::World,
     dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
 ) -> specs::DispatcherBuilder<'static, 'static> {
-    use game_state::GameState;
-    GameState::ensure_registered(world);
-
     let game_system = game_system::GameSystem::new(logger);
     dispatcher_builder.with(game_system, "woolgather_game", &[])
 }

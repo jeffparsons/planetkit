@@ -2,7 +2,7 @@ use std;
 use std::sync::mpsc::TryRecvError;
 
 use specs;
-use specs::WriteExpect;
+use specs::Write;
 use slog::Logger;
 
 use super::{
@@ -46,7 +46,7 @@ impl<'a, G> specs::System<'a> for NewPeerSystem<G>
     where G: GameMessage
 {
     type SystemData = (
-        WriteExpect<'a, NetworkPeers<G>>,
+        Write<'a, NetworkPeers<G>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

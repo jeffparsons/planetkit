@@ -1,5 +1,5 @@
 use specs;
-use specs::WriteExpect;
+use specs::Write;
 use slog::Logger;
 
 use super::game_state::{GameState, LevelOutcome};
@@ -16,7 +16,7 @@ impl GameSystem {
 }
 
 impl<'a> specs::System<'a> for GameSystem {
-    type SystemData = (WriteExpect<'a, GameState>,);
+    type SystemData = (Write<'a, GameState>,);
 
     fn run(&mut self, data: Self::SystemData) {
         let (mut game_state,) = data;

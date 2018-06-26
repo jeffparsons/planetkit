@@ -1,5 +1,5 @@
 use specs;
-use specs::{Read, WriteExpect, Entities, LazyUpdate, ReadStorage};
+use specs::{Read, Write, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
 
 use pk::Spatial;
@@ -16,12 +16,7 @@ pub struct RecvSystem {
 }
 
 impl RecvSystem {
-    pub fn new(parent_log: &Logger, world: &mut specs::World) -> RecvSystem {
-        use pk::AutoResource;
-
-        // Ensure resources we use are present.
-        RecvMessageQueue::ensure(world);
-
+    pub fn new(parent_log: &Logger) -> RecvSystem {
         RecvSystem {
             log: parent_log.new(o!("system" => "weapon_recv"))
         }
@@ -30,8 +25,8 @@ impl RecvSystem {
 
 impl<'a> specs::System<'a> for RecvSystem {
     type SystemData = (
-        WriteExpect<'a, RecvMessageQueue>,
-        WriteExpect<'a, SendMessageQueue<Message>>,
+        Write<'a, RecvMessageQueue>,
+        Write<'a, SendMessageQueue<Message>>,
         Entities<'a>,
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Spatial>,

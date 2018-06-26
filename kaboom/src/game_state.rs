@@ -1,8 +1,6 @@
 use std::collections::vec_deque::VecDeque;
 
-use specs::{self, Entity};
-
-use pk::AutoResource;
+use specs::Entity;
 
 use ::player::{Player, PlayerId};
 
@@ -31,8 +29,8 @@ pub struct GameState {
     pub next_unnamed_player_number: usize,
 }
 
-impl AutoResource for GameState {
-    fn new(_world: &mut specs::World) -> GameState {
+impl Default for GameState {
+    fn default() -> GameState {
         GameState {
             globe_entity: None,
             players: Vec::<Player>::new(),

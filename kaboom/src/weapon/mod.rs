@@ -12,9 +12,7 @@ pub use self::grenade::Grenade;
 
 use std::collections::vec_deque::VecDeque;
 
-use pk::AutoResource;
 use pk::net::RecvMessage;
-use specs;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum WeaponMessage {
@@ -38,14 +36,7 @@ pub struct NewGrenadeMessage {
 }
 
 /// `World`-global resource for inbound weapon-related network messages.
+#[derive(Default)]
 pub struct RecvMessageQueue {
     pub queue: VecDeque<RecvMessage<WeaponMessage>>,
-}
-
-impl AutoResource for RecvMessageQueue {
-    fn new(_world: &mut specs::World) -> RecvMessageQueue {
-        RecvMessageQueue {
-            queue: VecDeque::new(),
-        }
-    }
 }

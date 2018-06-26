@@ -1,5 +1,5 @@
 use specs;
-use specs::{Read, Write, WriteExpect};
+use specs::{Read, Write};
 use slog::Logger;
 use futures;
 
@@ -82,7 +82,7 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
     type SystemData = (
         Write<'a, SendMessageQueue<G>>,
         Write<'a, RecvMessageQueue<G>>,
-        WriteExpect<'a, NetworkPeers<G>>,
+        Write<'a, NetworkPeers<G>>,
         Read<'a, NodeResource>,
     );
 

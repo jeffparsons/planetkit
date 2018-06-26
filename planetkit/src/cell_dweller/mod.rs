@@ -10,7 +10,6 @@ use grid::{GridPoint3, Dir};
 use ::movement::TurnDir;
 use ::net::{SendMessage, RecvMessage};
 
-pub use ::AutoResource;
 pub use self::cell_dweller::CellDweller;
 pub use self::movement_system::{MovementSystem, MovementEvent, MovementInputAdapter};
 pub use self::mining_system::{MiningSystem, MiningEvent, MiningInputAdapter};
@@ -95,14 +94,7 @@ pub struct SendMessageQueue {
 }
 
 /// `World`-global resource for inbound cell-dweller network messages.
+#[derive(Default)]
 pub struct RecvMessageQueue {
     pub queue: VecDeque<RecvMessage<CellDwellerMessage>>,
-}
-
-impl ::AutoResource for RecvMessageQueue {
-    fn new(_world: &mut specs::World) -> RecvMessageQueue {
-        RecvMessageQueue {
-            queue: VecDeque::new(),
-        }
-    }
 }

@@ -2,7 +2,6 @@ use std::collections::vec_deque::VecDeque;
 
 use specs;
 
-use pk::AutoResource;
 use pk::net::{PeerId, RecvMessage};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
@@ -46,14 +45,7 @@ pub struct NewPlayerMessage {
 }
 
 /// `World`-global resource for inbound player-related network messages.
+#[derive(Default)]
 pub struct RecvMessageQueue {
     pub queue: VecDeque<RecvMessage<PlayerMessage>>,
-}
-
-impl AutoResource for RecvMessageQueue {
-    fn new(_world: &mut specs::World) -> RecvMessageQueue {
-        RecvMessageQueue {
-            queue: VecDeque::new(),
-        }
-    }
 }

@@ -44,7 +44,7 @@ impl Node {
         // Make a dispatcher, with simplified execution order.
         // TODO: replace this with waiting for specific things to be ready,
         // so you don't need to fiddle with fine timings.
-        let dispatcher = specs::DispatcherBuilder::new()
+        let mut dispatcher = specs::DispatcherBuilder::new()
             .with(new_peer_system, "new_peer", &[])
             .with_barrier()
             .with(recv_system, "recv", &[])
@@ -52,12 +52,10 @@ impl Node {
             .with(send_system, "send", &[])
             .build();
 
-        // There's no system ensuring these exist in tests,
-        // so we'll need to do it ourselves.
-        world.setup::<specs::Write<SendMessageQueue<TestMessage>>>();
-        world.setup::<specs::Write<RecvMessageQueue<TestMessage>>>();
-        world.setup::<specs::Write<NodeResource>>();
-        world.setup::<specs::Write<NetworkPeers<TestMessage>>>();
+        // We're going to poke at resources before we start
+        // dispatching, so we need to explicitly ask the dispatcher
+        // to ensure the existence of all Default resources.
+        dispatcher.setup(&mut world.res);
 
         Node {
             world: world,

@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, Read, Write, WriteExpect, LazyUpdate, Entities};
+use specs::{ReadStorage, WriteStorage, Read, Write, LazyUpdate, Entities};
 use slog::Logger;
 
 use pk;
@@ -24,13 +24,7 @@ pub struct GameSystem {
 // Or, rather, a PlayerRecvSystem.
 
 impl GameSystem {
-    pub fn new(parent_log: &Logger, world: &mut specs::World) -> GameSystem {
-        use pk::AutoResource;
-
-        // Ensure resources we use are present.
-        GameState::ensure(world);
-        player::RecvMessageQueue::ensure(world);
-
+    pub fn new(parent_log: &Logger) -> GameSystem {
         GameSystem {
             log: parent_log.new(o!("system" => "game"))
         }
@@ -38,8 +32,8 @@ impl GameSystem {
 
     fn create_and_broadcast_player(
         &mut self,
-        game_state: &mut WriteExpect<GameState>,
-        send_message_queue: &mut WriteExpect<SendMessageQueue<Message>>,
+        game_state: &mut Write<GameState>,
+        send_message_queue: &mut Write<SendMessageQueue<Message>>,
         peer_id: PeerId,
     ) {
         let next_player_id = PlayerId(game_state.players.len() as u16);
@@ -88,7 +82,7 @@ impl GameSystem {
 impl<'a> specs::System<'a> for GameSystem {
     type SystemData = (
         Read<'a, NodeResource>,
-        WriteExpect<'a, GameState>,
+        Write<'a, GameState>,
         Write<'a, ClientState>,
         Entities<'a>,
         Read<'a, LazyUpdate>,
@@ -96,11 +90,11 @@ impl<'a> specs::System<'a> for GameSystem {
         Write<'a, ActiveCellDweller>,
         WriteStorage<'a, CellDweller>,
         ReadStorage<'a, Fighter>,
-        WriteExpect<'a, DefaultCamera>,
-        WriteExpect<'a, NetworkPeers<Message>>,
-        WriteExpect<'a, SendMessageQueue<Message>>,
-        WriteExpect<'a, player::RecvMessageQueue>,
-        WriteExpect<'a, EntityIds>,
+        Write<'a, DefaultCamera>,
+        Write<'a, NetworkPeers<Message>>,
+        Write<'a, SendMessageQueue<Message>>,
+        Write<'a, player::RecvMessageQueue>,
+        Write<'a, EntityIds>,
         ReadStorage<'a, NetMarker>,
     );
 
