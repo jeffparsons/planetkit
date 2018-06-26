@@ -190,8 +190,11 @@ pub struct NetworkPeers<G> {
     pub new_peers: VecDeque<PeerId>,
 }
 
-impl<G: GameMessage> AutoResource for NetworkPeers<G> {
-    fn new(_world: &mut specs::World) -> NetworkPeers<G> {
+// `derive(Default)` doesn't seem to work here.
+// Maybe because GameMessage doesn't imply Default,
+// and it can't tell that doesn't matter?
+impl<G: GameMessage> Default for NetworkPeers<G> {
+    fn default() -> NetworkPeers<G> {
         NetworkPeers {
             peers: Vec::<NetworkPeer<G>>::new(),
             new_peers: VecDeque::<PeerId>::new(),

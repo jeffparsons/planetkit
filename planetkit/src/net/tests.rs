@@ -57,6 +57,7 @@ impl Node {
         world.setup::<specs::Write<SendMessageQueue<TestMessage>>>();
         world.setup::<specs::Write<RecvMessageQueue<TestMessage>>>();
         world.setup::<specs::Write<NodeResource>>();
+        world.setup::<specs::Write<NetworkPeers<TestMessage>>>();
 
         Node {
             world: world,

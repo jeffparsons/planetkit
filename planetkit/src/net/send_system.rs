@@ -29,9 +29,6 @@ impl<G> SendSystem<G>
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> SendSystem<G> {
         use auto_resource::AutoResource;
 
-        // Ensure resources we use are present.
-        NetworkPeers::<G>::ensure(world);
-
         // Ensure ServerResource is present, and fetch the
         // channel ends we need from it.
         use super::ServerResource;

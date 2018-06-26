@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use specs;
-use specs::{ReadExpect, Write};
+use specs::{Read, Write};
 use slog::Logger;
 
 use super::{
@@ -28,9 +28,6 @@ impl<G> RecvSystem<G>
     ) -> RecvSystem<G> {
         use auto_resource::AutoResource;
 
-        // Ensure resources we use are present.
-        NetworkPeers::<G>::ensure(world);
-
         // Ensure ServerResource is present, and fetch the
         // wire message receiver from it.
         use super::ServerResource;
@@ -53,7 +50,7 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
 {
     type SystemData = (
         Write<'a, RecvMessageQueue<G>>,
-        ReadExpect<'a, NetworkPeers<G>>,
+        Read<'a, NetworkPeers<G>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
