@@ -30,17 +30,6 @@ impl Walker {
         world.register::<::globe::Globe>();
         world.register::<::net::NetMarker>();
 
-        // Ensure some resources we use are present; we're going to mess
-        // around with it before it is automatically ensured through
-        // normal System runs.
-        //
-        // TODO: We should actually just call setup on our dispatcher
-        // before we poke things in; that'd be less fragile.
-        // Do this across the board wherever you're doing `world.setup`!
-        world.setup::<specs::Read<TimeDeltaResource>>();
-        world.setup::<specs::Read<cell_dweller::ActiveCellDweller>>();
-        world.setup::<specs::Read<cell_dweller::SendMessageQueue>>();
-
         // Create systems.
         let chunk_sys = globe::ChunkSystem::new(&root_log);
 
@@ -58,11 +47,16 @@ impl Walker {
         );
 
         // Make a dispatcher and add all our systems.
-        let dispatcher = specs::DispatcherBuilder::new()
+        let mut dispatcher = specs::DispatcherBuilder::new()
             .with(movement_sys, "cd_movement", &[])
             .with(physics_sys, "cd_physics", &[])
             .with(chunk_sys, "chunk", &[])
             .build();
+
+        // We're going to poke at resources before we start
+        // dispatching, so we need to explicitly ask the dispatcher
+        // to ensure the existence of all Default resources.
+        dispatcher.setup(&mut world.res);
 
         // Use an Earth-scale globe to make it likely we're constantly
         // visiting new chunks.
