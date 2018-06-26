@@ -100,9 +100,6 @@ mod spatial;
 pub use spatial::Spatial;
 pub use spatial::SpatialStorage;
 
-mod auto_resource;
-pub use auto_resource::AutoResource;
-
 mod log_resource;
 pub use log_resource::LogResource;
 

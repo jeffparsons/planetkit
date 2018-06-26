@@ -27,12 +27,9 @@ impl<G> SendSystem<G>
     where G: GameMessage
 {
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> SendSystem<G> {
-        use auto_resource::AutoResource;
-
-        // Ensure ServerResource is present, and fetch the
-        // channel ends we need from it.
+        // Take channel end we need from ServerResource.
         use super::ServerResource;
-        let server_resource = ServerResource::<G>::ensure(world);
+        let server_resource = world.write_resource::<ServerResource<G>>();
         let send_udp_tx = server_resource.send_udp_tx.clone();
 
         let system = SendSystem {

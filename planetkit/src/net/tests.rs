@@ -30,11 +30,9 @@ impl Node {
 
         let mut world = specs::World::new();
 
-        // Initialize common resources.
-        // These should be impossible to create from
-        // just a `World`; `pk::Resource` should be
-        // preferred to ensure those.
+        // Initialize resources that can't implement `Default`.
         world.add_resource(LogResource::new(&root_log));
+        world.add_resource(ServerResource::<TestMessage>::new(&root_log));
 
         // Create core network systems.
         let new_peer_system = NewPeerSystem::<TestMessage>::new(&root_log, &mut world);

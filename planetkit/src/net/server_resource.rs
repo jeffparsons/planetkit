@@ -1,10 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc as stdmpsc;
 use futures::sync::mpsc as futmpsc;
+use slog::Logger;
 
-use specs::World;
-
-use ::{AutoResource, LogResource};
 use super::{
     Server,
     GameMessage,
@@ -23,8 +21,10 @@ pub struct ServerResource<G> {
     pub send_udp_tx: futmpsc::Sender<SendWireMessage<G>>,
 }
 
-impl<G: GameMessage> AutoResource for ServerResource<G> {
-    fn new(world: &mut World) -> ServerResource<G> {
+impl<G: GameMessage> ServerResource<G> {
+    // Can't implement Default because it needs a
+    // root logger provided from the outside world.
+    pub fn new(parent_log: &Logger) -> ServerResource<G> {
         // Create all the various channels we'll
         // need to link up the `Server`, `RecvSystem`,
         // and `SendSystem`.
@@ -33,9 +33,8 @@ impl<G: GameMessage> AutoResource for ServerResource<G> {
         // TODO: how big is reasonable? Just go unbounded?
         let (send_udp_tx, send_udp_rx) = futmpsc::channel::<SendWireMessage<G>>(1000);
 
-        let log_resource = world.read_resource::<LogResource>();
         let server = Server::<G>::new(
-            &log_resource.log,
+            &parent_log,
             recv_tx,
             new_peer_tx,
             send_udp_rx,

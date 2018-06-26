@@ -26,12 +26,9 @@ impl<G> RecvSystem<G>
         parent_log: &Logger,
         world: &mut specs::World,
     ) -> RecvSystem<G> {
-        use auto_resource::AutoResource;
-
-        // Ensure ServerResource is present, and fetch the
-        // wire message receiver from it.
+        // Take wire message receiver from ServerResource.
         use super::ServerResource;
-        let server_resource = ServerResource::<G>::ensure(world);
+        let server_resource = world.write_resource::<ServerResource<G>>();
         let recv_rx = server_resource.recv_rx
             .lock()
             .expect("Couldn't get lock on wire message receiver")

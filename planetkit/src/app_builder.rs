@@ -9,6 +9,7 @@ use specs;
 use ::app::App;
 use ::cell_dweller;
 use ::window;
+use ::net::{ServerResource, GameMessage};
 
 /// Builder for [`App`].
 ///
@@ -60,11 +61,11 @@ impl AppBuilder {
         world.register::<::globe::ChunkView>();
         world.register::<::net::NetMarker>();
 
-        // Initialize common resources.
-        // These should be impossible to create from
-        // just a `World`; `pk::Resource` should be
-        // preferred to ensure those.
+        // Initialize resources that can't implement `Default`.
         world.add_resource(LogResource::new(&root_log));
+
+        // NOTE: You must opt in to having a `ServerResource`
+        // if you want it by calling `with_networking`.
 
         AppBuilder {
             root_log: root_log,
@@ -92,6 +93,13 @@ impl AppBuilder {
 
     pub fn with_systems<F: AddSystemsFn<'static, 'static>>(mut self, add_systems_fn: F) -> Self {
         self.dispatcher_builder = add_systems_fn(&self.root_log, &mut self.world, self.dispatcher_builder);
+        self
+    }
+
+    // TODO: Remark (assert!) on how this must
+    // be called before adding any networking-related systems.
+    pub fn with_networking<G: GameMessage>(mut self) -> Self {
+        self.world.add_resource(ServerResource::<G>::new(&self.root_log));
         self
     }
 

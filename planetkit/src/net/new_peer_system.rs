@@ -22,12 +22,9 @@ impl<G> NewPeerSystem<G>
     where G: GameMessage
 {
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> NewPeerSystem<G> {
-        use auto_resource::AutoResource;
-
-        // Ensure ServerResource is present, and fetch the
-        // channel ends we need from it.
+        // Take channel end we need from ServerResource.
         use super::ServerResource;
-        let server_resource = ServerResource::<G>::ensure(world);
+        let server_resource = world.write_resource::<ServerResource<G>>();
         let new_peer_rx = server_resource.new_peer_rx
             .lock()
             .expect("Couldn't get lock on new peer receiver")
