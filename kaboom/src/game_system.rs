@@ -29,7 +29,6 @@ impl GameSystem {
 
         // Ensure resources we use are present.
         GameState::ensure(world);
-        ClientState::ensure(world);
         player::RecvMessageQueue::ensure(world);
         EntityIds::ensure(world);
 
@@ -91,7 +90,7 @@ impl<'a> specs::System<'a> for GameSystem {
     type SystemData = (
         Read<'a, NodeResource>,
         WriteExpect<'a, GameState>,
-        WriteExpect<'a, ClientState>,
+        Write<'a, ClientState>,
         Entities<'a>,
         Read<'a, LazyUpdate>,
         WriteStorage<'a, Globe>,
