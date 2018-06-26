@@ -15,11 +15,8 @@ pub type Rot3 = na::Rotation3<f64>;
 pub type Iso3 = na::Isometry3<f64>;
 
 pub type TimeDelta = f64;
+
+#[derive(Default)]
 pub struct TimeDeltaResource(pub TimeDelta);
-impl Default for TimeDeltaResource {
-    fn default() -> TimeDeltaResource {
-        TimeDeltaResource(0.0)
-    }
-}
 
 pub type Mat4 = na::Matrix4<f64>;
