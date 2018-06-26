@@ -1,5 +1,5 @@
 use specs;
-use specs::{WriteStorage, Read, ReadExpect, WriteExpect};
+use specs::{WriteStorage, Read, WriteExpect};
 use slog::Logger;
 
 use super::{
@@ -45,7 +45,7 @@ impl<'a> specs::System<'a> for RecvSystem {
         WriteStorage<'a, Spatial>,
         WriteExpect<'a, RecvMessageQueue>,
         WriteExpect<'a, SendMessageQueue>,
-        ReadExpect<'a, EntityIds>,
+        Read<'a, EntityIds>,
         Read<'a, NodeResource>,
     );
 

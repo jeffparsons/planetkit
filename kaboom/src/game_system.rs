@@ -30,7 +30,6 @@ impl GameSystem {
         // Ensure resources we use are present.
         GameState::ensure(world);
         player::RecvMessageQueue::ensure(world);
-        EntityIds::ensure(world);
 
         GameSystem {
             log: parent_log.new(o!("system" => "game"))

@@ -1,5 +1,5 @@
 use specs;
-use specs::{Read, ReadExpect, WriteExpect, Entities, LazyUpdate, ReadStorage};
+use specs::{Read, WriteExpect, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
 
 use pk::Spatial;
@@ -36,7 +36,7 @@ impl<'a> specs::System<'a> for RecvSystem {
         Read<'a, LazyUpdate>,
         ReadStorage<'a, Spatial>,
         ReadStorage<'a, CellDweller>,
-        ReadExpect<'a, EntityIds>,
+        Read<'a, EntityIds>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

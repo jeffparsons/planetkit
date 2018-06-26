@@ -23,7 +23,6 @@ use serde::de::DeserializeOwned;
 use futures;
 use specs;
 
-use ::AutoResource;
 #[cfg(not(target_os="emscripten"))] pub use self::recv_system::RecvSystem;
 #[cfg(not(target_os="emscripten"))] pub use self::send_system::SendSystem;
 #[cfg(not(target_os="emscripten"))] pub use self::new_peer_system::NewPeerSystem;
@@ -212,11 +211,13 @@ pub struct EntityIds {
     pub mapping: HashMap<u64, specs::Entity>,
 }
 
-impl AutoResource for EntityIds {
-    fn new(_world: &mut specs::World) -> EntityIds {
+impl Default for EntityIds {
+    fn default() -> EntityIds {
         EntityIds {
             // The master will tell us what our namespace is.
             // TODO: make the master actually do that.
+            // TODO: this should probably be an Option until
+            // you find out...
             range: 0..100,
             mapping: HashMap::new(),
         }
