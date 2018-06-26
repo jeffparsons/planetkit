@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadExpect, LazyUpdate, Entities};
+use specs::{Read, LazyUpdate, Entities};
 
 use types::*;
 use globe;
@@ -105,7 +105,7 @@ pub fn create_simple_chase_camera_now(
 
 pub fn create_simple_chase_camera(
     entities: &Entities,
-    updater: &ReadExpect<LazyUpdate>,
+    updater: &Read<LazyUpdate>,
     player_character_entity: specs::Entity,
     default_camera: &mut DefaultCamera,
 ) -> specs::Entity {

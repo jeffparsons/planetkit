@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadExpect, WriteExpect, Entities, LazyUpdate, ReadStorage};
+use specs::{Read, ReadExpect, WriteExpect, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
 
 use pk::Spatial;
@@ -33,7 +33,7 @@ impl<'a> specs::System<'a> for RecvSystem {
         WriteExpect<'a, RecvMessageQueue>,
         WriteExpect<'a, SendMessageQueue<Message>>,
         Entities<'a>,
-        ReadExpect<'a, LazyUpdate>,
+        Read<'a, LazyUpdate>,
         ReadStorage<'a, Spatial>,
         ReadStorage<'a, CellDweller>,
         ReadExpect<'a, EntityIds>,

@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadExpect, LazyUpdate, Entities};
+use specs::{Read, LazyUpdate, Entities};
 
 use pk;
 use pk::globe::{Globe, Spec};
@@ -7,7 +7,7 @@ use pk::globe::{Globe, Spec};
 // Create a planet to fight on.
 pub fn create(
     entities: &Entities,
-    updater: &ReadExpect<LazyUpdate>,
+    updater: &Read<LazyUpdate>,
 ) -> specs::Entity {
     // Make it small enough that you can find another person easily enough.
     // TODO: eventually make it scale to the number of players present at the start of each round.
