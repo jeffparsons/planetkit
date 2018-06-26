@@ -80,6 +80,7 @@ pub struct RemoveBlockMessage {
 }
 
 /// `World`-global resource for outbound cell-dweller network messages.
+#[derive(Default)]
 pub struct SendMessageQueue {
     // We don't want to queue up any messages unless there's
     // actually a network system hanging around to consume them.
@@ -91,15 +92,6 @@ pub struct SendMessageQueue {
     // or make that thing you described above.
     pub has_consumer: bool,
     pub queue: VecDeque<SendMessage<CellDwellerMessage>>,
-}
-
-impl ::AutoResource for SendMessageQueue {
-    fn new(_world: &mut specs::World) -> SendMessageQueue {
-        SendMessageQueue {
-            has_consumer: false,
-            queue: VecDeque::new(),
-        }
-    }
 }
 
 /// `World`-global resource for inbound cell-dweller network messages.

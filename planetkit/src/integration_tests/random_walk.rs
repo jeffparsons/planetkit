@@ -39,13 +39,14 @@ impl Walker {
         // Do this across the board wherever you're doing `world.setup`!
         world.setup::<specs::Read<TimeDeltaResource>>();
         world.setup::<specs::Read<cell_dweller::ActiveCellDweller>>();
+        world.setup::<specs::Read<cell_dweller::SendMessageQueue>>();
 
         // Create systems.
         let chunk_sys = globe::ChunkSystem::new(&root_log);
 
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
         let mut movement_sys =
-            cell_dweller::MovementSystem::new(&mut world, movement_input_receiver, &root_log);
+            cell_dweller::MovementSystem::new(movement_input_receiver, &root_log);
         // Stop the player from getting stuck on cliffs; we want to test what
         // happens when they walk really aggressively all around the world, not what
         // happens when they fall into a hole and don't move anywhere.

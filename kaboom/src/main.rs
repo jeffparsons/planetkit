@@ -121,7 +121,7 @@ fn add_systems(
     let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
-    let send_mux_system = SendMuxSystem::new(logger, world);
+    let send_mux_system = SendMuxSystem::new(logger);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
     // TODO: these barriers are probably a bad idea;

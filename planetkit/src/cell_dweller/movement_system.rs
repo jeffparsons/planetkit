@@ -93,13 +93,9 @@ enum ForwardOrBackward {
 
 impl MovementSystem {
     pub fn new(
-        world: &mut specs::World,
         input_receiver: mpsc::Receiver<MovementEvent>,
         parent_log: &Logger,
     ) -> MovementSystem {
-        use ::AutoResource;
-        SendMessageQueue::ensure(world);
-
         MovementSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
