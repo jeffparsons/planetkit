@@ -1,5 +1,5 @@
 use specs;
-use specs::{Read, ReadExpect, Entities, ReadStorage, WriteStorage};
+use specs::{Read, Entities, ReadStorage, WriteStorage};
 use slog::Logger;
 
 use pk::types::*;
@@ -30,7 +30,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         WriteStorage<'a, Grenade>,
         WriteStorage<'a, Health>,
         ReadStorage<'a, Spatial>,
-        ReadExpect<'a, NodeResource>,
+        Read<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

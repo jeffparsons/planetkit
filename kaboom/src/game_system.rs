@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadStorage, WriteStorage, Read, ReadExpect, Write, WriteExpect, LazyUpdate, Entities};
+use specs::{ReadStorage, WriteStorage, Read, Write, WriteExpect, LazyUpdate, Entities};
 use slog::Logger;
 
 use pk;
@@ -28,7 +28,6 @@ impl GameSystem {
         use pk::AutoResource;
 
         // Ensure resources we use are present.
-        NodeResource::ensure(world);
         GameState::ensure(world);
         ClientState::ensure(world);
         player::RecvMessageQueue::ensure(world);
@@ -90,7 +89,7 @@ impl GameSystem {
 
 impl<'a> specs::System<'a> for GameSystem {
     type SystemData = (
-        ReadExpect<'a, NodeResource>,
+        Read<'a, NodeResource>,
         WriteExpect<'a, GameState>,
         WriteExpect<'a, ClientState>,
         Entities<'a>,

@@ -233,17 +233,11 @@ impl specs::Component for NetMarker {
 /// Used by some systems even if we're only running the game locally,
 /// because there are some generic systems (e.g. CellDweller mining)
 /// that need to know whether we are the master.
+#[derive(Default)]
 pub struct NodeResource {
     // Are we the server/owner of the game?
+    //
+    // This will get set to something meaningful
+    // when hosting/joining a game.
     pub is_master: bool,
-}
-
-impl AutoResource for NodeResource {
-    fn new(_world: &mut specs::World) -> NodeResource {
-        NodeResource {
-            // This will get set to something meaningful
-            // when hosting/joining a game.
-            is_master: false,
-        }
-    }
 }

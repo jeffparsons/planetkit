@@ -1,5 +1,5 @@
 use specs;
-use specs::{ReadExpect, Write, WriteExpect};
+use specs::{Read, Write, WriteExpect};
 use slog::Logger;
 use futures;
 
@@ -31,7 +31,6 @@ impl<G> SendSystem<G>
 
         // Ensure resources we use are present.
         NetworkPeers::<G>::ensure(world);
-        NodeResource::ensure(world);
 
         // Ensure ServerResource is present, and fetch the
         // channel ends we need from it.
@@ -87,7 +86,7 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
         Write<'a, SendMessageQueue<G>>,
         Write<'a, RecvMessageQueue<G>>,
         WriteExpect<'a, NetworkPeers<G>>,
-        ReadExpect<'a, NodeResource>,
+        Read<'a, NodeResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
