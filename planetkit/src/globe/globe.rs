@@ -7,7 +7,7 @@ use super::{origin_of_chunk_owning, origin_of_chunk_in_same_root_containing};
 use super::ChunkOrigin;
 use super::chunk::{Chunk, Cell};
 use super::spec::Spec;
-use super::gen::Gen;
+use super::gen::{Gen, SimpleGen};
 use super::chunk_pair::{ChunkPairOrigins, ChunkPair};
 
 // TODO: split out a WorldGen type that handles all the procedural
@@ -17,7 +17,7 @@ pub struct Globe {
     spec: Spec,
     // TODO: temporarily making this public because I'm planning to
     // rip it out of `Globe` anyway.
-    pub gen: Gen,
+    pub gen: Box<dyn Gen>,
     // Map chunk origins to chunks.
     //
     // TODO: you'll probably also want to store some lower-res
@@ -51,7 +51,7 @@ impl Globe {
     pub fn new(spec: Spec) -> Globe {
         Globe {
             spec: spec,
-            gen: Gen::new(spec),
+            gen: Box::new(SimpleGen::new(spec)),
             chunks: HashMap::new(),
             chunk_pairs: HashMap::new(),
         }

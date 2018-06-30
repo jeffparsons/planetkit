@@ -18,13 +18,19 @@ use super::chunk::{Cell, Material};
 /// The plan is for this to eventually be used with multiple
 /// implementations of globes, e.g., a full voxmap based globe,
 /// a distant blob in the sky, to a shiny dot in the distance.
-pub struct Gen {
+pub trait Gen: Send + Sync {
+    fn land_height(&self, column: GridPoint2) -> f64;
+    fn cell_at(&self, grid_point: GridPoint3) -> Cell;
+    fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>);
+}
+
+pub struct SimpleGen {
     spec: Spec,
     terrain_noise: noise::Fbm,
 }
 
-impl Gen {
-    pub fn new(spec: Spec) -> Gen {
+impl SimpleGen {
+    pub fn new(spec: Spec) -> SimpleGen {
         use noise::Seedable;
         use noise::MultiFractal;
 
@@ -47,13 +53,15 @@ impl Gen {
             .set_frequency(1.0 / 700.0)
             // TODO: probably allow a bigger seed; what's the smallest usize on any real platform?
             .set_seed(spec.seed);
-        Gen {
+        SimpleGen {
             spec: spec,
             terrain_noise: terrain_noise,
         }
     }
+}
 
-    pub fn land_height(&self, column: GridPoint2) -> f64 {
+impl Gen for SimpleGen {
+    fn land_height(&self, column: GridPoint2) -> f64 {
         use noise::NoiseFn;
 
         // Calculate height for this cell from world spec.
@@ -79,7 +87,7 @@ impl Gen {
         self.spec.ocean_radius + delta
     }
 
-    pub fn cell_at(&self, grid_point: GridPoint3) -> Cell {
+    fn cell_at(&self, grid_point: GridPoint3) -> Cell {
         let land_height = self.land_height(grid_point.rxy);
         let cell_pt3 = self.spec.cell_center_center(grid_point);
         // TEMP: ...
@@ -107,7 +115,7 @@ impl Gen {
         }
     }
 
-    pub fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>) {
+    fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>) {
         use rand;
         use rand::Rng;
 
