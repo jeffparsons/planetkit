@@ -8,7 +8,7 @@ use bytes::{BytesMut, BigEndian, ByteOrder};
 use futures::{self, Future};
 use tokio_core::reactor::{Remote, Handle};
 use tokio_core::net::{TcpListener, TcpStream};
-use tokio_io::codec::{Encoder, Decoder};
+use tokio_codec::{Encoder, Decoder};
 use slog::Logger;
 use serde_json;
 
@@ -266,14 +266,13 @@ fn handle_tcp_stream<G: GameMessage>(
 ) -> Box<Future<Item=(), Error=std::io::Error>> {
     use futures::Stream;
     use futures::Sink;
-    use tokio_io::AsyncRead;
 
     let codec = Codec::<G>{
         peer_addr: peer_addr,
         log: parent_log.new(o!()),
         _phantom_game_message: std::marker::PhantomData,
     };
-    let (sink, stream) = socket.framed(codec).split();
+    let (sink, stream) = codec.framed(socket).split();
 
     // Sender future
     let sink_error_log = parent_log.new(o!("peer_addr" => format!("{}", peer_addr)));

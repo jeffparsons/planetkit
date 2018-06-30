@@ -79,6 +79,7 @@ extern crate serde_json;
 // Stuff we can't run on the web yet.
 #[cfg(not(target_os="emscripten"))] extern crate tokio_core;
 #[cfg(not(target_os="emscripten"))] extern crate tokio_io;
+#[cfg(not(target_os="emscripten"))] extern crate tokio_codec;
 
 #[cfg(all(feature = "nightly", test))] extern crate test;
 
