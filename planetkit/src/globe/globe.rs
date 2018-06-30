@@ -327,36 +327,22 @@ impl Globe {
     // dumber component, e.g., `GlobeVoxMap`.
 
     pub fn load_or_build_chunk(&mut self, origin: ChunkOrigin) {
-        use rand;
-        use rand::Rng;
-
         let spec = self.spec();
+        let chunk_res = self.spec.chunk_resolution;
 
-        let mut cells: Vec<Cell> = Vec::new();
-        // Include cells _on_ the far edge of the chunk;
-        // even though we don't own them we'll need to draw part of them.
-        let end_x = origin.pos().x + spec.chunk_resolution[0];
-        let end_y = origin.pos().y + spec.chunk_resolution[1];
-        // Chunks don't share cells in the z-direction,
-        // but do in the x- and y-directions.
-        let end_z = origin.pos().z + spec.chunk_resolution[2] - 1;
-        for cell_z in origin.pos().z..(end_z + 1) {
-            for cell_y in origin.pos().y..(end_y + 1) {
-                for cell_x in origin.pos().x..(end_x + 1) {
-                    let grid_point = GridPoint3::new(origin.pos().root, cell_x, cell_y, cell_z);
-                    let mut cell = self.gen.cell_at(grid_point);
-                    // Temp hax?
-                    let mut rng = rand::thread_rng();
-                    cell.shade = 1.0 - 0.5 * rng.next_f32();
-                    cells.push(cell);
-                }
-            }
-        }
+        let mut cells: Vec<Cell> = Vec::with_capacity(
+            chunk_res[0] as usize *
+            chunk_res[1] as usize *
+            chunk_res[2] as usize
+        );
+
+        self.gen.populate_cells(origin, &mut cells);
+
         self.add_chunk(Chunk::new(
             origin,
             cells,
             spec.root_resolution,
-            spec.chunk_resolution,
+            chunk_res,
         ));
     }
 
