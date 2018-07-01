@@ -56,6 +56,8 @@ extern crate camera_controllers;
 extern crate vecmath;
 extern crate shader_version;
 extern crate nalgebra as na;
+extern crate nphysics3d as np3d;
+extern crate ncollide3d as nc3d;
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
