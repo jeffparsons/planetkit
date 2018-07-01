@@ -58,16 +58,16 @@ impl Globe {
     }
 
     pub fn new_example() -> Globe {
-        Globe::new(Spec {
-            seed: 14,
-            floor_radius: 25.0,
-            ocean_radius: 66.6,
-            block_height: 0.65,
-            root_resolution: [64, 128],
+        Globe::new(Spec::new(
+            14,
+            25.0,
+            66.6,
+            0.65,
+            [64, 128],
             // Chunks should probably be taller, but short chunks are a bit
             // better for now in exposing bugs visually.
-            chunk_resolution: [16, 16, 4],
-        })
+            [16, 16, 4],
+        ))
     }
 
     pub fn new_earth_scale_example() -> Globe {

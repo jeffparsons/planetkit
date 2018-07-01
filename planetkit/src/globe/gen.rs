@@ -51,8 +51,8 @@ impl SimpleGen {
         // will probably depend on planet size.
             .set_octaves(6)
             .set_frequency(1.0 / 700.0)
-            // TODO: probably allow a bigger seed; what's the smallest usize on any real platform?
-            .set_seed(spec.seed);
+            // Truncate seed to make it fit what `noise` expects.
+            .set_seed(spec.seed as u32);
         SimpleGen {
             spec: spec,
             terrain_noise: terrain_noise,
@@ -139,7 +139,7 @@ impl Gen for SimpleGen {
                     let mut cell = self.cell_at(grid_point);
                     // Temp hax?
                     let mut rng = rand::thread_rng();
-                    cell.shade = 1.0 - 0.5 * rng.next_f32();
+                    cell.shade = 1.0 - 0.5 * rng.gen::<f32>();
                     cells.push(cell);
                 }
             }

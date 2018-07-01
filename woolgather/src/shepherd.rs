@@ -19,8 +19,7 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
         );
         let globe_spec = globe.spec();
         // Seed spawn point RNG with world seed.
-        let seed = globe_spec.seed;
-        let mut rng = XorShiftRng::from_seed([seed, seed, seed, seed]);
+        let mut rng = XorShiftRng::from_seed(globe_spec.seed_as_u8_array);
         let shepherd_pos = globe
             .air_above_random_surface_dry_land(
                 &mut rng,

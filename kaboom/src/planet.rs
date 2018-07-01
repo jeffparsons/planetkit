@@ -15,18 +15,18 @@ pub fn create(
     let ocean_radius = 30.0;
     let crust_depth = 25.0;
     let floor_radius = ocean_radius - crust_depth;
-    let spec = Spec {
+    let spec = Spec::new(
         // TODO: random seed every time.
-        seed: 14,
-        floor_radius: floor_radius,
-        ocean_radius: ocean_radius,
-        block_height: 0.65,
+        14,
+        floor_radius,
+        ocean_radius,
+        0.65,
         // TODO: calculate this (experimentally if necessary) based on the size of the blocks you want
-        root_resolution: [64, 128],
+        [64, 128],
         // Chunks should probably be taller, but short chunks are a bit
         // better for now in exposing bugs visually.
-        chunk_resolution: [16, 16, 4],
-    };
+        [16, 16, 4],
+    );
     let globe = Globe::new(spec);
 
     let entity = entities.create();

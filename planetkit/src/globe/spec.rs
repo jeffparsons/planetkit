@@ -15,7 +15,10 @@ use grid::{GridCoord, GridPoint2, GridPoint3};
 // of globes.
 #[derive(Clone, Copy)]
 pub struct Spec {
-    pub seed: u32,
+    pub seed: u64,
+    // `rand` consumes PRNG seeds from a `[u8; 16]`,
+    // so we store it as that (big-endian) as well for convenience.
+    pub seed_as_u8_array: [u8; 16],
     pub floor_radius: f64,
     // NOTE: Don't let ocean radius be a neat multiple of block
     // height above floor radius, or we'll end up with
@@ -30,7 +33,45 @@ pub struct Spec {
 }
 
 impl Spec {
+    // TODO: Replace with builder pattern.
+    pub fn new(
+        // TODO: bump up to u128 when `bytes` releases
+        // support for that.
+        seed: u64,
+        floor_radius: f64,
+        ocean_radius: f64,
+        block_height: f64,
+        root_resolution: [GridCoord; 2],
+        chunk_resolution: [GridCoord; 3],
+    ) -> Spec {
+        // Convert seed to `u8` array for convenience when providing
+        // it to `rand`.
+        use bytes::{BigEndian, ByteOrder};
+        let mut seed_as_u8_array = [0u8; 16];
+        // TODO: Just writing the seed twice for now;
+        // will use an actual `u128` seed when `bytes` supports
+        // writing that.
+        BigEndian::write_u64(&mut seed_as_u8_array[..8], seed);
+        BigEndian::write_u64(&mut seed_as_u8_array[8..], seed);
+
+        Spec {
+            seed: seed,
+            seed_as_u8_array: seed_as_u8_array,
+            floor_radius: floor_radius,
+            ocean_radius: ocean_radius,
+            block_height: block_height,
+            root_resolution: root_resolution,
+            chunk_resolution: chunk_resolution,
+        }
+    }
+
     pub fn new_earth_scale_example() -> Spec {
+        // TODO: This only coincidentally puts you on land.
+        // Implement deterministic (PRNG) land finding so that the seed does not matter.
+        //
+        // ^^ TODO: Is this still true? I think this is actually implemented now.
+        let seed = 14;
+
         let ocean_radius = 6_371_000.0;
         // TODO: actually more like 60_000 when we know how to:
         // - Unload chunks properly
@@ -38,18 +79,16 @@ impl Spec {
         //   so we don't have to start at bedrock and search up.
         let crust_depth = 60.0;
         let floor_radius = ocean_radius - crust_depth;
-        Spec {
-            // TODO: This only coincidentally puts you on land.
-            // Implement deterministic (PRNG) land finding so that the seed does not matter.
-            seed: 14,
-            floor_radius: floor_radius,
-            ocean_radius: ocean_radius,
-            block_height: 0.65,
-            root_resolution: [8388608, 16777216],
+        Spec::new(
+            seed,
+            floor_radius,
+            ocean_radius,
+            0.65,
+            [8388608, 16777216],
             // Chunks should probably be taller, but short chunks are a bit
             // better for now in exposing bugs visually.
-            chunk_resolution: [16, 16, 4],
-        }
+            [16, 16, 4],
+        )
     }
 
     pub fn is_valid(&self) -> bool {
