@@ -1,4 +1,4 @@
-use specs;
+use specs::{self, Builder};
 use pk;
 use pk::types::*;
 use pk::grid;

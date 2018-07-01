@@ -2,7 +2,7 @@ use std::sync::mpsc;
 
 use slog;
 use globe;
-use specs;
+use specs::{self, Builder};
 use cell_dweller;
 use types::*;
 

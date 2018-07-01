@@ -202,7 +202,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use specs;
+    use specs::{self, Builder};
     use na;
 
     use super::*;
