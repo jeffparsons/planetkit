@@ -1,5 +1,8 @@
 use na;
 
+// TODO: Derive everything else from this.
+pub type Real = f64;
+
 // Common types for all of PlanetKit.
 //
 // REVISIT: should some of these actually be `f32`

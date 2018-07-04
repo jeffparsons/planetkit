@@ -122,6 +122,7 @@ fn add_systems(
     let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
+    let nphysics_world_system = pk::nphysics::WorldSystem::new();
     let send_mux_system = SendMuxSystem::new(logger);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
@@ -142,6 +143,7 @@ fn add_systems(
         .with(death_system, "death", &[])
         .with(velocity_system, "velocity", &[])
         .with(gravity_system, "gravity", &[])
+        .with(nphysics_world_system, "nphysics_world", &[])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that
