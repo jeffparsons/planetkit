@@ -5,17 +5,17 @@ use types::*;
 use super::WorldResource;
 
 /// Steps the `nphysics` World.
-pub struct WorldSystem {
+pub struct PhysicsSystem {
 }
 
-impl WorldSystem {
-    pub fn new() -> WorldSystem {
-        WorldSystem {
+impl PhysicsSystem {
+    pub fn new() -> PhysicsSystem {
+        PhysicsSystem {
         }
     }
 }
 
-impl<'a> specs::System<'a> for WorldSystem {
+impl<'a> specs::System<'a> for PhysicsSystem {
     type SystemData = (
         Read<'a, TimeDeltaResource>,
         Write<'a, WorldResource>,

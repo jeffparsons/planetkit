@@ -1,6 +1,6 @@
-mod world_system;
+mod physics_system;
 
-pub use self::world_system::WorldSystem;
+pub use self::physics_system::PhysicsSystem;
 
 use nphysics3d::world::World;
 
