@@ -5,6 +5,7 @@ use slog::Logger;
 use pk::Spatial;
 use pk::net::{EntityIds, SendMessageQueue, Destination, Transport, SendMessage};
 use pk::cell_dweller::CellDweller;
+use pk::nphysics::WorldResource;
 
 use ::message::Message;
 use super::RecvMessageQueue;
@@ -32,6 +33,7 @@ impl<'a> specs::System<'a> for RecvSystem {
         ReadStorage<'a, Spatial>,
         ReadStorage<'a, CellDweller>,
         Read<'a, EntityIds>,
+        Write<'a, WorldResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -43,6 +45,7 @@ impl<'a> specs::System<'a> for RecvSystem {
             spatials,
             cell_dwellers,
             entity_ids,
+            mut world_resource,
         ) = data;
 
         while let Some(message) = recv_message_queue.queue.pop_front() {
@@ -96,6 +99,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                         &spatials,
                         &self.log,
                         new_grenade_message.fired_by_player_id,
+                        &mut world_resource,
                     );
                 },
             }

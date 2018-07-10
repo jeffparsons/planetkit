@@ -1,6 +1,6 @@
 use na;
 use specs;
-use specs::{WriteStorage, Read};
+use specs::{WriteStorage, Read, Write};
 use specs::Entities;
 use slog::Logger;
 
@@ -8,6 +8,7 @@ use types::*;
 use globe::{Globe, View, ChunkView};
 use render::{Visual, ProtoMesh, Vertex};
 use Spatial;
+use nphysics::WorldResource;
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.
@@ -37,6 +38,7 @@ impl ChunkViewSystem {
         // TODO: I made `MaybeMutStorage` for `SpatialStorage`, so just pluck
         // that out somewhere public and use that.
         chunk_views: specs::WriteStorage<'a, ChunkView>,
+        world_resource: &mut Write<WorldResource>,
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.
@@ -124,6 +126,39 @@ impl ChunkViewSystem {
                 // in that type to avoid mistakes.
                 continue;
             }
+
+            // Add the terrain mesh to the physics world.
+            // TODO: This is a hack. Not here. Need to come up with
+            // a better way of doing "reactive" stuff where there
+            // are multiple downstream things (visual mesh, physics
+            // mesh) derived from a chunk.
+            use ncollide3d::shape::{TriMesh, ShapeHandle};
+            use nphysics3d::object::{BodyHandle, Material};
+            let chunk_origin_pos = globe.spec().cell_bottom_center(*chunk_view.origin.pos());
+            let vertices: Vec<Pt3> = vertex_data
+                .iter()
+                .map(|v| {
+                    Pt3::new(
+                        v.a_pos[0].into(),
+                        v.a_pos[1].into(),
+                        v.a_pos[2].into(),
+                    )
+                })
+                .collect();
+            let indices: Vec<na::Point3<usize>> = index_data
+                .chunks(3)
+                .map(|slice| na::Point3::new(slice[0] as usize, slice[1] as usize, slice[2] as usize))
+                .collect();
+            let tri_mesh = TriMesh::<Real>::new(vertices, indices, None);
+            let tri_mesh_handle = ShapeHandle::new(tri_mesh);
+            let world = &mut world_resource.world;
+            let collision_object_handle = world.add_collider(
+                0.01 as Real, // TODO: What's appropriate?
+                tri_mesh_handle,
+                BodyHandle::ground(),
+                Iso3::new(chunk_origin_pos.coords, na::zero()),
+                Material::default(),
+            );
 
             visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
 
@@ -233,11 +268,13 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
      WriteStorage<'a, Globe>,
      WriteStorage<'a, Visual>,
      WriteStorage<'a, Spatial>,
-     WriteStorage<'a, ChunkView>);
+     WriteStorage<'a, ChunkView>,
+     Write<'a, WorldResource>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (entities, dt, mut globes, mut visuals, mut spatials, mut chunk_views) = data;
+        let (entities, dt, mut globes, mut visuals, mut spatials, mut chunk_views, mut world_resource) = data;
 
         self.seconds_since_last_geometry_creation += dt.0;
 
@@ -272,6 +309,6 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
 
         // Build geometry for some chunks; throttled
         // so we don't spend too much time doing this each frame.
-        self.build_chunk_geometry(globes, visuals, chunk_views);
+        self.build_chunk_geometry(globes, visuals, chunk_views, &mut world_resource);
     }
 }

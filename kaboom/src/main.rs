@@ -10,6 +10,9 @@ extern crate serde;
 extern crate clap;
 extern crate piston;
 extern crate piston_window;
+extern crate nalgebra as na;
+extern crate ncollide3d;
+extern crate nphysics3d;
 
 mod player;
 mod game_state;
@@ -123,6 +126,8 @@ fn add_systems(
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
     let nphysics_world_system = pk::nphysics::WorldSystem::new();
+    let pre_nphysics_system = weapon::PreNphysicsSystem::new();
+    let post_nphysics_system = weapon::PostNphysicsSystem::new();
     let send_mux_system = SendMuxSystem::new(logger);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
@@ -141,9 +146,12 @@ fn add_systems(
         .with(shoot_system, "shoot_grenade", &[])
         .with(explode_system, "explode_grenade", &[])
         .with(death_system, "death", &[])
-        .with(velocity_system, "velocity", &[])
         .with(gravity_system, "gravity", &[])
-        .with(nphysics_world_system, "nphysics_world", &[])
+        .with(velocity_system, "velocity", &["gravity"])
+        // TODO: move gravity into nphysics as a force.
+        .with(pre_nphysics_system, "pre_nphysics", &["gravity"])
+        .with(nphysics_world_system, "nphysics_world", &["pre_nphysics"])
+        .with(post_nphysics_system, "post_nphysics", &["nphysics_world"])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that

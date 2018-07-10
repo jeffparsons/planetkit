@@ -14,3 +14,9 @@ exclude = [
     # it all the time on non-web targets.
     "webdemo",
 ]
+
+# I can't upgrade ncollide to 0.16.x because there isn't
+# yet a compatible nphysics release. So I've backported
+# the one fix I need from that series.
+[patch.crates-io]
+ncollide3d = { git = 'https://github.com/jeffparsons/ncollide', branch = '0.15.4_plus_triangle_edges_fix' }
