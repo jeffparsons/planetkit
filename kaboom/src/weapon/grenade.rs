@@ -9,7 +9,6 @@ use specs::{
 };
 use slog::Logger;
 use ncollide3d::shape::ShapeHandle;
-use nphysics3d::object::{ColliderHandle, BodyHandle};
 
 use pk::types::*;
 use pk::render;
@@ -17,29 +16,27 @@ use pk::cell_dweller::CellDweller;
 use pk::physics::Velocity;
 use pk::physics::Mass;
 use pk::Spatial;
-use pk::physics::WorldResource;
+use pk::physics::{WorldResource, RigidBody};
 
 use ::player::PlayerId;
 
-/// Velocity relative to some parent entity.
-///
-/// Assumed to also be a `Spatial`. (That's where its parent
-/// reference is stored, and there's no meaning to velocity
-/// without position.)
 pub struct Grenade {
     pub time_to_live_seconds: f64,
     // So that we don't accidentally make it explode
     // immediately after launching. This is a bit of a hack
     // because we launch it from the player's feet at the moment.
+    //
+    // But we probably want to support this in some form.
+    // I'm thinking being able to set the max number of bounces
+    // before you fire (like setting the grenade timer in Worms),
+    // and have it ignore bounces that happen in rapid succession,
+    // or immediately after firing.
     pub time_lived_seconds: f64,
     pub fired_by_player_id: PlayerId,
-    // Physics stuff
-    pub collider_handle: ColliderHandle,
-    pub body_handle: BodyHandle,
 }
 
 impl Grenade {
-    pub fn new(fired_by_player_id: PlayerId, collider_handle: ColliderHandle, body_handle: BodyHandle) -> Grenade {
+    pub fn new(fired_by_player_id: PlayerId) -> Grenade {
         Grenade {
             // It should usually hit terrain before running out
             // of time. But if you fire from a tall hill,
@@ -47,15 +44,12 @@ impl Grenade {
             time_to_live_seconds: 3.0,
             time_lived_seconds: 0.0,
             fired_by_player_id: fired_by_player_id,
-            collider_handle: collider_handle,
-            body_handle: body_handle,
         }
     }
 }
 
 impl specs::Component for Grenade {
-    // TODO: more appropriate storage?
-    type Storage = specs::VecStorage<Grenade>;
+    type Storage = specs::HashMapStorage<Grenade>;
 }
 
 /// Spawn a grenade travelling up and forward away from the player.
@@ -130,16 +124,12 @@ pub fn shoot_grenade(
         Material::default(),
     );
 
-    // TODO: should this just be a sensor, not a collider??
-    // Because the grenade doesn't need to be able to bounce.
-    // (Or would that be even cooler; if you can _choose_
-    // when you fire it? :D)
-
     // Build the entity.
     let entity = entities.create();
     updater.insert(entity, bullet_visual);
     updater.insert(entity, bullet_spatial);
     updater.insert(entity, bullet_velocity);
     updater.insert(entity, Mass{});
-    updater.insert(entity, Grenade::new(fired_by_player_id, collider_handle, rigid_body_handle));
+    updater.insert(entity, Grenade::new(fired_by_player_id));
+    updater.insert(entity, RigidBody::new(rigid_body_handle, collider_handle));
 }

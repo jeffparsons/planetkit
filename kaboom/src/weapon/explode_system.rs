@@ -33,6 +33,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         ReadStorage<'a, Spatial>,
         Read<'a, NodeResource>,
         Read<'a, physics::WorldResource>,
+        ReadStorage<'a, physics::RigidBody>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -47,11 +48,12 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             spatials,
             node_resource,
             world_resource,
+            rigid_bodies,
         ) = data;
 
         let nphysics_world = &world_resource.world;
 
-        for (grenade_entity, grenade) in (&*entities, &mut grenades).join() {
+        for (grenade_entity, grenade, rigid_body) in (&*entities, &mut grenades, &rigid_bodies).join() {
             // Count down each grenade's timer, and remove it if
             // it's been alive too long.
             grenade.time_to_live_seconds -= dt.0;
@@ -86,9 +88,9 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                             println!("Got a contact event: {:?}, {:?}", a, b);
 
                             // Collision could be either way around...?
-                            *a == grenade.collider_handle
+                            *a == rigid_body.collider_handle
                             ||
-                            *b == grenade.collider_handle
+                            *b == rigid_body.collider_handle
                         },
                         _ => false,
                     }

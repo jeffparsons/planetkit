@@ -152,7 +152,8 @@ impl ChunkViewSystem {
             let tri_mesh = TriMesh::<Real>::new(vertices, indices, None);
             let tri_mesh_handle = ShapeHandle::new(tri_mesh);
             let world = &mut world_resource.world;
-            let collision_object_handle = world.add_collider(
+            // TODO: store this somewhere so we can clean it up.
+            let _collision_object_handle = world.add_collider(
                 0.01 as Real, // TODO: What's appropriate?
                 tri_mesh_handle,
                 BodyHandle::ground(),

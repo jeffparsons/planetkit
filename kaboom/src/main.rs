@@ -126,8 +126,6 @@ fn add_systems(
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
     let physics_system = pk::physics::PhysicsSystem::new();
-    let pre_nphysics_system = weapon::PreNphysicsSystem::new();
-    let post_nphysics_system = weapon::PostNphysicsSystem::new();
     let send_mux_system = SendMuxSystem::new(logger);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
@@ -149,9 +147,7 @@ fn add_systems(
         .with(gravity_system, "gravity", &[])
         .with(velocity_system, "velocity", &["gravity"])
         // TODO: move gravity into nphysics as a force.
-        .with(pre_nphysics_system, "pre_nphysics", &["gravity"])
-        .with(physics_system, "physics", &["pre_nphysics"])
-        .with(post_nphysics_system, "post_nphysics", &["physics"])
+        .with(physics_system, "physics", &["gravity"])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that

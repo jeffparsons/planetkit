@@ -2,8 +2,6 @@ mod shoot_system;
 mod explode_system;
 mod grenade;
 mod recv_system;
-mod pre_nphysics_system;
-mod post_nphysics_system;
 
 pub use self::shoot_system::ShootSystem;
 pub use self::recv_system::RecvSystem;
@@ -11,8 +9,6 @@ pub use self::explode_system::ExplodeSystem;
 pub use self::shoot_system::ShootEvent;
 pub use self::shoot_system::ShootInputAdapter;
 pub use self::grenade::Grenade;
-pub use self::pre_nphysics_system::PreNphysicsSystem;
-pub use self::post_nphysics_system::PostNphysicsSystem;
 
 use std::collections::vec_deque::VecDeque;
 
