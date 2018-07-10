@@ -98,7 +98,6 @@ pub mod movement;
 pub mod camera;
 pub mod net;
 pub mod physics;
-pub mod nphysics;
 
 mod spatial;
 pub use spatial::Spatial;

@@ -125,7 +125,7 @@ fn add_systems(
     let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
-    let physics_system = pk::nphysics::PhysicsSystem::new();
+    let physics_system = pk::physics::PhysicsSystem::new();
     let pre_nphysics_system = weapon::PreNphysicsSystem::new();
     let post_nphysics_system = weapon::PostNphysicsSystem::new();
     let send_mux_system = SendMuxSystem::new(logger);

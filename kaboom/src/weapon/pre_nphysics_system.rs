@@ -8,7 +8,7 @@ use specs::{Read, Write, ReadStorage};
 
 use pk::types::*;
 use pk::physics::Velocity;
-use pk::nphysics::WorldResource;
+use pk::physics::WorldResource;
 
 use super::Grenade;
 

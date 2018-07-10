@@ -8,7 +8,7 @@ use types::*;
 use globe::{Globe, View, ChunkView};
 use render::{Visual, ProtoMesh, Vertex};
 use Spatial;
-use nphysics::WorldResource;
+use physics::WorldResource;
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.

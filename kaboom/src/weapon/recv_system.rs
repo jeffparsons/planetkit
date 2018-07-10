@@ -5,7 +5,7 @@ use slog::Logger;
 use pk::Spatial;
 use pk::net::{EntityIds, SendMessageQueue, Destination, Transport, SendMessage};
 use pk::cell_dweller::CellDweller;
-use pk::nphysics::WorldResource;
+use pk::physics::WorldResource;
 
 use ::message::Message;
 use super::RecvMessageQueue;

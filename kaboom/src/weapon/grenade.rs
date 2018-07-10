@@ -17,7 +17,7 @@ use pk::cell_dweller::CellDweller;
 use pk::physics::Velocity;
 use pk::physics::Mass;
 use pk::Spatial;
-use pk::nphysics::WorldResource;
+use pk::physics::WorldResource;
 
 use ::player::PlayerId;
 

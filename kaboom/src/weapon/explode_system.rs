@@ -5,7 +5,7 @@ use slog::Logger;
 use pk::types::*;
 use pk::Spatial;
 use pk::net::NodeResource;
-use pk::nphysics;
+use pk::physics;
 
 use ::health::Health;
 use super::grenade::Grenade;
@@ -32,7 +32,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         WriteStorage<'a, Health>,
         ReadStorage<'a, Spatial>,
         Read<'a, NodeResource>,
-        Read<'a, nphysics::WorldResource>,
+        Read<'a, physics::WorldResource>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
