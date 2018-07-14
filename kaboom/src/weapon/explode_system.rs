@@ -1,5 +1,5 @@
 use specs;
-use specs::{Read, Entities, ReadStorage, WriteStorage};
+use specs::{Read, Write, Entities, ReadStorage, WriteStorage};
 use slog::Logger;
 
 use pk::types::*;
@@ -34,6 +34,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         Read<'a, NodeResource>,
         Read<'a, physics::WorldResource>,
         ReadStorage<'a, physics::RigidBody>,
+        Write<'a, physics::RemoveBodyQueue>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -49,9 +50,11 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             node_resource,
             world_resource,
             rigid_bodies,
+            mut remove_body_queue_resource,
         ) = data;
 
         let nphysics_world = &world_resource.world;
+        let remove_body_queue = &mut remove_body_queue_resource.queue;
 
         for (grenade_entity, grenade, rigid_body) in (&*entities, &mut grenades, &rigid_bodies).join() {
             // Count down each grenade's timer, and remove it if
@@ -85,8 +88,6 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 .any(|contact_event| {
                     match contact_event {
                         ContactEvent::Started(a, b) => {
-                            println!("Got a contact event: {:?}, {:?}", a, b);
-
                             // Collision could be either way around...?
                             *a == rigid_body.collider_handle
                             ||
@@ -97,11 +98,20 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 });
 
             if did_hit_something || grenade.time_to_live_seconds <= 0.0 {
-                info!(self.log, "Kaboom!"; "did_hit_something" => did_hit_something);
+                debug!(self.log, "Kaboom!"; "did_hit_something" => did_hit_something);
 
                 entities.delete(grenade_entity).expect("Wrong entity generation!");
 
-                // TODO: remove from physics world.
+                // Queue it for removal from physics world.
+                // TODO: These are hacks until Specs addresses reading
+                // the data of removed components. (Presumably some extension
+                // to the existing FlaggedStorage where you indicate that
+                // you want the channel to carry full component data
+                // with each event?)
+                use pk::physics::RemoveBodyMessage;
+                remove_body_queue.push_back(RemoveBodyMessage {
+                    handle: rigid_body.body_handle,
+                });
 
                 // NOTE: Hacks until we have saveload and figure out how to do networking better.
                 if !node_resource.is_master {

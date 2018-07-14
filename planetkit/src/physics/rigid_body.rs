@@ -1,8 +1,6 @@
 use specs;
 use nphysics3d::object::{BodyHandle, ColliderHandle};
 
-// use pk::types::*;
-
 /// A rigid body simulated by nphysics.
 pub struct RigidBody {
     pub body_handle: BodyHandle,

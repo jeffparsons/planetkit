@@ -17,7 +17,9 @@ pub use self::gravity_system::GravitySystem;
 pub use self::physics_system::PhysicsSystem;
 pub use self::rigid_body::RigidBody;
 
+use std::collections::vec_deque::VecDeque;
 use nphysics3d::world::World;
+use nphysics3d::object::BodyHandle;
 
 use types::*;
 
@@ -36,4 +38,18 @@ impl Default for WorldResource {
             world: World::new(),
         }
     }
+}
+
+// Work-around for not being able to access removed components
+// in Specs FlaggedStorage. This requires systems that remove
+// any RigidBody (etc.) components, directly or indirectly by
+// deleting the entity, to push an event into this channel.
+
+pub struct RemoveBodyMessage {
+    pub handle: BodyHandle,
+}
+
+#[derive(Default)]
+pub struct RemoveBodyQueue {
+    pub queue: VecDeque<RemoveBodyMessage>,
 }
