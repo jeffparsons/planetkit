@@ -34,7 +34,9 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         Read<'a, NodeResource>,
         Read<'a, physics::WorldResource>,
         ReadStorage<'a, physics::RigidBody>,
+        ReadStorage<'a, physics::Collider>,
         Write<'a, physics::RemoveBodyQueue>,
+        Write<'a, physics::RemoveColliderQueue>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -50,13 +52,16 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             node_resource,
             world_resource,
             rigid_bodies,
+            colliders,
             mut remove_body_queue_resource,
+            mut remove_collider_queue_resource,
         ) = data;
 
         let nphysics_world = &world_resource.world;
         let remove_body_queue = &mut remove_body_queue_resource.queue;
+        let remove_collider_queue = &mut remove_collider_queue_resource.queue;
 
-        for (grenade_entity, grenade, rigid_body) in (&*entities, &mut grenades, &rigid_bodies).join() {
+        for (grenade_entity, grenade, rigid_body, collider) in (&*entities, &mut grenades, &rigid_bodies, &colliders).join() {
             // Count down each grenade's timer, and remove it if
             // it's been alive too long.
             grenade.time_to_live_seconds -= dt.0;
@@ -89,9 +94,9 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                     match contact_event {
                         ContactEvent::Started(a, b) => {
                             // Collision could be either way around...?
-                            *a == rigid_body.collider_handle
+                            *a == collider.collider_handle
                             ||
-                            *b == rigid_body.collider_handle
+                            *b == collider.collider_handle
                         },
                         _ => false,
                     }
@@ -108,9 +113,12 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 // to the existing FlaggedStorage where you indicate that
                 // you want the channel to carry full component data
                 // with each event?)
-                use pk::physics::RemoveBodyMessage;
+                use pk::physics::{RemoveBodyMessage, RemoveColliderMessage};
                 remove_body_queue.push_back(RemoveBodyMessage {
                     handle: rigid_body.body_handle,
+                });
+                remove_collider_queue.push_back(RemoveColliderMessage {
+                    handle: collider.collider_handle,
                 });
 
                 // NOTE: Hacks until we have saveload and figure out how to do networking better.

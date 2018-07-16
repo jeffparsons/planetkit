@@ -16,7 +16,7 @@ use pk::cell_dweller::CellDweller;
 use pk::physics::Velocity;
 use pk::physics::Mass;
 use pk::Spatial;
-use pk::physics::{WorldResource, RigidBody};
+use pk::physics::{WorldResource, RigidBody, Collider};
 
 use ::player::PlayerId;
 
@@ -131,5 +131,6 @@ pub fn shoot_grenade(
     updater.insert(entity, bullet_velocity);
     updater.insert(entity, Mass{});
     updater.insert(entity, Grenade::new(fired_by_player_id));
-    updater.insert(entity, RigidBody::new(rigid_body_handle, collider_handle));
+    updater.insert(entity, Collider::new(collider_handle));
+    updater.insert(entity, RigidBody::new(rigid_body_handle));
 }

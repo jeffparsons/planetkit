@@ -36,6 +36,7 @@ pub struct PhysicsSystemData<'a> {
     spatials: WriteStorage<'a, Spatial>,
     rigid_bodies: ReadStorage<'a, RigidBody>,
     remove_body_queue: Write<'a, super::RemoveBodyQueue>,
+    remove_collider_queue: Write<'a, super::RemoveColliderQueue>,
 }
 
 impl<'a> specs::System<'a> for PhysicsSystem {
@@ -51,7 +52,7 @@ impl<'a> specs::System<'a> for PhysicsSystem {
 
         let nphysics_world = &mut data.world_resource.world;
 
-        // Remove any bodies that have had their corresponding
+        // Remove any bodies and colliders that have had their corresponding
         // components in Specs land removed.
         //
         // Note that we might be removing them before the
@@ -59,6 +60,14 @@ impl<'a> specs::System<'a> for PhysicsSystem {
         // look up bodies below, we need to ignore any we don't find.
         while let Some(message) = data.remove_body_queue.queue.pop_front() {
             nphysics_world.remove_bodies(&[message.handle]);
+        }
+        while let Some(message) = data.remove_collider_queue.queue.pop_front() {
+            // If there was also an associated body,
+            // this might have been implicitly removed.
+            let collision_world = nphysics_world.collision_world_mut();
+            if collision_world.collision_object(message.handle).is_some() {
+                collision_world.remove(&[message.handle]);
+            }
         }
 
         // Copy all rigid body velocities into the nphysics world.
