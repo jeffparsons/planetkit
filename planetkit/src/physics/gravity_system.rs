@@ -8,6 +8,8 @@ use super::Mass;
 use Spatial;
 use globe::Globe;
 
+// TODO: Reimplement gravity in Nphysics.
+
 /// Accelerates everything with mass toward the first globe we find.
 // (TODO: this is horrible hacks, but works for Kaboom.)
 pub struct GravitySystem {

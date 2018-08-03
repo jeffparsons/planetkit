@@ -129,7 +129,7 @@ impl<'a> specs::System<'a> for ShootSystem {
 
             // Place the bullet in the same location as the player,
             // relative to the same globe.
-            info!(self.log, "Fire!");
+            debug!(self.log, "Fire!");
 
             // Ask the server/master to spawn a grenade.
             // (TODO: really need to decide on termonology around server/master/client/peer/etc.)

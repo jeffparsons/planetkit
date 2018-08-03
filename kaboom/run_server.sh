@@ -1,3 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
 
-cargo run "$@" -- listen
+set -e
+
+cargo run --release "$@" -- listen

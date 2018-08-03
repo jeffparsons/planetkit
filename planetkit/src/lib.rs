@@ -56,13 +56,15 @@ extern crate camera_controllers;
 extern crate vecmath;
 extern crate shader_version;
 extern crate nalgebra as na;
-extern crate nphysics3d as np3d;
-extern crate ncollide3d as nc3d;
+extern crate nphysics3d;
+extern crate ncollide3d;
 #[macro_use]
 extern crate slog;
 extern crate slog_term;
 extern crate slog_async;
 extern crate shred;
+#[macro_use]
+extern crate shred_derive;
 extern crate specs;
 extern crate num_traits;
 #[macro_use]

@@ -119,7 +119,7 @@ impl AppBuilder {
 
         let mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &self.root_log);
 
-        let physics_sys = cell_dweller::PhysicsSystem::new(
+        let cd_physics_sys = cell_dweller::PhysicsSystem::new(
             &self.root_log,
             0.1, // Seconds between falls
         );
@@ -138,7 +138,7 @@ impl AppBuilder {
                 .with(movement_sys, "cd_movement", &[])
                 .with(mining_sys, "cd_mining", &["cd_movement"])
                 .with_barrier()
-                .with(physics_sys, "physics", &[])
+                .with(cd_physics_sys, "cd_physics", &[])
                 .with(chunk_sys, "chunk", &[])
                 // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
                 // to be able to run it in parallel.

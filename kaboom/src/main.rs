@@ -10,6 +10,9 @@ extern crate serde;
 extern crate clap;
 extern crate piston;
 extern crate piston_window;
+extern crate nalgebra as na;
+extern crate ncollide3d;
+extern crate nphysics3d;
 
 mod player;
 mod game_state;
@@ -122,6 +125,7 @@ fn add_systems(
     let death_system = death_system::DeathSystem::new(logger);
     let velocity_system = pk::physics::VelocitySystem::new(logger);
     let gravity_system = pk::physics::GravitySystem::new(logger);
+    let physics_system = pk::physics::PhysicsSystem::new();
     let send_mux_system = SendMuxSystem::new(logger);
     let send_system = pk::net::SendSystem::<Message>::new(logger, world);
 
@@ -140,8 +144,10 @@ fn add_systems(
         .with(shoot_system, "shoot_grenade", &[])
         .with(explode_system, "explode_grenade", &[])
         .with(death_system, "death", &[])
-        .with(velocity_system, "velocity", &[])
         .with(gravity_system, "gravity", &[])
+        .with(velocity_system, "velocity", &["gravity"])
+        // TODO: move gravity into nphysics as a force.
+        .with(physics_system, "physics", &["gravity"])
         // TODO: explicitly add all systems here,
         // instead of whatever "simple" wants to throw at you.
         // At the moment they might execute in an order that

@@ -1,6 +1,6 @@
 use na;
 use specs;
-use specs::{WriteStorage, Read};
+use specs::{WriteStorage, Read, Write};
 use specs::Entities;
 use slog::Logger;
 
@@ -8,6 +8,7 @@ use types::*;
 use globe::{Globe, View, ChunkView};
 use render::{Visual, ProtoMesh, Vertex};
 use Spatial;
+use physics::{WorldResource, Collider, RemoveColliderQueue};
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.
@@ -31,12 +32,16 @@ impl ChunkViewSystem {
 
     fn build_chunk_geometry<'a>(
         &mut self,
-        mut globes: specs::WriteStorage<'a, Globe>,
-        mut visuals: specs::WriteStorage<'a, Visual>,
+        entities: &Entities<'a>,
+        mut globes: WriteStorage<'a, Globe>,
+        mut visuals: WriteStorage<'a, Visual>,
         // TODO: Parameterise over ReadStorage/WriteStorage when we don't care?
         // TODO: I made `MaybeMutStorage` for `SpatialStorage`, so just pluck
         // that out somewhere public and use that.
-        chunk_views: specs::WriteStorage<'a, ChunkView>,
+        chunk_views: WriteStorage<'a, ChunkView>,
+        world_resource: &mut Write<WorldResource>,
+        colliders: &mut WriteStorage<Collider>,
+        remove_collider_queue_resource: &mut Write<::physics::RemoveColliderQueue>,
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.
@@ -47,7 +52,7 @@ impl ChunkViewSystem {
         }
 
         use specs::Join;
-        for (visual, chunk_view) in (&mut visuals, &chunk_views).join() {
+        for (visual, chunk_view, chunk_view_ent) in (&mut visuals, &chunk_views, &**entities).join() {
             // TODO: find the closest mesh to the player that needs
             // to be generated (i.e. absent or dirty).
             //
@@ -79,7 +84,7 @@ impl ChunkViewSystem {
             {
                 // Ew, can I please have non-lexical borrow scopes?
                 let chunk = &mut globe.chunks_mut().get(&chunk_view.origin)
-                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
+                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway? [1]");
                 if !chunk.is_view_dirty {
                     continue;
                 }
@@ -108,8 +113,32 @@ impl ChunkViewSystem {
             {
                 // Ew, can I please have non-lexical borrow scopes?
                 let chunk = &mut globe.chunks_mut().get_mut(&chunk_view.origin)
-                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway?");
+                    .expect("Don't know how to deal with chunk not loaded yet. Why do we have a view for it anyway? [2]");
                 chunk.mark_view_as_clean();
+            }
+
+            // Before deciding whether or not to skip making a new
+            // proto-mesh etc., remove any physics mesh that existed before.
+            // Note that we won't have made before a collider if the chunk view
+            // would've been an empty mesh.
+            //
+            // TODO: These are hacks until Specs addresses reading
+            // the data of removed components. (Presumably some extension
+            // to the existing FlaggedStorage where you indicate that
+            // you want the channel to carry full component data
+            // with each event?)
+            //
+            // See <https://github.com/slide-rs/specs/issues/361>.
+            use ::physics::RemoveColliderMessage;
+            let mut removed_collider = false; // Hax to not need NLL
+            if let Some(collider) = colliders.get(chunk_view_ent) {
+                let remove_collider_queue = &mut remove_collider_queue_resource.queue;
+                remove_collider_queue.push_back(RemoveColliderMessage {
+                    handle: collider.collider_handle,
+                });
+            }
+            if removed_collider {
+                colliders.remove(chunk_view_ent);
             }
 
             // Don't attempt to create an empty mesh.
@@ -124,6 +153,41 @@ impl ChunkViewSystem {
                 // in that type to avoid mistakes.
                 continue;
             }
+
+            // Add the terrain mesh to the physics world.
+            //
+            // TODO: This is a hack. Not here. Need to come up with
+            // a better way of doing "reactive" stuff where there
+            // are multiple downstream things (visual mesh, physics
+            // mesh) derived from a chunk.
+            use ncollide3d::shape::{TriMesh, ShapeHandle};
+            use nphysics3d::object::{BodyHandle, Material};
+            let chunk_origin_pos = globe.spec().cell_bottom_center(*chunk_view.origin.pos());
+            let vertices: Vec<Pt3> = vertex_data
+                .iter()
+                .map(|v| {
+                    Pt3::new(
+                        v.a_pos[0].into(),
+                        v.a_pos[1].into(),
+                        v.a_pos[2].into(),
+                    )
+                })
+                .collect();
+            let indices: Vec<na::Point3<usize>> = index_data
+                .chunks(3)
+                .map(|slice| na::Point3::new(slice[0] as usize, slice[1] as usize, slice[2] as usize))
+                .collect();
+            let tri_mesh = TriMesh::<Real>::new(vertices, indices, None);
+            let tri_mesh_handle = ShapeHandle::new(tri_mesh);
+            let world = &mut world_resource.world;
+            let collider_handle = world.add_collider(
+                0.01 as Real, // TODO: What's appropriate?
+                tri_mesh_handle,
+                BodyHandle::ground(),
+                Iso3::new(chunk_origin_pos.coords, na::zero()),
+                Material::default(),
+            );
+            colliders.insert(chunk_view_ent, Collider::new(collider_handle)).expect("Component insertion failed. Whyyyy?");
 
             visual.proto_mesh = ProtoMesh::new(vertex_data, index_data).into();
 
@@ -140,8 +204,10 @@ impl ChunkViewSystem {
         entities: &Entities<'a>,
         globe: &mut Globe,
         globe_entity: specs::Entity,
-        visuals: &mut specs::WriteStorage<'a, Visual>,
-        chunk_views: &mut specs::WriteStorage<'a, ChunkView>,
+        visuals: &mut WriteStorage<'a, Visual>,
+        chunk_views: &mut WriteStorage<'a, ChunkView>,
+        remove_collider_queue_resource: &mut Write<'a, RemoveColliderQueue>,
+        colliders: &WriteStorage<'a, Collider>,
     ) {
         use specs::Join;
 
@@ -179,10 +245,24 @@ impl ChunkViewSystem {
             chunk_views.remove(chunk_view_ent);
             entities.delete(chunk_view_ent).expect("Somehow tried to use an entity with the wrong generation!");
 
-            // TODO: maintain? Do we need to do that here?
-            // Or are these entities immediately inaccessible?
-            // (I'm unclear on when it's necessary / exactly what it does.)
+            // Queue it for removal from physics world.
+            // TODO: These are hacks until Specs addresses reading
+            // the data of removed components. (Presumably some extension
+            // to the existing FlaggedStorage where you indicate that
+            // you want the channel to carry full component data
+            // with each event?)
+            //
+            // See <https://github.com/slide-rs/specs/issues/361>.
+            use ::physics::RemoveColliderMessage;
 
+            // We won't have made a collider if the chunk view
+            // would've been an empty mesh.
+            if let Some(collider) = colliders.get(chunk_view_ent) {
+                let remove_collider_queue = &mut remove_collider_queue_resource.queue;
+                remove_collider_queue.push_back(RemoveColliderMessage {
+                    handle: collider.collider_handle,
+                });
+            }
         }
     }
 
@@ -191,9 +271,9 @@ impl ChunkViewSystem {
         entities: &Entities<'a>,
         globe: &mut Globe,
         globe_entity: specs::Entity,
-        chunk_views: &mut specs::WriteStorage<'a, ChunkView>,
-        visuals: &mut specs::WriteStorage<'a, Visual>,
-        spatials: &mut specs::WriteStorage<'a, Spatial>,
+        chunk_views: &mut WriteStorage<'a, ChunkView>,
+        visuals: &mut WriteStorage<'a, Visual>,
+        spatials: &mut WriteStorage<'a, Spatial>,
     ) {
         use globe::globe::GlobeGuts;
         let globe_spec = globe.spec();
@@ -214,8 +294,6 @@ impl ChunkViewSystem {
             // Updated TODO: figure out what the new API is for that.
             // ^^ YES, definitely use that.
             let new_ent = entities.create();
-            // TODO: run `maintain`? When do we have to do that?
-            // Nope, that is run outside of systems.
             chunk.view_entity = Some(new_ent);
             chunk_views.insert(new_ent, chunk_view)
                 .expect("Inserting chunk view failed");
@@ -233,11 +311,25 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
      WriteStorage<'a, Globe>,
      WriteStorage<'a, Visual>,
      WriteStorage<'a, Spatial>,
-     WriteStorage<'a, ChunkView>);
+     WriteStorage<'a, ChunkView>,
+     Write<'a, WorldResource>,
+     Write<'a, ::physics::RemoveColliderQueue>,
+     WriteStorage<'a, ::physics::Collider>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (entities, dt, mut globes, mut visuals, mut spatials, mut chunk_views) = data;
+        let (
+            entities,
+            dt,
+            mut globes,
+            mut visuals,
+            mut spatials,
+            mut chunk_views,
+            mut world_resource,
+            mut remove_collider_queue_resource,
+            mut colliders,
+        ) = data;
 
         self.seconds_since_last_geometry_creation += dt.0;
 
@@ -249,6 +341,8 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
                 globe_entity,
                 &mut visuals,
                 &mut chunk_views,
+                &mut remove_collider_queue_resource,
+                &colliders,
             );
 
             // Ensure that there is a visual for
@@ -272,6 +366,6 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
 
         // Build geometry for some chunks; throttled
         // so we don't spend too much time doing this each frame.
-        self.build_chunk_geometry(globes, visuals, chunk_views);
+        self.build_chunk_geometry(&entities, globes, visuals, chunk_views, &mut world_resource, &mut colliders, &mut remove_collider_queue_resource);
     }
 }
