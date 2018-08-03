@@ -66,20 +66,19 @@ use super::GridCoord;
 //
 // Referring to the top figure for the offsets and the
 // bottom for the labelling, that gives us:
-#[rustfmt::skip]
 pub const DIR_OFFSETS: [[i64; 2]; 12] = [
-    [ 3,  0], // edge (+x)
-    [ 2,  2], // vertex
-    [ 0,  3], // edge (+y)
-    [-2,  4], // vertex
-    [-3,  3], // edge
-    [-4,  2], // vertex
-    [-3,  0], // edge (-x)
+    [3, 0],   // edge (+x)
+    [2, 2],   // vertex
+    [0, 3],   // edge (+y)
+    [-2, 4],  // vertex
+    [-3, 3],  // edge
+    [-4, 2],  // vertex
+    [-3, 0],  // edge (-x)
     [-2, -2], // vertex
-    [ 0, -3], // edge (-y)
-    [ 2, -4], // vertex
-    [ 3, -3], // edge
-    [ 4, -2], // vertex
+    [0, -3],  // edge (-y)
+    [2, -4],  // vertex
+    [3, -3],  // edge
+    [4, -2],  // vertex
 ];
 
 // There are 9 different shapes that we need for drawing cells in various
