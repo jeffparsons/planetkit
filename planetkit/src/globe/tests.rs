@@ -78,14 +78,7 @@ pub mod benches {
 
         let drain = slog::Discard;
         let log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
-        let spec = Spec {
-            seed: 13,
-            floor_radius: 0.91,
-            ocean_radius: 1.13,
-            block_height: 0.02,
-            root_resolution: ROOT_RESOLUTION,
-            chunk_resolution: CHUNK_RESOLUTION,
-        };
+        let spec = Spec::new(13, 0.91, 1.13, 0.02, ROOT_RESOLUTION, CHUNK_RESOLUTION);
         let globe = Globe::new(spec);
         let spec = globe.spec();
         let globe_view = View::new(spec, &log);
