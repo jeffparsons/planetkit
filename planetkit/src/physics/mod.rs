@@ -33,10 +33,6 @@ pub struct WorldResource {
 impl Default for WorldResource {
     fn default() -> WorldResource {
         WorldResource {
-            // TODO: remove the ground? I don't think we want it,
-            // and it appears to be created by default.
-            // Or... there are no colliders by default, so maybe
-            // the ground just exists as a "root" object?
             world: World::new(),
         }
     }
@@ -46,6 +42,8 @@ impl Default for WorldResource {
 // in Specs FlaggedStorage. This requires systems that remove
 // any RigidBody (etc.) components, directly or indirectly by
 // deleting the entity, to push an event into this channel.
+//
+// See <https://github.com/slide-rs/specs/issues/361>.
 
 pub struct RemoveBodyMessage {
     pub handle: BodyHandle,

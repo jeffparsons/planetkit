@@ -108,11 +108,14 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 entities.delete(grenade_entity).expect("Wrong entity generation!");
 
                 // Queue it for removal from physics world.
+                //
                 // TODO: These are hacks until Specs addresses reading
                 // the data of removed components. (Presumably some extension
                 // to the existing FlaggedStorage where you indicate that
                 // you want the channel to carry full component data
                 // with each event?)
+                //
+                // See <https://github.com/slide-rs/specs/issues/361>.
                 use pk::physics::{RemoveBodyMessage, RemoveColliderMessage};
                 remove_body_queue.push_back(RemoveBodyMessage {
                     handle: rigid_body.body_handle,

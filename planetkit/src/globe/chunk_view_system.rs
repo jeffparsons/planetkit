@@ -127,6 +127,8 @@ impl ChunkViewSystem {
             // to the existing FlaggedStorage where you indicate that
             // you want the channel to carry full component data
             // with each event?)
+            //
+            // See <https://github.com/slide-rs/specs/issues/361>.
             use ::physics::RemoveColliderMessage;
             let mut removed_collider = false; // Hax to not need NLL
             if let Some(collider) = colliders.get(chunk_view_ent) {
@@ -249,6 +251,8 @@ impl ChunkViewSystem {
             // to the existing FlaggedStorage where you indicate that
             // you want the channel to carry full component data
             // with each event?)
+            //
+            // See <https://github.com/slide-rs/specs/issues/361>.
             use ::physics::RemoveColliderMessage;
 
             // We won't have made a collider if the chunk view
