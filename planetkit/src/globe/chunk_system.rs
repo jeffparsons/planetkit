@@ -1,11 +1,11 @@
-use specs;
-use specs::{ReadStorage, WriteStorage};
-use specs::Entities;
 use slog::Logger;
+use specs;
+use specs::Entities;
+use specs::{ReadStorage, WriteStorage};
 
-use grid::PosInOwningRoot;
-use super::{Globe, ChunkOrigin};
+use super::{ChunkOrigin, Globe};
 use cell_dweller::CellDweller;
+use grid::PosInOwningRoot;
 
 // NOTE: this is currently all pretty awful. See comments throughout.
 
@@ -168,9 +168,10 @@ impl ChunkSystem {
             globe.ensure_chunk_present(chunk_origin);
             let accessible_chunks = {
                 use super::globe::GlobeGuts;
-                let chunk = globe.chunks().get(&chunk_origin).expect(
-                    "We just ensured this chunk is loaded.",
-                );
+                let chunk = globe
+                    .chunks()
+                    .get(&chunk_origin)
+                    .expect("We just ensured this chunk is loaded.");
                 // TODO: Gah, such slow!
                 chunk.accessible_chunks.clone()
             };
@@ -180,9 +181,10 @@ impl ChunkSystem {
                 // Repeat this from each immediately accessible chunk.
                 let next_level_accessible_chunks = {
                     use super::globe::GlobeGuts;
-                    let chunk = globe.chunks().get(&accessible_chunk_origin).expect(
-                        "We just ensured this chunk is loaded.",
-                    );
+                    let chunk = globe
+                        .chunks()
+                        .get(&accessible_chunk_origin)
+                        .expect("We just ensured this chunk is loaded.");
                     // TODO: Gah, such slow!
                     chunk.accessible_chunks.clone()
                 };
@@ -195,7 +197,11 @@ impl ChunkSystem {
 }
 
 impl<'a> specs::System<'a> for ChunkSystem {
-    type SystemData = (Entities<'a>, WriteStorage<'a, Globe>, ReadStorage<'a, CellDweller>);
+    type SystemData = (
+        Entities<'a>,
+        WriteStorage<'a, Globe>,
+        ReadStorage<'a, CellDweller>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;

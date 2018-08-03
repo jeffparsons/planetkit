@@ -23,7 +23,7 @@ struct Node {
 
 impl Node {
     pub fn new() -> Node {
-        use ::LogResource;
+        use LogResource;
 
         let drain = slog::Discard;
         let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
@@ -65,7 +65,9 @@ impl Node {
         let server_node = Node::new();
         {
             // NLL SVP
-            let server_resource = server_node.world.read_resource::<ServerResource<TestMessage>>();
+            let server_resource = server_node
+                .world
+                .read_resource::<ServerResource<TestMessage>>();
             let mut server = server_resource.server.lock().expect("Couldn't lock server");
             server.start_listen(None);
         }
@@ -74,14 +76,27 @@ impl Node {
 
     pub fn new_client_connected_to(server_node: &Node) -> Node {
         let client_node = Node::new();
-        let server_server_resource = server_node.world.read_resource::<ServerResource<TestMessage>>();
-        let server_server = server_server_resource.server.lock().expect("Couldn't lock server");
-        let connect_addr = format!("127.0.0.1:{}", server_server.port.expect("Should be listening"));
+        let server_server_resource = server_node
+            .world
+            .read_resource::<ServerResource<TestMessage>>();
+        let server_server = server_server_resource
+            .server
+            .lock()
+            .expect("Couldn't lock server");
+        let connect_addr = format!(
+            "127.0.0.1:{}",
+            server_server.port.expect("Should be listening")
+        );
         let connect_addr: SocketAddr = connect_addr.parse().unwrap();
         {
             // NLL SVP
-            let client_server_resource = client_node.world.read_resource::<ServerResource<TestMessage>>();
-            let mut client_server = client_server_resource.server.lock().expect("Couldn't lock server");
+            let client_server_resource = client_node
+                .world
+                .read_resource::<ServerResource<TestMessage>>();
+            let mut client_server = client_server_resource
+                .server
+                .lock()
+                .expect("Couldn't lock server");
             client_server.connect(connect_addr);
         }
         client_node
@@ -92,12 +107,18 @@ impl Node {
     }
 
     pub fn enqueue_message(&mut self, message: SendMessage<TestMessage>) {
-        let send_queue = &mut self.world.write_resource::<SendMessageQueue<TestMessage>>().queue;
+        let send_queue = &mut self
+            .world
+            .write_resource::<SendMessageQueue<TestMessage>>()
+            .queue;
         send_queue.push_back(message);
     }
 
     pub fn expect_message(&mut self, expected_message: TestMessage) {
-        let recv_queue = &mut self.world.write_resource::<RecvMessageQueue<TestMessage>>().queue;
+        let recv_queue = &mut self
+            .world
+            .write_resource::<RecvMessageQueue<TestMessage>>()
+            .queue;
         assert!(recv_queue.len() >= 1);
         let received_message = recv_queue.pop_front().unwrap().game_message;
         assert_eq!(received_message, expected_message);
@@ -124,16 +145,14 @@ fn client_sends_udp_message_to_server() {
 
     // Put a message on the SendMessageQueue of the client node,
     // to be sent over UDP.
-    client_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Sunny!".to_string(),
-            },
-            transport: Transport::UDP,
-        }
-    );
+    client_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Sunny!".to_string(),
+        },
+        transport: Transport::UDP,
+    });
 
     // Step the world.
     // This should send the message.
@@ -174,26 +193,22 @@ fn client_sends_tcp_messages_to_server() {
     // because we need to make sure we don't corrupt the
     // stream/buffer when receiving them, as opposed to UDP
     // where we work with individual datagrams.
-    client_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Cooperative!".to_string(),
-            },
-            transport: Transport::TCP,
-        }
-    );
-    client_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Enthusiastic!".to_string(),
-            },
-            transport: Transport::TCP,
-        }
-    );
+    client_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Cooperative!".to_string(),
+        },
+        transport: Transport::TCP,
+    });
+    client_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Enthusiastic!".to_string(),
+        },
+        transport: Transport::TCP,
+    });
 
     // This should send the message.
     client_node.dispatch();
@@ -234,16 +249,14 @@ fn server_sends_udp_message_to_client() {
 
     // Put a message on the SendMessageQueue of the server node,
     // to be sent over UDP.
-    server_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Authoritative!".to_string(),
-            },
-            transport: Transport::UDP,
-        }
-    );
+    server_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Authoritative!".to_string(),
+        },
+        transport: Transport::UDP,
+    });
 
     // Step the world.
     // This should send the message.
@@ -284,26 +297,22 @@ fn server_sends_tcp_messages_to_client() {
     // because we need to make sure we don't corrupt the
     // stream/buffer when receiving them, as opposed to UDP
     // where we work with individual datagrams.
-    server_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Oppressive!".to_string(),
-            },
-            transport: Transport::TCP,
-        }
-    );
-    server_node.enqueue_message(
-        SendMessage {
-            // Peer ID 0 is self.
-            destination: Destination::One(PeerId(1)),
-            game_message: TestMessage{
-                disposition: "Demanding!".to_string(),
-            },
-            transport: Transport::TCP,
-        }
-    );
+    server_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Oppressive!".to_string(),
+        },
+        transport: Transport::TCP,
+    });
+    server_node.enqueue_message(SendMessage {
+        // Peer ID 0 is self.
+        destination: Destination::One(PeerId(1)),
+        game_message: TestMessage {
+            disposition: "Demanding!".to_string(),
+        },
+        transport: Transport::TCP,
+    });
 
     // Step the world.
     // This should send the message.

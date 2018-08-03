@@ -1,6 +1,6 @@
 use specs;
 
-use ::types::*;
+use types::*;
 
 /// Velocity relative to some parent entity.
 ///

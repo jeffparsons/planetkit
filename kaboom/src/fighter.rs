@@ -1,15 +1,15 @@
 use specs;
-use specs::{Read, LazyUpdate, Entities};
+use specs::{Entities, LazyUpdate, Read};
 
 use pk;
-use pk::types::*;
-use pk::grid;
-use pk::globe::Globe;
-use pk::render;
 use pk::cell_dweller;
+use pk::globe::Globe;
+use pk::grid;
+use pk::render;
+use pk::types::*;
 
-use ::health::Health;
-use ::player::PlayerId;
+use health::Health;
+use player::PlayerId;
 
 pub struct Fighter {
     pub player_id: PlayerId,
@@ -41,7 +41,7 @@ pub fn create(
     globe: &mut Globe,
     player_id: PlayerId,
 ) -> specs::Entity {
-    use rand::{XorShiftRng, SeedableRng};
+    use rand::{SeedableRng, XorShiftRng};
 
     // Find a suitable spawn point for the player character at the globe surface.
     let (globe_spec, fighter_pos) = {
@@ -50,14 +50,11 @@ pub fn create(
         let mut rng = XorShiftRng::from_seed(globe_spec.seed_as_u8_array);
         let fighter_pos = globe
             .air_above_random_surface_dry_land(
-                &mut rng,
-                2, // Min air cells above
+                &mut rng, 2, // Min air cells above
                 5, // Max distance from starting point
                 5, // Max attempts
             )
-            .expect(
-                "Oh noes, we took too many attempts to find a decent spawn point!",
-            );
+            .expect("Oh noes, we took too many attempts to find a decent spawn point!");
         (globe_spec, fighter_pos)
     };
 
@@ -67,12 +64,15 @@ pub fn create(
     fighter_visual.proto_mesh = Some(render::make_axes_mesh());
 
     let entity = entities.create();
-    updater.insert(entity, cell_dweller::CellDweller::new(
-        fighter_pos,
-        grid::Dir::default(),
-        globe_spec,
-        Some(globe_entity),
-    ));
+    updater.insert(
+        entity,
+        cell_dweller::CellDweller::new(
+            fighter_pos,
+            grid::Dir::default(),
+            globe_spec,
+            Some(globe_entity),
+        ),
+    );
     updater.insert(entity, fighter_visual);
     // The CellDweller's transformation will be set based
     // on its coordinates in cell space.

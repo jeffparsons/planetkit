@@ -1,5 +1,5 @@
-use std::sync::mpsc;
 use gfx;
+use std::sync::mpsc;
 
 // Bi-directional channel to send Encoder between game thread(s)
 // (as managed by Specs), and the thread owning the graphics device.

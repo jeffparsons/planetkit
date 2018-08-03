@@ -1,6 +1,6 @@
-use super::*;
-use grid::{GridPoint3, Dir};
 use super::triangles::TRIANGLES;
+use super::*;
+use grid::{Dir, GridPoint3};
 use na;
 
 const RESOLUTION: [i64; 2] = [32, 64];
@@ -47,7 +47,6 @@ fn move_forward_into_northern_tropic_pentagon() {
         pos
     );
     assert_eq!(Dir::new(10), dir);
-
 }
 
 #[test]
@@ -56,9 +55,10 @@ fn turn_left_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = GridPoint3::default().with_root(0).with_x(apex.x).with_y(
-        apex.y,
-    );
+    let mut pos = GridPoint3::default()
+        .with_root(0)
+        .with_x(apex.x)
+        .with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -113,9 +113,10 @@ fn turn_right_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = GridPoint3::default().with_root(0).with_x(apex.x).with_y(
-        apex.y,
-    );
+    let mut pos = GridPoint3::default()
+        .with_root(0)
+        .with_x(apex.x)
+        .with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -221,8 +222,7 @@ fn walk_anticlockwise_around_all_pentagons() {
         for triangle_index in triangle_indexes.iter() {
             println!(
                 "Starting in root {} at apex of triangle {}.",
-                root_index,
-                triangle_index
+                root_index, triangle_index
             );
             let triangle = &TRIANGLES[*triangle_index];
 
@@ -273,8 +273,7 @@ fn walk_clockwise_around_all_pentagons() {
         for triangle_index in triangle_indexes.iter() {
             println!(
                 "Starting in root {} at apex of triangle {}.",
-                root_index,
-                triangle_index
+                root_index, triangle_index
             );
             let triangle = &TRIANGLES[*triangle_index];
 
@@ -361,7 +360,6 @@ fn random_walks() {
                     turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
                     crumbs.push(Action::TurnLeft);
                     println!("Turned left.");
-
                 } else if f < 0.01 {
                     turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
                     crumbs.push(Action::TurnRight);
@@ -387,14 +385,12 @@ fn random_walks() {
         crumbs.reverse();
         for crumb in crumbs {
             match crumb {
-                Action::StepForward => {
-                    step_forward_and_face_neighbor(
-                        &mut pos,
-                        &mut dir,
-                        RESOLUTION,
-                        &mut last_turn_bias,
-                    ).unwrap()
-                }
+                Action::StepForward => step_forward_and_face_neighbor(
+                    &mut pos,
+                    &mut dir,
+                    RESOLUTION,
+                    &mut last_turn_bias,
+                ).unwrap(),
                 Action::TurnLeft => {
                     turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
                 }
@@ -404,8 +400,7 @@ fn random_walks() {
             }
             println!(
                 "Retracing crumbs walking forward; now at: {:?}, {:?}",
-                pos,
-                dir
+                pos, dir
             );
         }
 
@@ -483,14 +478,12 @@ fn random_walks_retraced_by_stepping_backwards() {
         crumbs.reverse();
         for crumb in crumbs {
             match crumb {
-                Action::StepBackward => {
-                    step_backward_and_face_neighbor(
-                        &mut pos,
-                        &mut dir,
-                        RESOLUTION,
-                        &mut last_turn_bias,
-                    ).unwrap()
-                }
+                Action::StepBackward => step_backward_and_face_neighbor(
+                    &mut pos,
+                    &mut dir,
+                    RESOLUTION,
+                    &mut last_turn_bias,
+                ).unwrap(),
                 Action::TurnLeft => {
                     turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
                 }
@@ -500,8 +493,7 @@ fn random_walks_retraced_by_stepping_backwards() {
             }
             println!(
                 "Retracing crumbs walking backward; now at: {:?}, {:?}",
-                pos,
-                dir
+                pos, dir
             );
         }
 

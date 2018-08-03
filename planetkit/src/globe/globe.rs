@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use specs;
 
-use grid::{GridPoint3, PosInOwningRoot};
-use super::{origin_of_chunk_owning, origin_of_chunk_in_same_root_containing};
-use super::ChunkOrigin;
-use super::chunk::{Chunk, Cell};
-use super::spec::Spec;
+use super::chunk::{Cell, Chunk};
+use super::chunk_pair::{ChunkPair, ChunkPairOrigins};
 use super::gen::{Gen, SimpleGen};
-use super::chunk_pair::{ChunkPairOrigins, ChunkPair};
+use super::spec::Spec;
+use super::ChunkOrigin;
+use super::{origin_of_chunk_in_same_root_containing, origin_of_chunk_owning};
+use grid::{GridPoint3, PosInOwningRoot};
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -91,9 +91,10 @@ impl Globe {
         //
         // TODO: at very least avoid this most of the time by doing a read-only pass over
         // all neighbours and bailing out if they're completely up-to-date.
-        let source_chunk = self.chunks.remove(&source_chunk_origin).expect(
-            "Tried to push shared cells for a chunk that isn't loaded.",
-        );
+        let source_chunk = self
+            .chunks
+            .remove(&source_chunk_origin)
+            .expect("Tried to push shared cells for a chunk that isn't loaded.");
 
         // For each of this chunk's downstream neighbors, see if it has up-to-date
         // copies of the data we share with that neighbor. Otherwise, copy it over.
@@ -111,11 +112,12 @@ impl Globe {
                 source: source_chunk.origin,
                 sink: sink_chunk.origin,
             };
-            let chunk_pair = self.chunk_pairs.get_mut(&chunk_pair_origins).expect(
-                "Chunk pair for chunk should have been present.",
-            );
-            if chunk_pair.last_upstream_edge_version_known_downstream ==
-                source_chunk.owned_edge_version
+            let chunk_pair = self
+                .chunk_pairs
+                .get_mut(&chunk_pair_origins)
+                .expect("Chunk pair for chunk should have been present.");
+            if chunk_pair.last_upstream_edge_version_known_downstream
+                == source_chunk.owned_edge_version
             {
                 // Sink chunk is already up-to-date; move on to next neighbor.
                 continue;
@@ -130,8 +132,8 @@ impl Globe {
             }
 
             // Downstream chunk now has most recent changes from upstream.
-            chunk_pair.last_upstream_edge_version_known_downstream = source_chunk
-                .owned_edge_version;
+            chunk_pair.last_upstream_edge_version_known_downstream =
+                source_chunk.owned_edge_version;
 
             // If we got this far, then it means we needed to update something.
             // So mark the downstream chunk as having its view out-of-date.
@@ -167,9 +169,10 @@ impl Globe {
         //
         // TODO: at very least avoid this most of the time by doing a read-only pass over
         // all neighbours and bailing out if we're completely up-to-date.
-        let mut sink_chunk = self.chunks.remove(&sink_chunk_origin).expect(
-            "Tried to pull shared cells for a chunk that isn't loaded.",
-        );
+        let mut sink_chunk = self
+            .chunks
+            .remove(&sink_chunk_origin)
+            .expect("Tried to pull shared cells for a chunk that isn't loaded.");
 
         // Temporarily remove list of neighbours from sink chunk so that we can
         // both read from it and update the chunk's data.
@@ -194,11 +197,12 @@ impl Globe {
                 source: source_chunk.origin,
                 sink: sink_chunk.origin,
             };
-            let chunk_pair = self.chunk_pairs.get_mut(&chunk_pair_origins).expect(
-                "Chunk pair for chunk should have been present.",
-            );
-            if chunk_pair.last_upstream_edge_version_known_downstream ==
-                source_chunk.owned_edge_version
+            let chunk_pair = self
+                .chunk_pairs
+                .get_mut(&chunk_pair_origins)
+                .expect("Chunk pair for chunk should have been present.");
+            if chunk_pair.last_upstream_edge_version_known_downstream
+                == source_chunk.owned_edge_version
             {
                 // Sink chunk is already up-to-date; move on to next neighbor.
                 continue;
@@ -213,8 +217,8 @@ impl Globe {
             }
 
             // Downstream chunk now has most recent changes from upstream.
-            chunk_pair.last_upstream_edge_version_known_downstream = source_chunk
-                .owned_edge_version;
+            chunk_pair.last_upstream_edge_version_known_downstream =
+                source_chunk.owned_edge_version;
 
             // If we got this far, then it means we needed to update something.
             sink_chunk_view_dirty = true;
@@ -266,11 +270,9 @@ impl Globe {
         // of more distant cells.
         for z_d in &[-1, 0, 1] {
             let p = point.with_z(point.z + z_d);
-            for (chunk_origin, _equivalent_point) in chunks_containing_point(
-                    p,
-                    self.spec.root_resolution,
-                    self.spec.chunk_resolution
-            ) {
+            for (chunk_origin, _equivalent_point) in
+                chunks_containing_point(p, self.spec.root_resolution, self.spec.chunk_resolution)
+            {
                 // It's fine for the chunk to not be loaded; just ignore it.
                 if let Some(chunk) = self.chunks.get_mut(&chunk_origin) {
                     chunk.mark_view_as_dirty();
@@ -281,9 +283,10 @@ impl Globe {
 
     pub fn increment_chunk_owned_edge_version_for_cell(&mut self, pos: PosInOwningRoot) {
         let chunk_origin = self.origin_of_chunk_owning(pos.into());
-        let chunk = self.chunks.get_mut(&chunk_origin).expect(
-            "Uh oh, I don't know how to handle chunks that aren't loaded yet.",
-        );
+        let chunk = self
+            .chunks
+            .get_mut(&chunk_origin)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         chunk.owned_edge_version += 1;
     }
 
@@ -314,9 +317,10 @@ impl Globe {
     ///
     /// Panics if there was no chunk loaded at the given chunk origin.
     pub fn remove_chunk(&mut self, chunk_origin: ChunkOrigin) -> Chunk {
-        let chunk = self.chunks.remove(&chunk_origin).expect(
-            "Attempted to remove a chunk that was not loaded",
-        );
+        let chunk = self
+            .chunks
+            .remove(&chunk_origin)
+            .expect("Attempted to remove a chunk that was not loaded");
         self.remove_all_chunk_pairs_for(&chunk);
         chunk
     }
@@ -331,19 +335,12 @@ impl Globe {
         let chunk_res = self.spec.chunk_resolution;
 
         let mut cells: Vec<Cell> = Vec::with_capacity(
-            chunk_res[0] as usize *
-            chunk_res[1] as usize *
-            chunk_res[2] as usize
+            chunk_res[0] as usize * chunk_res[1] as usize * chunk_res[2] as usize,
         );
 
         self.gen.populate_cells(origin, &mut cells);
 
-        self.add_chunk(Chunk::new(
-            origin,
-            cells,
-            spec.root_resolution,
-            chunk_res,
-        ));
+        self.add_chunk(Chunk::new(origin, cells, spec.root_resolution, chunk_res));
     }
 
     /// Ensures the specified chunk is present.
@@ -377,7 +374,7 @@ impl Globe {
     /// Make sure we are tracking the currency of shared data in all chunks
     /// upstream or downstream of this chunk.
     fn ensure_all_chunk_pairs_present_for(&mut self, chunk: &Chunk) {
-        use globe::chunk_pair::{ChunkPairOrigins, ChunkPair};
+        use globe::chunk_pair::{ChunkPair, ChunkPairOrigins};
         // Copy cached upstream and downstream neighbors from
         // chunks rather than re-computing them for each pair now.
         for upstream_neighbor in &chunk.upstream_neighbors {
@@ -385,24 +382,24 @@ impl Globe {
                 source: upstream_neighbor.origin,
                 sink: chunk.origin,
             };
-            self.chunk_pairs.entry(chunk_pair_origins).or_insert(
-                ChunkPair {
+            self.chunk_pairs
+                .entry(chunk_pair_origins)
+                .or_insert(ChunkPair {
                     point_pairs: upstream_neighbor.shared_cells.clone(),
                     last_upstream_edge_version_known_downstream: 0,
-                },
-            );
+                });
         }
         for downstream_neighbor in &chunk.downstream_neighbors {
             let chunk_pair_origins = ChunkPairOrigins {
                 source: chunk.origin,
                 sink: downstream_neighbor.origin,
             };
-            self.chunk_pairs.entry(chunk_pair_origins).or_insert(
-                ChunkPair {
+            self.chunk_pairs
+                .entry(chunk_pair_origins)
+                .or_insert(ChunkPair {
                     point_pairs: downstream_neighbor.shared_cells.clone(),
                     last_upstream_edge_version_known_downstream: 0,
-                },
-            );
+                });
         }
     }
 
@@ -438,17 +435,19 @@ impl<'a> Globe {
 
     pub fn authoritative_cell(&'a self, pos: PosInOwningRoot) -> &'a Cell {
         let chunk_origin = self.origin_of_chunk_owning(pos);
-        let chunk = self.chunks.get(&chunk_origin).expect(
-            "Uh oh, I don't know how to handle chunks that aren't loaded yet.",
-        );
+        let chunk = self
+            .chunks
+            .get(&chunk_origin)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         chunk.cell(pos.into())
     }
 
     pub fn authoritative_cell_mut(&'a mut self, pos: PosInOwningRoot) -> &'a mut Cell {
         let chunk_origin = self.origin_of_chunk_owning(pos);
-        let chunk = self.chunks.get_mut(&chunk_origin).expect(
-            "Uh oh, I don't know how to handle chunks that aren't loaded yet.",
-        );
+        let chunk = self
+            .chunks
+            .get_mut(&chunk_origin)
+            .expect("Uh oh, I don't know how to handle chunks that aren't loaded yet.");
         chunk.cell_mut(pos.into())
     }
 
@@ -456,9 +455,10 @@ impl<'a> Globe {
     // Panic message formerly "Uh oh, I don't know how to handle chunks that aren't loaded yet."
     pub fn maybe_non_authoritative_cell(&'a self, pos: GridPoint3) -> Result<&'a Cell, ()> {
         let chunk_origin = self.origin_of_chunk_in_same_root_containing(pos);
-        self.chunks.get(&chunk_origin).map(|chunk| {
-            chunk.cell(pos)
-        }).ok_or(())
+        self.chunks
+            .get(&chunk_origin)
+            .map(|chunk| chunk.cell(pos))
+            .ok_or(())
     }
 }
 

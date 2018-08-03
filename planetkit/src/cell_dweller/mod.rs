@@ -1,18 +1,18 @@
 mod cell_dweller;
-mod movement_system;
 mod mining;
 mod mining_system;
+mod movement_system;
 mod physics_system;
 mod recv_system;
 
+use grid::{Dir, GridPoint3};
+use movement::TurnDir;
+use net::{RecvMessage, SendMessage};
 use std::collections::vec_deque::VecDeque;
-use grid::{GridPoint3, Dir};
-use ::movement::TurnDir;
-use ::net::{SendMessage, RecvMessage};
 
 pub use self::cell_dweller::CellDweller;
-pub use self::movement_system::{MovementSystem, MovementEvent, MovementInputAdapter};
-pub use self::mining_system::{MiningSystem, MiningEvent, MiningInputAdapter};
+pub use self::mining_system::{MiningEvent, MiningInputAdapter, MiningSystem};
+pub use self::movement_system::{MovementEvent, MovementInputAdapter, MovementSystem};
 pub use self::physics_system::PhysicsSystem;
 pub use self::recv_system::RecvSystem;
 

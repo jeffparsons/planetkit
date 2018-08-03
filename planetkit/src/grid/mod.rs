@@ -1,20 +1,20 @@
 use rand::Rng;
 
-mod root;
-mod grid_point2;
 pub mod cell_shape;
-mod grid_point3;
-mod neighbors;
 mod dir;
 mod equivalent_points;
+mod grid_point2;
+mod grid_point3;
+mod neighbors;
+mod root;
 
 // TODO: be selective in what you export; no wildcards!
-pub use self::root::*;
+pub use self::dir::*;
+pub use self::equivalent_points::*;
 pub use self::grid_point2::GridPoint2;
 pub use self::grid_point3::*;
 pub use self::neighbors::*;
-pub use self::dir::*;
-pub use self::equivalent_points::*;
+pub use self::root::*;
 
 pub type GridCoord = i64;
 

@@ -1,7 +1,7 @@
+use super::{Dir, GridCoord, GridPoint3, PosInOwningRoot};
+use movement::{move_forward, turn_left_by_one_hex_edge};
 use std::iter::Chain;
 use std::slice;
-use super::{GridCoord, GridPoint3, PosInOwningRoot, Dir};
-use movement::{move_forward, turn_left_by_one_hex_edge};
 
 pub struct Neighbors {
     // Hide the iterators used to implement this.
@@ -13,8 +13,8 @@ pub struct Neighbors {
 impl Neighbors {
     pub fn new(pos: GridPoint3, resolution: [GridCoord; 2]) -> Neighbors {
         let above_and_below = AboveAndBelow::new(pos);
-        let is_away_from_root_edges = pos.x > 0 && pos.x < resolution[0] - 1 && pos.y > 0 &&
-            pos.y < resolution[1] - 1;
+        let is_away_from_root_edges =
+            pos.x > 0 && pos.x < resolution[0] - 1 && pos.y > 0 && pos.y < resolution[1] - 1;
         if is_away_from_root_edges {
             let fast_intra_root_neighbors = FastIntraRootNeighbors::new(pos);
             Neighbors {
@@ -92,9 +92,8 @@ impl Iterator for SlowGeneralEdgeNeighbors {
         // Find the neighbor in the current direction.
         let mut pos = self.origin;
         let mut dir = self.current_dir;
-        move_forward(&mut pos, &mut dir, self.resolution).expect(
-            "Oops, we started from an invalid position.",
-        );
+        move_forward(&mut pos, &mut dir, self.resolution)
+            .expect("Oops, we started from an invalid position.");
 
         // Express neighbor in its owning root so we know
         // whether we've seen it twice.
@@ -143,10 +142,9 @@ impl Iterator for FastIntraRootNeighbors {
 
     fn next(&mut self) -> Option<GridPoint3> {
         self.offsets.next().map(|offset| {
-            self.origin.with_x(self.origin.x + offset.0).with_y(
-                self.origin.y +
-                    offset.1,
-            )
+            self.origin
+                .with_x(self.origin.x + offset.0)
+                .with_y(self.origin.y + offset.1)
         })
     }
 }

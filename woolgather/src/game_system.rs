@@ -1,6 +1,6 @@
+use slog::Logger;
 use specs;
 use specs::Write;
-use slog::Logger;
 
 use super::game_state::{GameState, LevelOutcome};
 
@@ -11,7 +11,9 @@ pub struct GameSystem {
 
 impl GameSystem {
     pub fn new(parent_log: &Logger) -> GameSystem {
-        GameSystem { logger: parent_log.new(o!("system" => "game")) }
+        GameSystem {
+            logger: parent_log.new(o!("system" => "game")),
+        }
     }
 }
 

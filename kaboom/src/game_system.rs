@@ -1,19 +1,22 @@
-use specs;
-use specs::{ReadStorage, WriteStorage, Read, Write, LazyUpdate, Entities};
 use slog::Logger;
+use specs;
+use specs::{Entities, LazyUpdate, Read, ReadStorage, Write, WriteStorage};
 
 use pk;
-use pk::globe::Globe;
-use pk::cell_dweller::{CellDweller, ActiveCellDweller};
 use pk::camera::DefaultCamera;
-use pk::net::{NodeResource, PeerId, NetworkPeers, Destination, Transport, SendMessageQueue, SendMessage, EntityIds, NetMarker};
+use pk::cell_dweller::{ActiveCellDweller, CellDweller};
+use pk::globe::Globe;
+use pk::net::{
+    Destination, EntityIds, NetMarker, NetworkPeers, NodeResource, PeerId, SendMessage,
+    SendMessageQueue, Transport,
+};
 
-use ::player::{self, Player, PlayerId, PlayerMessage};
-use ::game_state::GameState;
-use ::client_state::ClientState;
-use ::planet;
-use ::fighter::{self, Fighter};
-use ::message::Message;
+use client_state::ClientState;
+use fighter::{self, Fighter};
+use game_state::GameState;
+use message::Message;
+use planet;
+use player::{self, Player, PlayerId, PlayerMessage};
 
 /// System to drive the top-level state machine for level and game state.
 pub struct GameSystem {
@@ -26,7 +29,7 @@ pub struct GameSystem {
 impl GameSystem {
     pub fn new(parent_log: &Logger) -> GameSystem {
         GameSystem {
-            log: parent_log.new(o!("system" => "game"))
+            log: parent_log.new(o!("system" => "game")),
         }
     }
 
@@ -39,43 +42,31 @@ impl GameSystem {
         let next_player_id = PlayerId(game_state.players.len() as u16);
         let player_name = format!("Unnamed player {}", game_state.next_unnamed_player_number);
         game_state.next_unnamed_player_number += 1;
-        game_state.players.push(
-            Player {
-                id: next_player_id,
-                peer_id: peer_id,
-                fighter_entity: None,
-                name: player_name.clone(),
-                points: 0,
-            }
-        );
+        game_state.players.push(Player {
+            id: next_player_id,
+            peer_id: peer_id,
+            fighter_entity: None,
+            name: player_name.clone(),
+            points: 0,
+        });
         game_state.new_players.push_back(next_player_id);
 
         // Tell all the other peers about this new player.
-        send_message_queue.queue.push_back(
-            SendMessage {
-                destination: Destination::EveryoneElse,
-                game_message: Message::Player(
-                    PlayerMessage::NewPlayer(
-                        player::NewPlayerMessage {
-                            id: next_player_id,
-                            name: player_name,
-                        }
-                    )
-                ),
-                transport: Transport::TCP,
-            }
-        );
+        send_message_queue.queue.push_back(SendMessage {
+            destination: Destination::EveryoneElse,
+            game_message: Message::Player(PlayerMessage::NewPlayer(player::NewPlayerMessage {
+                id: next_player_id,
+                name: player_name,
+            })),
+            transport: Transport::TCP,
+        });
 
         // Tell the owner (even if it's us) who their new player is.
-        send_message_queue.queue.push_back(
-            SendMessage {
-                destination: Destination::One(peer_id),
-                game_message: Message::Player(
-                    PlayerMessage::YourPlayer(next_player_id)
-                ),
-                transport: Transport::TCP,
-            }
-        );
+        send_message_queue.queue.push_back(SendMessage {
+            destination: Destination::One(peer_id),
+            game_message: Message::Player(PlayerMessage::YourPlayer(next_player_id)),
+            transport: Transport::TCP,
+        });
     }
 }
 
@@ -123,9 +114,7 @@ impl<'a> specs::System<'a> for GameSystem {
         if game_state.globe_entity.is_none() {
             // Create the globe first, because we'll need it to figure out where
             // to place the player character.
-            game_state.globe_entity = Some(
-                planet::create(&entities, &updater)
-            );
+            game_state.globe_entity = Some(planet::create(&entities, &updater));
 
             // Don't do anything else in the GameSystem for the rest of the frame.
             // All we're really trying to achieve here is to not process any messages
@@ -161,21 +150,19 @@ impl<'a> specs::System<'a> for GameSystem {
                     // We shouldn't hear about new players until
                     // we've at least caught up on existing ones.
                     assert!((player_id.0 as usize) <= game_state.players.len());
-                    game_state.players.push(
-                        Player {
-                            id: new_player_message.id,
-                            // TODO: don't just make this up!
-                            // TODO: make the network server tack on
-                            // the ID of the peer that sent these messages!!!!!
-                            peer_id: PeerId(1),
-                            fighter_entity: None,
-                            name: new_player_message.name,
-                            // TODO: again, don't just make this up;
-                            // the server should serialize the player object.
-                            points: 0,
-                        }
-                    );
-                },
+                    game_state.players.push(Player {
+                        id: new_player_message.id,
+                        // TODO: don't just make this up!
+                        // TODO: make the network server tack on
+                        // the ID of the peer that sent these messages!!!!!
+                        peer_id: PeerId(1),
+                        fighter_entity: None,
+                        name: new_player_message.name,
+                        // TODO: again, don't just make this up;
+                        // the server should serialize the player object.
+                        points: 0,
+                    });
+                }
                 PlayerMessage::YourPlayer(player_id) => {
                     // We should already know about this player.
                     assert!((player_id.0 as usize) < game_state.players.len());
@@ -190,41 +177,39 @@ impl<'a> specs::System<'a> for GameSystem {
 
                     // Remember which player is ours.
                     client_state.player_id = Some(player_id);
-                },
+                }
                 PlayerMessage::NewFighter(entity_id, player_id) => {
                     debug!(self.log, "Heard about new fighter entity"; "entity_id" => entity_id, "player_id" => player_id.0);
 
                     // TODO: make sure we initialize everything in the right order,
                     // and have some way to queue things up until the entities they
                     // depend on are realized.
-                    let globe_entity = game_state.globe_entity.expect("Should've had a globe entity by now.");
-                    let mut globe = globes.get_mut(globe_entity).expect("Should've had a globe by now!");
+                    let globe_entity = game_state
+                        .globe_entity
+                        .expect("Should've had a globe entity by now.");
+                    let mut globe = globes
+                        .get_mut(globe_entity)
+                        .expect("Should've had a globe by now!");
 
                     // Create the player character.
-                    let fighter_entity = fighter::create(
-                        &entities,
-                        &updater,
-                        globe_entity,
-                        &mut globe,
-                        player_id,
-                    );
-                    updater.insert(
-                        fighter_entity,
-                        NetMarker{ id: entity_id },
-                    );
+                    let fighter_entity =
+                        fighter::create(&entities, &updater, globe_entity, &mut globe, player_id);
+                    updater.insert(fighter_entity, NetMarker { id: entity_id });
 
                     // Record its global ID so we can tell other peers
                     // about what we want to do to it.
                     entity_ids.mapping.insert(entity_id, fighter_entity);
-                },
+                }
                 PlayerMessage::YourFighter(entity_id) => {
                     debug!(self.log, "Heard about my fighter entity"; "entity_id" => entity_id);
 
-                    let player_id = client_state.player_id.expect("Should've had a player ID by now.");
+                    let player_id = client_state
+                        .player_id
+                        .expect("Should've had a player ID by now.");
                     let player = &mut game_state.players[player_id.0 as usize];
                     let fighter_entity = entity_ids.mapping[&entity_id];
                     player.fighter_entity = Some(fighter_entity);
-                },
+                }
             }
         }
 
@@ -242,38 +227,37 @@ impl<'a> specs::System<'a> for GameSystem {
             if node_resource.is_master {
                 // Tell the new peer about all existing players.
                 for player in &game_state.players {
-                    send_message_queue.queue.push_back(
-                        SendMessage {
-                            destination: Destination::One(new_peer_id),
-                            game_message: Message::Player(
-                                PlayerMessage::NewPlayer(
-                                    player::NewPlayerMessage {
-                                        id: player.id,
-                                        name: player.name.clone(),
-                                    }
-                                )
-                            ),
-                            transport: Transport::TCP,
-                        }
-                    );
+                    send_message_queue.queue.push_back(SendMessage {
+                        destination: Destination::One(new_peer_id),
+                        game_message: Message::Player(PlayerMessage::NewPlayer(
+                            player::NewPlayerMessage {
+                                id: player.id,
+                                name: player.name.clone(),
+                            },
+                        )),
+                        transport: Transport::TCP,
+                    });
                 }
 
                 // Tell the new peer about all existing fighters.
                 use specs::Join;
                 for (_cd, net_marker, fighter) in (&cell_dwellers, &net_markers, &fighters).join() {
-                    send_message_queue.queue.push_back(
-                        SendMessage {
-                            destination: Destination::One(new_peer_id),
-                            game_message: Message::Player(
-                                PlayerMessage::NewFighter(net_marker.id, fighter.player_id)
-                            ),
-                            transport: Transport::TCP,
-                        }
-                    );
+                    send_message_queue.queue.push_back(SendMessage {
+                        destination: Destination::One(new_peer_id),
+                        game_message: Message::Player(PlayerMessage::NewFighter(
+                            net_marker.id,
+                            fighter.player_id,
+                        )),
+                        transport: Transport::TCP,
+                    });
                 }
 
                 // Create a new player for that peer.
-                self.create_and_broadcast_player(&mut game_state, &mut send_message_queue, new_peer_id);
+                self.create_and_broadcast_player(
+                    &mut game_state,
+                    &mut send_message_queue,
+                    new_peer_id,
+                );
             }
 
             // TODO: instead first just create a player for them,
@@ -305,36 +289,27 @@ impl<'a> specs::System<'a> for GameSystem {
                         // peers about it.
                         let entity_id = entity_ids.range.next().expect("We ran out of IDs!");
                         entity_ids.mapping.insert(entity_id, fighter_entity);
-                        updater.insert(
-                            fighter_entity,
-                            NetMarker{ id: entity_id },
-                        );
+                        updater.insert(fighter_entity, NetMarker { id: entity_id });
 
                         // Tell all network peers about the new entity.
                         // TODO: use Specs's `saveload` stuff once it's in a release.
-                        send_message_queue.queue.push_back(
-                            SendMessage {
-                                destination: Destination::EveryoneElse,
-                                game_message: Message::Player(
-                                    PlayerMessage::NewFighter(entity_id, player_id)
-                                ),
-                                transport: Transport::TCP,
-                            }
-                        );
+                        send_message_queue.queue.push_back(SendMessage {
+                            destination: Destination::EveryoneElse,
+                            game_message: Message::Player(PlayerMessage::NewFighter(
+                                entity_id, player_id,
+                            )),
+                            transport: Transport::TCP,
+                        });
 
                         // Tell the owner that this is _their_ fighter.
                         // TODO: this should probably tell them what
                         // player it's for, too. Splitscreen, bots, etc.
                         let peer_id = player.peer_id;
-                        send_message_queue.queue.push_back(
-                            SendMessage {
-                                destination: Destination::One(peer_id),
-                                game_message: Message::Player(
-                                    PlayerMessage::YourFighter(entity_id)
-                                ),
-                                transport: Transport::TCP,
-                            }
-                        );
+                        send_message_queue.queue.push_back(SendMessage {
+                            destination: Destination::One(peer_id),
+                            game_message: Message::Player(PlayerMessage::YourFighter(entity_id)),
+                            transport: Transport::TCP,
+                        });
                     }
                 }
             }
@@ -361,14 +336,12 @@ impl<'a> specs::System<'a> for GameSystem {
                 // TODO: there's got to be a better pattern for this...
                 if let Some(_cell_dweller) = cell_dwellers.get(fighter_entity) {
                     // Create basic third-person following camera.
-                    client_state.camera_entity = Some(
-                        pk::simple::create_simple_chase_camera(
-                            &entities,
-                            &updater,
-                            fighter_entity,
-                            &mut default_camera,
-                        )
-                    );
+                    client_state.camera_entity = Some(pk::simple::create_simple_chase_camera(
+                        &entities,
+                        &updater,
+                        fighter_entity,
+                        &mut default_camera,
+                    ));
                 }
             }
         }

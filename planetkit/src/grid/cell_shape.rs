@@ -66,6 +66,7 @@ use super::GridCoord;
 //
 // Referring to the top figure for the offsets and the
 // bottom for the labelling, that gives us:
+#[rustfmt::skip]
 pub const DIR_OFFSETS: [[i64; 2]; 12] = [
     [ 3,  0], // edge (+x)
     [ 2,  2], // vertex

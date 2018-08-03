@@ -1,24 +1,15 @@
-use specs;
-use specs::{WriteStorage, Read, Write};
 use slog::Logger;
+use specs;
+use specs::{Read, Write, WriteStorage};
 
 use super::{
-    CellDweller,
-    RecvMessageQueue,
+    CellDweller, CellDwellerMessage, RecvMessageQueue, RemoveBlockMessage, SendMessage,
     SendMessageQueue,
-    CellDwellerMessage,
-    SendMessage,
-    RemoveBlockMessage,
 };
-use Spatial;
-use grid::PosInOwningRoot;
 use globe::Globe;
-use net::{
-    EntityIds,
-    NodeResource,
-    Destination,
-    Transport,
-};
+use grid::PosInOwningRoot;
+use net::{Destination, EntityIds, NodeResource, Transport};
+use Spatial;
 
 pub struct RecvSystem {
     log: Logger,
@@ -59,21 +50,24 @@ impl<'a> specs::System<'a> for RecvSystem {
             match message.game_message {
                 CellDwellerMessage::SetPos(set_pos_message) => {
                     // Look up the entity from its global ID.
-                    let cell_dweller_entity = match entity_ids.mapping.get(&set_pos_message.entity_id) {
+                    let cell_dweller_entity = match entity_ids
+                        .mapping
+                        .get(&set_pos_message.entity_id)
+                    {
                         Some(ent) => ent,
                         // We probably just don't know about it yet.
                         None => {
                             // TODO: demote to trace
                             info!(self.log, "Heard about cell dweller we don't know about yet"; "entity_id" => set_pos_message.entity_id);
                             continue;
-                        },
+                        }
                     };
-                    let cd = cell_dwellers.get_mut(*cell_dweller_entity).expect(
-                        "Missing CellDweller",
-                    );
-                    let spatial = spatials.get_mut(*cell_dweller_entity).expect(
-                        "Missing Spatial",
-                    );
+                    let cd = cell_dwellers
+                        .get_mut(*cell_dweller_entity)
+                        .expect("Missing CellDweller");
+                    let spatial = spatials
+                        .get_mut(*cell_dweller_entity)
+                        .expect("Missing Spatial");
 
                     // TODO: validate that they're allowed to move this cell dweller.
 
@@ -105,31 +99,32 @@ impl<'a> specs::System<'a> for RecvSystem {
                     // - how to forward it on if we're the server and we just
                     //   acted on it.
                     if node_resource.is_master {
-                        send_message_queue.queue.push_back(
-                            SendMessage {
-                                destination: Destination::EveryoneElseExcept(message.source),
-                                game_message: CellDwellerMessage::SetPos(set_pos_message),
-                                transport: Transport::UDP,
-                            }
-                        )
+                        send_message_queue.queue.push_back(SendMessage {
+                            destination: Destination::EveryoneElseExcept(message.source),
+                            game_message: CellDwellerMessage::SetPos(set_pos_message),
+                            transport: Transport::UDP,
+                        })
                     }
-                },
+                }
                 CellDwellerMessage::TryPickUpBlock(try_pick_up_block_message) => {
                     // TODO: validate that we are the server.
 
                     // Look up the entity from its global ID.
-                    let cell_dweller_entity = match entity_ids.mapping.get(&try_pick_up_block_message.cd_entity_id) {
+                    let cell_dweller_entity = match entity_ids
+                        .mapping
+                        .get(&try_pick_up_block_message.cd_entity_id)
+                    {
                         Some(ent) => ent,
                         // We probably just don't know about it yet.
                         None => {
                             // TODO: demote to trace
                             info!(self.log, "Heard about cell dweller we don't know about yet"; "entity_id" => try_pick_up_block_message.cd_entity_id);
                             continue;
-                        },
+                        }
                     };
-                    let cd = cell_dwellers.get_mut(*cell_dweller_entity).expect(
-                        "Missing CellDweller",
-                    );
+                    let cd = cell_dwellers
+                        .get_mut(*cell_dweller_entity)
+                        .expect("Missing CellDweller");
 
                     // Get the associated globe, complaining loudly if we fail.
                     // TODO: again, need a pattern for this that isn't awful.
@@ -177,30 +172,33 @@ impl<'a> specs::System<'a> for RecvSystem {
                             // globe_entity_id: ......,
                             pos: new_pos_in_owning_root.into(),
                         };
-                        send_message_queue.queue.push_back(
-                            SendMessage {
-                                destination: Destination::EveryoneElse,
-                                game_message: CellDwellerMessage::RemoveBlock(remove_block_message),
-                                transport: Transport::TCP,
-                            }
-                        );
+                        send_message_queue.queue.push_back(SendMessage {
+                            destination: Destination::EveryoneElse,
+                            game_message: CellDwellerMessage::RemoveBlock(remove_block_message),
+                            transport: Transport::TCP,
+                        });
                     }
-                },
+                }
                 CellDwellerMessage::RemoveBlock(remove_block_message) => {
                     // For now just find the first globe, and assume that's
                     // the one we're supposed to be working with.
                     use specs::Join;
-                    let globe = (&mut globes).join().next().expect("Should've been at least one globe.");
+                    let globe = (&mut globes)
+                        .join()
+                        .next()
+                        .expect("Should've been at least one globe.");
 
                     // TODO: validate that position makes sense. Don't want the client
                     // to be able to punk us.
 
-                    let pos_in_owning_root =
-                        PosInOwningRoot::new(remove_block_message.pos, globe.spec().root_resolution);
+                    let pos_in_owning_root = PosInOwningRoot::new(
+                        remove_block_message.pos,
+                        globe.spec().root_resolution,
+                    );
                     let removed_cell = super::mining::remove_block(globe, pos_in_owning_root);
 
                     debug!(self.log, "Removed a block master told me to"; "pos" => format!("{:?}", remove_block_message.pos), "cell" => format!("{:?}", removed_cell));
-                },
+                }
             }
         }
     }

@@ -1,11 +1,11 @@
 use specs;
-use specs::{Read, LazyUpdate, Entities, Builder};
+use specs::{Builder, Entities, LazyUpdate, Read};
 
-use types::*;
-use globe;
-use cell_dweller;
-use render;
 use camera::DefaultCamera;
+use cell_dweller;
+use globe;
+use render;
+use types::*;
 
 // TODO: Retire most of this stuff. Or, rather, turn it into
 // a module (eventually split out into a separate crate) of easy-to-combine
@@ -35,28 +35,25 @@ pub fn create_simple_player_character_now(
     world: &mut specs::World,
     globe_entity: specs::Entity,
 ) -> specs::Entity {
-    use rand::{XorShiftRng, SeedableRng};
+    use rand::{SeedableRng, XorShiftRng};
 
     // Find a suitable spawn point for the player character at the globe surface.
     use grid::Dir;
     let (globe_spec, player_character_pos) = {
         let mut globe_storage = world.write_storage::<globe::Globe>();
-        let globe = globe_storage.get_mut(globe_entity).expect(
-            "Uh oh, it looks like our Globe went missing.",
-        );
+        let globe = globe_storage
+            .get_mut(globe_entity)
+            .expect("Uh oh, it looks like our Globe went missing.");
         let globe_spec = globe.spec();
         // Seed spawn point RNG with world seed.
         let mut rng = XorShiftRng::from_seed(globe_spec.seed_as_u8_array);
         let player_character_pos = globe
             .air_above_random_surface_dry_land(
-                &mut rng,
-                2, // Min air cells above
+                &mut rng, 2, // Min air cells above
                 5, // Max distance from starting point
                 5, // Max attempts
             )
-            .expect(
-                "Oh noes, we took too many attempts to find a decent spawn point!",
-            );
+            .expect("Oh noes, we took too many attempts to find a decent spawn point!");
         (globe_spec, player_character_pos)
     };
 
@@ -98,7 +95,9 @@ pub fn create_simple_chase_camera_now(
         .build();
     use camera::DefaultCamera;
     // TODO: gah, where does this belong?
-    world.add_resource(DefaultCamera { camera_entity: Some(camera_entity) });
+    world.add_resource(DefaultCamera {
+        camera_entity: Some(camera_entity),
+    });
     camera_entity
 }
 
@@ -113,7 +112,10 @@ pub fn create_simple_chase_camera(
     let target = Pt3::origin();
     let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
     let entity = entities.create();
-    updater.insert(entity, ::Spatial::new(player_character_entity, camera_transform));
+    updater.insert(
+        entity,
+        ::Spatial::new(player_character_entity, camera_transform),
+    );
     default_camera.camera_entity = Some(entity);
     entity
 }

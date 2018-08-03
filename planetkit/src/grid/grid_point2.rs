@@ -1,5 +1,5 @@
-use super::{GridCoord, Root, RootIndex};
 use super::GridPoint3;
+use super::{GridCoord, Root, RootIndex};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct GridPoint2 {

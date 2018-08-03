@@ -1,12 +1,11 @@
 /// These functions are used so that most movement calculations can assume we're in the
 /// arctic triangle of root 0 (see `triangles.rs`) to minimise the amount of
 /// special case logic.
-
 use na;
 
-use grid::{GridCoord, GridPoint3, Dir};
-use grid::cell_shape::NEIGHBOR_OFFSETS;
 use super::triangles::*;
+use grid::cell_shape::NEIGHBOR_OFFSETS;
+use grid::{Dir, GridCoord, GridPoint3};
 
 // Use nalgebra for some local transformations.
 // We are ignoring z-axis completely because this kid of movement
@@ -95,7 +94,7 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use grid::{GridPoint3, Dir};
+    use grid::{Dir, GridPoint3};
 
     const RESOLUTION: [i64; 2] = [32, 64];
 
@@ -129,9 +128,9 @@ mod tests {
     #[test]
     fn world_to_tri_4() {
         // Transform from just below northern tropic, facing north-west.
-        let pos = GridPoint3::default().with_x(2).with_y(
-            RESOLUTION[1] / 2 - 1,
-        );
+        let pos = GridPoint3::default()
+            .with_x(2)
+            .with_y(RESOLUTION[1] / 2 - 1);
         let dir = Dir::new(8);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
@@ -151,9 +150,9 @@ mod tests {
 
         // Should now be just below northern tropic, facing north-west.
         assert_eq!(
-            GridPoint3::default().with_x(2).with_y(
-                RESOLUTION[1] / 2 - 1,
-            ),
+            GridPoint3::default()
+                .with_x(2,)
+                .with_y(RESOLUTION[1] / 2 - 1,),
             new_pos
         );
         assert_eq!(Dir::new(8), new_dir);

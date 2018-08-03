@@ -1,38 +1,38 @@
 extern crate planetkit as pk;
+extern crate rand;
 extern crate shred;
 extern crate specs;
-extern crate rand;
 #[macro_use]
 extern crate slog;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
 extern crate clap;
-extern crate piston;
-extern crate piston_window;
 extern crate nalgebra as na;
 extern crate ncollide3d;
 extern crate nphysics3d;
+extern crate piston;
+extern crate piston_window;
+extern crate serde;
 
-mod player;
-mod game_state;
 mod client_state;
-mod fighter;
-mod game_system;
-mod planet;
-mod message;
-mod send_mux_system;
-mod recv_demux_system;
-mod weapon;
-mod health;
 mod death_system;
+mod fighter;
+mod game_state;
+mod game_system;
+mod health;
+mod message;
+mod planet;
+mod player;
+mod recv_demux_system;
+mod send_mux_system;
+mod weapon;
 
 use std::sync::mpsc;
 
-use message::Message;
 use clap::{AppSettings, Arg, SubCommand};
-use send_mux_system::SendMuxSystem;
+use message::Message;
 use recv_demux_system::RecvDemuxSystem;
+use send_mux_system::SendMuxSystem;
 
 fn main() {
     let matches = clap::App::new("Kaboom")
@@ -65,9 +65,13 @@ fn main() {
     let mut app = pk::AppBuilder::new()
         .with_networking::<Message>()
         .with_common_systems()
-        .with_systems(|logger: &slog::Logger, world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
-            add_systems(logger, world, dispatcher_builder, shoot_input_receiver)
-        })
+        .with_systems(
+            |logger: &slog::Logger,
+             world: &mut specs::World,
+             dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
+                add_systems(logger, world, dispatcher_builder, shoot_input_receiver)
+            },
+        )
         .build_gui();
 
     app.add_input_adapter(shoot_input_adapter);
@@ -75,14 +79,17 @@ fn main() {
     // Should we start a server or connect to one?
     // NLL SVP.
     {
-        use std::net::SocketAddr;
         use piston_window::AdvancedWindow;
         use pk::net::ServerResource;
+        use std::net::SocketAddr;
 
         // Systems we added will have ensured ServerResource is present.
         let (world, window) = app.world_and_window_mut();
         let server_resource = world.write_resource::<ServerResource<Message>>();
-        let mut server = server_resource.server.lock().expect("Failed to lock server");
+        let mut server = server_resource
+            .server
+            .lock()
+            .expect("Failed to lock server");
         if let Some(_matches) = matches.subcommand_matches("listen") {
             window.set_title("Kaboom (server)".to_string());
             // TODO: make port configurable

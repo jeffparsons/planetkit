@@ -1,17 +1,12 @@
 use std;
-use std::thread;
 use std::net::SocketAddr;
+use std::thread;
 
-use slog;
 use futures;
+use slog;
 use tokio_core::reactor::{Core, Remote};
 
-use super::{
-    SendWireMessage,
-    RecvWireMessage,
-    NewPeer,
-    GameMessage,
-};
+use super::{GameMessage, NewPeer, RecvWireMessage, SendWireMessage};
 
 /// Network client/server.
 ///
@@ -45,8 +40,11 @@ impl<G: GameMessage> Server<G> {
             .spawn(move || {
                 let mut reactor = Core::new().expect("Failed to create reactor for network server");
                 remote_tx.send(reactor.remote()).expect("Receiver hung up");
-                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
-            }).expect("Failed to spawn server thread");
+                reactor
+                    .run(futures::future::empty::<(), ()>())
+                    .expect("Network server reactor failed");
+            })
+            .expect("Failed to spawn server thread");
         let remote = remote_rx.recv().expect("Sender hung up");
 
         Server {
@@ -59,11 +57,9 @@ impl<G: GameMessage> Server<G> {
         }
     }
 
-    pub fn start_listen<MaybePort>(
-        &mut self,
-        port: MaybePort,
-    )
-        where MaybePort: Into<Option<u16>>
+    pub fn start_listen<MaybePort>(&mut self, port: MaybePort)
+    where
+        MaybePort: Into<Option<u16>>,
     {
         self.port = super::tcp::start_tcp_server(
             &self.log,
@@ -75,7 +71,9 @@ impl<G: GameMessage> Server<G> {
         super::udp::start_udp_server(
             &self.log,
             self.recv_system_sender.clone(),
-            self.send_udp_wire_message_rx.take().expect("Somebody else took it!"),
+            self.send_udp_wire_message_rx
+                .take()
+                .expect("Somebody else took it!"),
             self.remote.clone(),
             self.port,
         );
@@ -95,7 +93,9 @@ impl<G: GameMessage> Server<G> {
         super::udp::start_udp_server(
             &self.log,
             self.recv_system_sender.clone(),
-            self.send_udp_wire_message_rx.take().expect("Somebody else took it!"),
+            self.send_udp_wire_message_rx
+                .take()
+                .expect("Somebody else took it!"),
             self.remote.clone(),
             local_port,
         );

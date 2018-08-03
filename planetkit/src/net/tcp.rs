@@ -1,23 +1,18 @@
 use std;
-use std::result::Result;
 use std::io;
-use std::net::SocketAddr;
 use std::mem::size_of;
+use std::net::SocketAddr;
+use std::result::Result;
 
-use bytes::{BytesMut, BigEndian, ByteOrder};
+use bytes::{BigEndian, ByteOrder, BytesMut};
 use futures::{self, Future};
-use tokio_core::reactor::{Remote, Handle};
-use tokio_core::net::{TcpListener, TcpStream};
-use tokio_codec::{Encoder, Decoder};
-use slog::Logger;
 use serde_json;
+use slog::Logger;
+use tokio_codec::{Decoder, Encoder};
+use tokio_core::net::{TcpListener, TcpStream};
+use tokio_core::reactor::{Handle, Remote};
 
-use super::{
-    GameMessage,
-    WireMessage,
-    RecvWireMessage,
-    NewPeer,
-};
+use super::{GameMessage, NewPeer, RecvWireMessage, WireMessage};
 
 type MessageLengthPrefix = u16;
 
@@ -62,7 +57,8 @@ impl<G: GameMessage> Encoder for Codec<G> {
 
         // Now that we know how much space the message itself took,
         // go back and fill in the actual in the header.
-        let message_length = (buf.len() - length_header_index - size_of::<MessageLengthPrefix>()) as u16;
+        let message_length =
+            (buf.len() - length_header_index - size_of::<MessageLengthPrefix>()) as u16;
         BigEndian::write_u16(&mut buf[length_header_index..], message_length);
 
         Ok(())
@@ -94,16 +90,16 @@ impl<G: GameMessage> Decoder for Codec<G> {
         // Skip the length prefix, and try to parse the message.
         buf.split_to(size_of::<MessageLengthPrefix>());
         serde_json::from_slice::<WireMessage<G>>(&buf[0..message_length])
-        .map(|message| {
-            // Advance the buffer past the message we found.
-            buf.split_to(message_length);
-            Some(RecvWireMessage {
-                src: self.peer_addr,
-                message: Result::Ok(message)
+            .map(|message| {
+                // Advance the buffer past the message we found.
+                buf.split_to(message_length);
+                Some(RecvWireMessage {
+                    src: self.peer_addr,
+                    message: Result::Ok(message),
+                })
             })
-        })
-        .map_err(|error| {
-            warn!(
+            .map_err(|error| {
+                warn!(
                 self.log,
                 "Got a bad message from peer";
                 "peer_addr" => format!("{:?}", self.peer_addr),
@@ -111,8 +107,8 @@ impl<G: GameMessage> Decoder for Codec<G> {
                 "buffer" => format!("{:?}", buf),
                 "error" => format!("{:?}", error)
             );
-            io::Error::new(io::ErrorKind::Other, "Couldn't parse message")
-        })
+                io::Error::new(io::ErrorKind::Other, "Couldn't parse message")
+            })
     }
 }
 
@@ -133,12 +129,12 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
     // Used to establish new peer connections,
     // and register the sender ends of channels
     // to send messages to those connections.
-    send_system_new_peer_sender:
-        std::sync::mpsc::Sender<NewPeer<G>>,
+    send_system_new_peer_sender: std::sync::mpsc::Sender<NewPeer<G>>,
     remote: Remote,
-    port: MaybePort
+    port: MaybePort,
 ) -> u16
-    where MaybePort: Into<Option<u16>>
+where
+    MaybePort: Into<Option<u16>>,
 {
     use futures::Stream;
 
@@ -164,23 +160,28 @@ pub fn start_tcp_server<G: GameMessage, MaybePort>(
         info!(server_log, "TCP server listening"; "addr" => format!("{}", actual_addr));
 
         // Let main thread know we're ready to receive messages.
-        actual_port_tx.send(actual_addr.port()).expect("Receiver hung up");
+        actual_port_tx
+            .send(actual_addr.port())
+            .expect("Receiver hung up");
 
         let cloned_handle = handle.clone();
-        let f = socket.incoming().for_each(move |(socket, peer_addr)| {
-            info!(server_log, "New client connected"; "addr" => format!("{}", peer_addr));
-            handle_tcp_stream(
-                &cloned_handle,
-                socket,
-                peer_addr,
-                &server_log,
-                recv_system_sender.clone(),
-                send_system_new_peer_sender.clone(),
-            )
-        }).or_else(move |error| {
-            info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
-            futures::future::ok(())
-        });
+        let f = socket
+            .incoming()
+            .for_each(move |(socket, peer_addr)| {
+                info!(server_log, "New client connected"; "addr" => format!("{}", peer_addr));
+                handle_tcp_stream(
+                    &cloned_handle,
+                    socket,
+                    peer_addr,
+                    &server_log,
+                    recv_system_sender.clone(),
+                    send_system_new_peer_sender.clone(),
+                )
+            })
+            .or_else(move |error| {
+                info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
+                futures::future::ok(())
+            });
 
         // TODO: handle stream disconnection somewhere.
         // (The stream will terminate on first error.)
@@ -199,8 +200,7 @@ pub fn connect_to_server<G: GameMessage>(
     // Used to establish new peer connections,
     // and register the sender ends of channels
     // to send messages to those connections.
-    send_system_new_peer_sender:
-        std::sync::mpsc::Sender<NewPeer<G>>,
+    send_system_new_peer_sender: std::sync::mpsc::Sender<NewPeer<G>>,
     remote: Remote,
     addr: SocketAddr,
 ) -> u16 {
@@ -220,28 +220,32 @@ pub fn connect_to_server<G: GameMessage>(
         let socket_future = TcpStream::connect(&addr, &handle);
 
         let cloned_handle = handle.clone();
-        let f = socket_future.and_then(move |socket| {
-            info!(client_log, "Connected!");
+        let f = socket_future
+            .and_then(move |socket| {
+                info!(client_log, "Connected!");
 
-            local_port_tx.send(
-                socket
-                    .local_addr()
-                    .expect("Somehow we didn't actually bind a local port?")
-                    .port()
-            ).expect("Receiver hung up?");
-            handle_tcp_stream(
-                &cloned_handle,
-                socket,
-                addr,
-                &client_log,
-                recv_system_sender,
-                send_system_new_peer_sender,
-            )
-        }).or_else(move |error| {
-            // TODO: figure out more specific error; decide where each is handled.
-            info!(client_error_log, "Something broke in connecting to server, or handling connection"; "error" => format!("{}", error));
-            futures::future::ok(())
-        });
+                local_port_tx
+                    .send(
+                        socket
+                            .local_addr()
+                            .expect("Somehow we didn't actually bind a local port?")
+                            .port(),
+                    )
+                    .expect("Receiver hung up?");
+                handle_tcp_stream(
+                    &cloned_handle,
+                    socket,
+                    addr,
+                    &client_log,
+                    recv_system_sender,
+                    send_system_new_peer_sender,
+                )
+            })
+            .or_else(move |error| {
+                // TODO: figure out more specific error; decide where each is handled.
+                info!(client_error_log, "Something broke in connecting to server, or handling connection"; "error" => format!("{}", error));
+                futures::future::ok(())
+            });
 
         f
     });
@@ -263,11 +267,11 @@ fn handle_tcp_stream<G: GameMessage>(
     // and register the sender ends of channels
     // to send messages to those connections.
     send_system_new_peer_sender: std::sync::mpsc::Sender<NewPeer<G>>,
-) -> Box<Future<Item=(), Error=std::io::Error>> {
-    use futures::Stream;
+) -> Box<Future<Item = (), Error = std::io::Error>> {
     use futures::Sink;
+    use futures::Stream;
 
-    let codec = Codec::<G>{
+    let codec = Codec::<G> {
         peer_addr: peer_addr,
         log: parent_log.new(o!()),
         _phantom_game_message: std::marker::PhantomData,
@@ -292,7 +296,9 @@ fn handle_tcp_stream<G: GameMessage>(
         socket_addr: peer_addr,
         ready_to_receive_tx: rtr_tx,
     };
-    send_system_new_peer_sender.send(new_peer).expect("Receiver hung up?");
+    send_system_new_peer_sender
+        .send(new_peer)
+        .expect("Receiver hung up?");
     // Throw away the source and sink after the connection closes;
     // what else do we want with them? :)
     // TODO: maybe we want to remove the peer... make a test for lots
@@ -306,29 +312,33 @@ fn handle_tcp_stream<G: GameMessage>(
     // First wait for the RecvSystem to signal that it's registered
     // the peer and is ready to receive.
     let f = rtr_rx.then(|_| {
-        stream.filter(|recv_wire_message| {
-            // TODO: log
-            match recv_wire_message.message {
-                Result::Err(_) => {
-                    println!("Got a bad message from peer");
-                    false
+        stream
+            .filter(|recv_wire_message| {
+                // TODO: log
+                match recv_wire_message.message {
+                    Result::Err(_) => {
+                        println!("Got a bad message from peer");
+                        false
+                    }
+                    _ => true,
                 }
-                _ => true,
-            }
-        })
-        .for_each(move |recv_wire_message| {
-            trace!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
+            })
+            .for_each(move |recv_wire_message| {
+                trace!(peer_server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
-            // Send the message to net RecvSystem, to be interpreted and dispatched.
-            recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
+                // Send the message to net RecvSystem, to be interpreted and dispatched.
+                recv_system_sender
+                    .send(recv_wire_message)
+                    .expect("Receiver hung up?");
 
-            futures::future::ok(())
-        }).or_else(move |error| {
-            // Got a bad message from the peer (I assume) so the
-            // connection is going to close.
-            info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
-            futures::future::ok(())
-        })
+                futures::future::ok(())
+            })
+            .or_else(move |error| {
+                // Got a bad message from the peer (I assume) so the
+                // connection is going to close.
+                info!(peer_server_error_log, "Peer broke pipe"; "error" => format!("{}", error));
+                futures::future::ok(())
+            })
     });
     Box::new(f)
 }
@@ -340,17 +350,17 @@ mod tests {
     use std;
     use std::thread;
 
-    use futures::{self, Future};
-    use tokio_core::reactor::Core;
-    use tokio_core::net::TcpStream;
-    use tokio_io::io::write_all;
-    use slog;
     use bytes::BufMut;
+    use futures::{self, Future};
+    use slog;
+    use tokio_core::net::TcpStream;
+    use tokio_core::reactor::Core;
+    use tokio_io::io::write_all;
 
     // Nothing interesting in here!
     #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
     struct TestMessage {}
-    impl GameMessage for TestMessage{}
+    impl GameMessage for TestMessage {}
 
     #[test]
     fn receive_corrupt_message() {
@@ -363,8 +373,11 @@ mod tests {
             .spawn(move || {
                 let mut reactor = Core::new().expect("Failed to create reactor for network server");
                 remote_tx.send(reactor.remote()).expect("Receiver hung up");
-                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
-            }).expect("Failed to spawn server thread");
+                reactor
+                    .run(futures::future::empty::<(), ()>())
+                    .expect("Network server reactor failed");
+            })
+            .expect("Failed to spawn server thread");
         let remote = remote_rx.recv().expect("Sender hung up");
 
         // Spawn network server on other thread.
@@ -386,18 +399,20 @@ mod tests {
         // Oops, it's lowercase; it won't match any message type!
         let mut buf = BytesMut::with_capacity(1000);
         let mut buf2 = BytesMut::with_capacity(1000);
-        let f = socket_future.and_then(|tcp_stream| {
-            let message = b"\"hello\"";
-            buf.put_u16_be(message.len() as u16);
-            buf.put_slice(message);
-            write_all(tcp_stream, &mut buf)
-        }).and_then(|stream_and_buffer| {
-            let tcp_stream = stream_and_buffer.0;
-            let message = b"{\"Game\":{}}";
-            buf2.put_u16_be(message.len() as u16);
-            buf2.put_slice(message);
-            write_all(tcp_stream, &mut buf2)
-        });
+        let f = socket_future
+            .and_then(|tcp_stream| {
+                let message = b"\"hello\"";
+                buf.put_u16_be(message.len() as u16);
+                buf.put_slice(message);
+                write_all(tcp_stream, &mut buf)
+            })
+            .and_then(|stream_and_buffer| {
+                let tcp_stream = stream_and_buffer.0;
+                let message = b"{\"Game\":{}}";
+                buf2.put_u16_be(message.len() as u16);
+                buf2.put_slice(message);
+                write_all(tcp_stream, &mut buf2)
+            });
 
         reactor.run(f).expect("Test reactor failed");
 
@@ -424,8 +439,11 @@ mod tests {
             .spawn(move || {
                 let mut reactor = Core::new().expect("Failed to create reactor for network server");
                 remote_tx.send(reactor.remote()).expect("Receiver hung up");
-                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
-            }).expect("Failed to spawn server thread");
+                reactor
+                    .run(futures::future::empty::<(), ()>())
+                    .expect("Network server reactor failed");
+            })
+            .expect("Failed to spawn server thread");
         let remote = remote_rx.recv().expect("Sender hung up");
 
         // Spawn network server on other thread.
@@ -447,8 +465,13 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(10));
         // Declare that we're ready to receive.
         // (Emulate what SendSystem/whatever does.)
-        let new_peer = new_peer_rx.try_recv().expect("Should've been a new peer connected");
-        new_peer.ready_to_receive_tx.send(()).expect("Receiver hung up?");
+        let new_peer = new_peer_rx
+            .try_recv()
+            .expect("Should've been a new peer connected");
+        new_peer
+            .ready_to_receive_tx
+            .send(())
+            .expect("Receiver hung up?");
 
         // Send two great messages together!
         let mut buf = BytesMut::with_capacity(1000);
@@ -472,10 +495,20 @@ mod tests {
 
         // Take a look at what was received. We should have gotten two
         // identical `TestMessage`s.
-        let recv_wire_message = rx.recv_timeout(blink).expect("Should have found our first message on the channel");
-        assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
-        let recv_wire_message = rx.recv_timeout(blink).expect("Should have found our second message on the channel");
-        assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
+        let recv_wire_message = rx
+            .recv_timeout(blink)
+            .expect("Should have found our first message on the channel");
+        assert_eq!(
+            recv_wire_message.message,
+            Ok(WireMessage::Game(TestMessage {}))
+        );
+        let recv_wire_message = rx
+            .recv_timeout(blink)
+            .expect("Should have found our second message on the channel");
+        assert_eq!(
+            recv_wire_message.message,
+            Ok(WireMessage::Game(TestMessage {}))
+        );
         // There shouldn't be any more messages on the channel.
         assert_eq!(rx.try_recv(), Err(std::sync::mpsc::TryRecvError::Empty));
 

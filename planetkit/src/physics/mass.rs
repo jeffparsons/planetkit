@@ -10,8 +10,7 @@ pub struct Mass {
 
 impl Mass {
     pub fn new() -> Mass {
-        Mass {
-        }
+        Mass {}
     }
 }
 

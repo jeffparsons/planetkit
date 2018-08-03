@@ -1,23 +1,21 @@
-use specs;
-use specs::{Read, Write, Entities, ReadStorage, WriteStorage};
 use slog::Logger;
+use specs;
+use specs::{Entities, Read, ReadStorage, Write, WriteStorage};
 
-use pk::types::*;
-use pk::Spatial;
 use pk::net::NodeResource;
 use pk::physics;
+use pk::types::*;
+use pk::Spatial;
 
-use ::health::Health;
 use super::grenade::Grenade;
+use health::Health;
 
 pub struct ExplodeSystem {
     log: Logger,
 }
 
 impl ExplodeSystem {
-    pub fn new(
-        parent_log: &Logger,
-    ) -> ExplodeSystem {
+    pub fn new(parent_log: &Logger) -> ExplodeSystem {
         ExplodeSystem {
             log: parent_log.new(o!()),
         }
@@ -40,8 +38,8 @@ impl<'a> specs::System<'a> for ExplodeSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use specs::Join;
         use pk::SpatialStorage;
+        use specs::Join;
 
         let (
             dt,
@@ -61,7 +59,9 @@ impl<'a> specs::System<'a> for ExplodeSystem {
         let remove_body_queue = &mut remove_body_queue_resource.queue;
         let remove_collider_queue = &mut remove_collider_queue_resource.queue;
 
-        for (grenade_entity, grenade, rigid_body, collider) in (&*entities, &mut grenades, &rigid_bodies, &colliders).join() {
+        for (grenade_entity, grenade, rigid_body, collider) in
+            (&*entities, &mut grenades, &rigid_bodies, &colliders).join()
+        {
             // Count down each grenade's timer, and remove it if
             // it's been alive too long.
             grenade.time_to_live_seconds -= dt.0;
@@ -87,17 +87,13 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             // thing to bounce... or DO you? :P Maybe that'll be
             // a setting: number of bounces. It'll be way more fun like that.
             use ncollide3d::events::ContactEvent;
-            let did_hit_something = grenade.time_lived_seconds > 0.2 &&
-                nphysics_world.contact_events()
-                .iter()
-                .any(|contact_event| {
+            let did_hit_something = grenade.time_lived_seconds > 0.2
+                && nphysics_world.contact_events().iter().any(|contact_event| {
                     match contact_event {
                         ContactEvent::Started(a, b) => {
                             // Collision could be either way around...?
-                            *a == collider.collider_handle
-                            ||
-                            *b == collider.collider_handle
-                        },
+                            *a == collider.collider_handle || *b == collider.collider_handle
+                        }
                         _ => false,
                     }
                 });
@@ -105,7 +101,9 @@ impl<'a> specs::System<'a> for ExplodeSystem {
             if did_hit_something || grenade.time_to_live_seconds <= 0.0 {
                 debug!(self.log, "Kaboom!"; "did_hit_something" => did_hit_something);
 
-                entities.delete(grenade_entity).expect("Wrong entity generation!");
+                entities
+                    .delete(grenade_entity)
+                    .expect("Wrong entity generation!");
 
                 // Queue it for removal from physics world.
                 //
@@ -130,8 +128,11 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 }
 
                 // Damage anything nearby that can take damage.
-                for (living_thing_entity, health, _spatial) in (&*entities, &mut healths, &spatials).join() {
-                    let relative_transform = spatials.a_relative_to_b(living_thing_entity, grenade_entity);
+                for (living_thing_entity, health, _spatial) in
+                    (&*entities, &mut healths, &spatials).join()
+                {
+                    let relative_transform =
+                        spatials.a_relative_to_b(living_thing_entity, grenade_entity);
                     let distance_squared = relative_transform.translation.vector.norm_squared();
                     let blast_radius_squared = 2.5 * 2.5;
 

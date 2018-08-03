@@ -141,7 +141,9 @@ impl PosInOwningRoot {
             pos
         };
 
-        PosInOwningRoot { pos: pos_in_owning_root }
+        PosInOwningRoot {
+            pos: pos_in_owning_root,
+        }
     }
 
     /// Set z-coordinate of underlying `Pos`.

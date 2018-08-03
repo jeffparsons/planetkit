@@ -1,20 +1,20 @@
-use std::sync::{Arc, Mutex, mpsc};
-use piston_window::PistonWindow;
-use piston::input::{UpdateArgs, RenderArgs};
-use slog::Logger;
+use camera_controllers;
 use gfx;
 use gfx_device_gl;
-use camera_controllers;
+use piston::input::{RenderArgs, UpdateArgs};
+use piston_window::PistonWindow;
+use slog::Logger;
 use specs;
+use std::sync::{mpsc, Arc, Mutex};
 
-use render;
-use render::{Visual, Mesh, MeshRepository};
-use types::*;
 use input_adapter::InputAdapter;
+use render;
+use render::{Mesh, MeshRepository, Visual};
+use types::*;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
-    use piston::window::Window;
     use camera_controllers::CameraPerspective;
+    use piston::window::Window;
 
     let draw_size = w.window.draw_size();
     CameraPerspective {
@@ -57,7 +57,7 @@ impl App {
         mut world: specs::World,
         dispatcher_builder: specs::DispatcherBuilder<'static, 'static>,
     ) -> App {
-        use camera_controllers::{FirstPersonSettings, FirstPerson};
+        use camera_controllers::{FirstPerson, FirstPersonSettings};
 
         // Rendering system, with bi-directional channel to pass
         // encoder back and forth between this thread (which owns
@@ -233,9 +233,10 @@ impl App {
             if !needs_to_be_realized {
                 continue;
             }
-            let proto_mesh = visual.proto_mesh.clone().expect(
-                "Just ensured this above...",
-            );
+            let proto_mesh = visual
+                .proto_mesh
+                .clone()
+                .expect("Just ensured this above...");
             // Realize the mesh and hand it off to the mesh repository.
             let mesh = Mesh::new(
                 &mut self.factory,

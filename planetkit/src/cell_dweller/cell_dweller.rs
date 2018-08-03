@@ -1,9 +1,9 @@
 use specs;
 
-use types::*;
-use grid::{GridPoint3, Dir};
 use globe::Spec;
+use grid::{Dir, GridPoint3};
 use movement::*;
+use types::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.

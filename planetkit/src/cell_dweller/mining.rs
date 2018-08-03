@@ -1,8 +1,8 @@
 use super::CellDweller;
-use movement::*;
-use grid::PosInOwningRoot;
 use globe::chunk::{Cell, Material};
 use globe::Globe;
+use grid::PosInOwningRoot;
+use movement::*;
 
 /// Assumes that the given CellDweller is indeed attached to the given globe.
 /// May panick if this is not true.
@@ -37,9 +37,10 @@ pub fn can_pick_up(cd: &mut CellDweller, globe: &mut Globe) -> bool {
         .expect("CellDweller should have been in good state.");
     let anything_to_pick_up = {
         // Chunk might not be loaded; in that case assume nothing to pick up.
-        globe.maybe_non_authoritative_cell(new_pos).map(|cell| {
-            cell.material == Material::Dirt
-        }).unwrap_or(false)
+        globe
+            .maybe_non_authoritative_cell(new_pos)
+            .map(|cell| cell.material == Material::Dirt)
+            .unwrap_or(false)
     };
     // Also require that there's air above the block;
     // in my initial use case I don't want to allow mining below
@@ -47,16 +48,20 @@ pub fn can_pick_up(cd: &mut CellDweller, globe: &mut Globe) -> bool {
     let air_above_target = {
         // Chunk might not be loaded; in that case assume not air above block.
         let above_new_pos = new_pos.with_z(new_pos.z + 1);
-        globe.maybe_non_authoritative_cell(above_new_pos).map(|cell| {
-            cell.material == Material::Air
-        }).unwrap_or(false)
+        globe
+            .maybe_non_authoritative_cell(above_new_pos)
+            .map(|cell| cell.material == Material::Air)
+            .unwrap_or(false)
     };
     anything_to_pick_up && air_above_target
 }
 
 // If anything was picked up, then return the position we picked up,
 // and what was in it.
-pub fn pick_up_if_possible(cd: &mut CellDweller, globe: &mut Globe) -> Option<(PosInOwningRoot, Cell)> {
+pub fn pick_up_if_possible(
+    cd: &mut CellDweller,
+    globe: &mut Globe,
+) -> Option<(PosInOwningRoot, Cell)> {
     if !can_pick_up(cd, globe) {
         return None;
     }
@@ -71,8 +76,7 @@ pub fn pick_up_if_possible(cd: &mut CellDweller, globe: &mut Globe) -> Option<(P
     // that make it super-easy to configure.
     // The goal here should be that the "block dude" game
     // ends up both concise and legible.
-    let new_pos_in_owning_root =
-        PosInOwningRoot::new(new_pos, globe.spec().root_resolution);
+    let new_pos_in_owning_root = PosInOwningRoot::new(new_pos, globe.spec().root_resolution);
 
     let removed_cell = remove_block(globe, new_pos_in_owning_root);
 
@@ -93,11 +97,7 @@ pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> C
 
     // Some extra stuff is only relevant if the cell is shared
     // with another chunk (horizontal edges).
-    if is_point_shared(
-        *pos_in_owning_root.pos(),
-        globe.spec().chunk_resolution,
-    )
-    {
+    if is_point_shared(*pos_in_owning_root.pos(), globe.spec().chunk_resolution) {
         // Bump version of owned shared cells.
         globe.increment_chunk_owned_edge_version_for_cell(pos_in_owning_root);
         // Propagate change to neighbouring chunks.

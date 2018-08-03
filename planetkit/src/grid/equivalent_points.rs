@@ -2,8 +2,8 @@ use std::slice;
 
 use arrayvec;
 
-use super::{GridCoord, GridPoint2, GridPoint3, Root};
 use super::ROOTS;
+use super::{GridCoord, GridPoint2, GridPoint3, Root};
 
 // We need to handle 9 different cases:
 //
@@ -46,7 +46,9 @@ pub struct EquivalentPoints {
 impl EquivalentPoints {
     pub fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> EquivalentPoints {
         if point.x == 0 && point.y == 0 {
-            EquivalentPoints { iter: EquivalentPointsImpl::NorthPole(NorthPolePoints::new(point)) }
+            EquivalentPoints {
+                iter: EquivalentPointsImpl::NorthPole(NorthPolePoints::new(point)),
+            }
         } else if point.x == root_resolution[0] && point.y == root_resolution[1] {
             EquivalentPoints {
                 iter: EquivalentPointsImpl::SouthPole(SouthPolePoints::new(point, root_resolution)),
@@ -62,30 +64,36 @@ impl EquivalentPoints {
             }
         } else if point.x == 0 && point.y >= root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::EastTropics(
-                    EastTropicsPoints::new(point, root_resolution),
-                ),
+                iter: EquivalentPointsImpl::EastTropics(EastTropicsPoints::new(
+                    point,
+                    root_resolution,
+                )),
             }
         } else if point.x == root_resolution[0] && point.y < root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::WestTropics(
-                    WestTropicsPoints::new(point, root_resolution),
-                ),
+                iter: EquivalentPointsImpl::WestTropics(WestTropicsPoints::new(
+                    point,
+                    root_resolution,
+                )),
             }
         } else if point.y == root_resolution[1] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::EastAntarctic(
-                    EastAntarcticPoints::new(point, root_resolution),
-                ),
+                iter: EquivalentPointsImpl::EastAntarctic(EastAntarcticPoints::new(
+                    point,
+                    root_resolution,
+                )),
             }
         } else if point.x == root_resolution[0] && point.y >= root_resolution[0] {
             EquivalentPoints {
-                iter: EquivalentPointsImpl::WestAntarctic(
-                    WestAntarcticPoints::new(point, root_resolution),
-                ),
+                iter: EquivalentPointsImpl::WestAntarctic(WestAntarcticPoints::new(
+                    point,
+                    root_resolution,
+                )),
             }
         } else {
-            EquivalentPoints { iter: EquivalentPointsImpl::Interior(InteriorPoints::new(point)) }
+            EquivalentPoints {
+                iter: EquivalentPointsImpl::Interior(InteriorPoints::new(point)),
+            }
         }
     }
 }
@@ -130,15 +138,13 @@ impl Iterator for NorthPolePoints {
     type Item = GridPoint3;
 
     fn next(&mut self) -> Option<GridPoint3> {
-        self.roots_iter.next().map(|root| {
-            GridPoint3 {
-                rxy: GridPoint2 {
-                    root: *root,
-                    x: 0,
-                    y: 0,
-                },
-                z: self.z,
-            }
+        self.roots_iter.next().map(|root| GridPoint3 {
+            rxy: GridPoint2 {
+                root: *root,
+                x: 0,
+                y: 0,
+            },
+            z: self.z,
         })
     }
 }
@@ -169,15 +175,13 @@ impl Iterator for SouthPolePoints {
     type Item = GridPoint3;
 
     fn next(&mut self) -> Option<GridPoint3> {
-        self.roots_iter.next().map(|root| {
-            GridPoint3 {
-                rxy: GridPoint2 {
-                    root: *root,
-                    x: self.x,
-                    y: self.y,
-                },
-                z: self.z,
-            }
+        self.roots_iter.next().map(|root| GridPoint3 {
+            rxy: GridPoint2 {
+                root: *root,
+                x: self.x,
+                y: self.y,
+            },
+            z: self.z,
         })
     }
 }
@@ -202,7 +206,9 @@ impl EastArcticPoints {
             0,
             point.z,
         ));
-        EastArcticPoints { points_iter: points.into_iter() }
+        EastArcticPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -234,7 +240,9 @@ impl WestArcticPoints {
             point.x,
             point.z,
         ));
-        WestArcticPoints { points_iter: points.into_iter() }
+        WestArcticPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -267,7 +275,9 @@ impl EastTropicsPoints {
             point.y - root_resolution[0],
             point.z,
         ));
-        EastTropicsPoints { points_iter: points.into_iter() }
+        EastTropicsPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -300,7 +310,9 @@ impl WestTropicsPoints {
             point.y + root_resolution[0],
             point.z,
         ));
-        WestTropicsPoints { points_iter: points.into_iter() }
+        WestTropicsPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -333,7 +345,9 @@ impl EastAntarcticPoints {
             point.x + root_resolution[0],
             point.z,
         ));
-        EastAntarcticPoints { points_iter: points.into_iter() }
+        EastAntarcticPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -366,7 +380,9 @@ impl WestAntarcticPoints {
             root_resolution[1],
             point.z,
         ));
-        WestAntarcticPoints { points_iter: points.into_iter() }
+        WestAntarcticPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -391,7 +407,9 @@ impl InteriorPoints {
         use arrayvec::ArrayVec;
         let mut points: ArrayVec<[GridPoint3; 1]> = ArrayVec::new();
         points.push(point);
-        InteriorPoints { points_iter: points.into_iter() }
+        InteriorPoints {
+            points_iter: points.into_iter(),
+        }
     }
 }
 
@@ -407,8 +425,8 @@ impl Iterator for InteriorPoints {
 mod tests {
     use std::collections::HashSet;
 
-    use grid::semi_arbitrary_compare;
     use super::*;
+    use grid::semi_arbitrary_compare;
 
     #[test]
     fn points_equivalent_to_north_pole() {
@@ -427,8 +445,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     GridPoint3 {
                         rxy: GridPoint2 {
                             root: Root { index: 0 },
@@ -490,8 +508,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     GridPoint3 {
                         rxy: GridPoint2 {
                             root: Root { index: 0 },
@@ -553,8 +571,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Same point as given
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -594,8 +612,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Equivalent point in next root east
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -635,8 +653,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Same point as given
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -676,8 +694,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Equivalent point in next root east
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -717,8 +735,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Same point as given
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -758,8 +776,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Equivalent point in next root west
                     GridPoint3 {
                         rxy: GridPoint2 {
@@ -799,8 +817,8 @@ mod tests {
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 1);
         assert!(
-            equivalent_points ==
-                vec![
+            equivalent_points
+                == vec![
                     // Same point as given
                     GridPoint3 {
                         rxy: GridPoint2 {

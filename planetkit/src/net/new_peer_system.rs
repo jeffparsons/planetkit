@@ -1,31 +1,27 @@
 use std;
 use std::sync::mpsc::TryRecvError;
 
+use slog::Logger;
 use specs;
 use specs::Write;
-use slog::Logger;
 
-use super::{
-    GameMessage,
-    NewPeer,
-    NetworkPeers,
-    NetworkPeer,
-    PeerId,
-};
+use super::{GameMessage, NetworkPeer, NetworkPeers, NewPeer, PeerId};
 
-pub struct NewPeerSystem<G: GameMessage>{
+pub struct NewPeerSystem<G: GameMessage> {
     _log: Logger,
     new_peer_rx: std::sync::mpsc::Receiver<NewPeer<G>>,
 }
 
 impl<G> NewPeerSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> NewPeerSystem<G> {
         // Take channel end we need from ServerResource.
         use super::ServerResource;
         let server_resource = world.write_resource::<ServerResource<G>>();
-        let new_peer_rx = server_resource.new_peer_rx
+        let new_peer_rx = server_resource
+            .new_peer_rx
             .lock()
             .expect("Couldn't get lock on new peer receiver")
             .take()
@@ -40,16 +36,13 @@ impl<G> NewPeerSystem<G>
 }
 
 impl<'a, G> specs::System<'a> for NewPeerSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
-    type SystemData = (
-        Write<'a, NetworkPeers<G>>,
-    );
+    type SystemData = (Write<'a, NetworkPeers<G>>,);
 
     fn run(&mut self, data: Self::SystemData) {
-        let (
-            mut network_peers,
-        ) = data;
+        let (mut network_peers,) = data;
 
         // Register any new peers that have connected
         // (or that we've connected to).
@@ -68,7 +61,10 @@ impl<'a, G> specs::System<'a> for NewPeerSystem<G>
                     // Cool, we've registered the peer, so we can now
                     // handle messages from the network. Let the network
                     // bits know that.
-                    new_peer.ready_to_receive_tx.send(()).expect("Receiver hung up?");
+                    new_peer
+                        .ready_to_receive_tx
+                        .send(())
+                        .expect("Receiver hung up?");
 
                     // Leave a note about the new peer so game-specific
                     // systems can do whatever initialization they might
@@ -80,19 +76,19 @@ impl<'a, G> specs::System<'a> for NewPeerSystem<G>
                     // they're not ready to receive, and they'll spew a bunch
                     // of unnecessary warnings. :)
                     network_peers.new_peers.push_back(next_peer_id);
-                },
+                }
                 Err(err) => {
                     match err {
                         TryRecvError::Empty => {
                             break;
-                        },
+                        }
                         TryRecvError::Disconnected => {
                             // TODO: don't panic; we're going to need
                             // a way to shut the server down gracefully.
                             panic!("Sender hung up");
-                        },
+                        }
                     }
-                },
+                }
             }
         }
     }

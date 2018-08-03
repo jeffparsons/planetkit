@@ -1,12 +1,12 @@
-use specs;
-use specs::{ReadStorage, WriteStorage, Read};
 use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, WriteStorage};
 
-use types::*;
 use super::CellDweller;
-use Spatial;
-use globe::Globe;
 use globe::chunk::Material;
+use globe::Globe;
+use types::*;
+use Spatial;
 
 pub struct PhysicsSystem {
     log: Logger,
@@ -63,10 +63,12 @@ impl PhysicsSystem {
 }
 
 impl<'a> specs::System<'a> for PhysicsSystem {
-    type SystemData = (Read<'a, TimeDeltaResource>,
-     WriteStorage<'a, CellDweller>,
-     WriteStorage<'a, Spatial>,
-     ReadStorage<'a, Globe>);
+    type SystemData = (
+        Read<'a, TimeDeltaResource>,
+        WriteStorage<'a, CellDweller>,
+        WriteStorage<'a, Spatial>,
+        ReadStorage<'a, Globe>,
+    );
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;

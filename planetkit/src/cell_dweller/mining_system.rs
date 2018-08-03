@@ -1,24 +1,15 @@
-use std::sync::mpsc;
-use specs;
-use specs::{ReadStorage, WriteStorage, Read, Write};
-use slog::Logger;
 use piston::input::Input;
+use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, Write, WriteStorage};
+use std::sync::mpsc;
 
 use super::{
-    CellDweller,
-    ActiveCellDweller,
-    SendMessageQueue,
-    CellDwellerMessage,
-    TryPickUpBlockMessage,
+    ActiveCellDweller, CellDweller, CellDwellerMessage, SendMessageQueue, TryPickUpBlockMessage,
 };
 use globe::Globe;
 use input_adapter;
-use ::net::{
-    SendMessage,
-    Transport,
-    Destination,
-    NetMarker,
-};
+use net::{Destination, NetMarker, SendMessage, Transport};
 
 // TODO: own file?
 pub struct MiningInputAdapter {
@@ -33,8 +24,8 @@ impl MiningInputAdapter {
 
 impl input_adapter::InputAdapter for MiningInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{Button, ButtonState};
         use piston::input::keyboard::Key;
+        use piston::input::{Button, ButtonState};
 
         if let &Input::Button(button_args) = input_event {
             if let Button::Keyboard(key) = button_args.button {
@@ -107,9 +98,9 @@ impl<'a> specs::System<'a> for MiningSystem {
             Some(entity) => entity,
             None => return,
         };
-        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect(
-            "Someone deleted the controlled entity's CellDweller",
-        );
+        let cd = cell_dwellers
+            .get_mut(active_cell_dweller_entity)
+            .expect("Someone deleted the controlled entity's CellDweller");
 
         // Get the associated globe, complaining loudly if we fail.
         let globe_entity = match cd.globe_entity {
@@ -147,16 +138,14 @@ impl<'a> specs::System<'a> for MiningSystem {
                     .get(active_cell_dweller_entity)
                     .expect("Shouldn't be trying to tell peers about entities that don't have global IDs!")
                     .id;
-                send_message_queue.queue.push_back(
-                    SendMessage {
-                        // Send the request to the master node, including when that's us.
-                        destination: Destination::Master,
-                        game_message: CellDwellerMessage::TryPickUpBlock(TryPickUpBlockMessage {
-                            cd_entity_id: cd_entity_id,
-                        }),
-                        transport: Transport::TCP,
-                    }
-                )
+                send_message_queue.queue.push_back(SendMessage {
+                    // Send the request to the master node, including when that's us.
+                    destination: Destination::Master,
+                    game_message: CellDwellerMessage::TryPickUpBlock(TryPickUpBlockMessage {
+                        cd_entity_id: cd_entity_id,
+                    }),
+                    transport: Transport::TCP,
+                })
             }
         }
     }

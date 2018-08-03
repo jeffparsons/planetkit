@@ -1,9 +1,9 @@
 use specs;
-use specs::{Read, Write, ReadStorage, WriteStorage};
+use specs::{Read, ReadStorage, Write, WriteStorage};
 
+use super::{RigidBody, Velocity, WorldResource};
 use types::*;
-use ::Spatial;
-use super::{WorldResource, Velocity, RigidBody};
+use Spatial;
 
 /// Synchronises state between the Specs and nphysics worlds,
 /// and drives the nphysics simulation.
@@ -18,13 +18,11 @@ use super::{WorldResource, Velocity, RigidBody};
 // TODO: How are we going to be communicating collision events
 // into Specs land? Just make everyone who cares iterate over all of them?
 // Or make every system register its interest in particular objects?
-pub struct PhysicsSystem {
-}
+pub struct PhysicsSystem {}
 
 impl PhysicsSystem {
     pub fn new() -> PhysicsSystem {
-        PhysicsSystem {
-        }
+        PhysicsSystem {}
     }
 }
 
@@ -85,7 +83,9 @@ impl<'a> specs::System<'a> for PhysicsSystem {
         nphysics_world.step();
 
         // Copy position and velocity back out into the Specs world.
-        for (rigid_body, spatial, velocity) in (&data.rigid_bodies, &mut data.spatials, &mut data.velocities).join() {
+        for (rigid_body, spatial, velocity) in
+            (&data.rigid_bodies, &mut data.spatials, &mut data.velocities).join()
+        {
             // Component might not have been cleaned up, even if we've
             // already deleted the corresponding nphysics body.
             if let Some(body) = nphysics_world.rigid_body(rigid_body.body_handle) {

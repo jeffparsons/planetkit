@@ -1,16 +1,16 @@
 use std;
-use std::result::Result;
 use std::io;
 use std::net::SocketAddr;
+use std::result::Result;
 use std::sync::mpsc;
 
 use futures::{self, sync};
-use tokio_core::reactor::Remote;
-use tokio_core::net::{UdpSocket, UdpCodec};
-use slog::Logger;
 use serde_json;
+use slog::Logger;
+use tokio_core::net::{UdpCodec, UdpSocket};
+use tokio_core::reactor::Remote;
 
-use super::{GameMessage, WireMessage, SendWireMessage, RecvWireMessage};
+use super::{GameMessage, RecvWireMessage, SendWireMessage, WireMessage};
 
 struct Codec<G> {
     log: Logger,
@@ -29,21 +29,19 @@ impl<G: GameMessage> UdpCodec for Codec<G> {
 
     fn decode(&mut self, src: &SocketAddr, buf: &[u8]) -> io::Result<RecvWireMessage<G>> {
         serde_json::from_slice::<WireMessage<G>>(buf)
-        .map(|message| {
-            RecvWireMessage {
+            .map(|message| RecvWireMessage {
                 src: *src,
-                message: Result::Ok(message)
-            }
-        })
-        .or_else(|error| {
-            // TODO: don't warn here; trace here with details unless we can wrap
-            // them up in an error to log below.
-            warn!(self.log, "Got a bad message from peer"; "peer_addr" => format!("{:?}", src), "message" => format!("{:?}", buf), "error" => format!("{:?}", error));
-            Ok(RecvWireMessage {
-                src: *src,
-                message: Result::Err(())
+                message: Result::Ok(message),
             })
-        })
+            .or_else(|error| {
+                // TODO: don't warn here; trace here with details unless we can wrap
+                // them up in an error to log below.
+                warn!(self.log, "Got a bad message from peer"; "peer_addr" => format!("{:?}", src), "message" => format!("{:?}", buf), "error" => format!("{:?}", error));
+                Ok(RecvWireMessage {
+                    src: *src,
+                    message: Result::Err(()),
+                })
+            })
     }
 
     fn encode(&mut self, message: SendWireMessage<G>, buf: &mut Vec<u8>) -> SocketAddr {
@@ -68,11 +66,12 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
     recv_system_sender: mpsc::Sender<RecvWireMessage<G>>,
     send_system_udp_receiver: sync::mpsc::Receiver<SendWireMessage<G>>,
     remote: Remote,
-    port: MaybePort
+    port: MaybePort,
 ) -> u16
-    where MaybePort: Into<Option<u16>>
+where
+    MaybePort: Into<Option<u16>>,
 {
-    use futures::{Future, Stream, Sink};
+    use futures::{Future, Sink, Stream};
 
     // Don't return to caller until we've bound the socket,
     // or we might miss some messages.
@@ -98,9 +97,11 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
         info!(server_log, "UDP server listening"; "addr" => format!("{}", actual_addr));
 
         // Let main thread know we're ready to receive messages.
-        actual_port_tx.send(actual_addr.port()).expect("Receiver hung up");
+        actual_port_tx
+            .send(actual_addr.port())
+            .expect("Receiver hung up");
 
-        let codec = Codec::<G>{
+        let codec = Codec::<G> {
             log: codec_log,
             _phantom_game_message: std::marker::PhantomData,
         };
@@ -131,10 +132,13 @@ pub fn start_udp_server<G: GameMessage, MaybePort>(
                 trace!(server_log, "Got recv_wire_message"; "recv_wire_message" => format!("{:?}", recv_wire_message));
 
                 // Send the message to net RecvSystem, to be interpreted and dispatched.
-                recv_system_sender.send(recv_wire_message).expect("Receiver hung up?");
+                recv_system_sender
+                    .send(recv_wire_message)
+                    .expect("Receiver hung up?");
 
                 futures::future::ok(())
-            }).or_else(move |error| {
+            })
+            .or_else(move |error| {
                 info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
                 futures::future::ok(())
             });
@@ -155,14 +159,14 @@ mod tests {
     use std::time::Duration;
 
     use futures::Future;
-    use tokio_core::reactor::{Core, Timeout};
-    use tokio_core::net::UdpSocket;
     use slog;
+    use tokio_core::net::UdpSocket;
+    use tokio_core::reactor::{Core, Timeout};
 
     // Nothing interesting in here!
     #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
     struct TestMessage {}
-    impl GameMessage for TestMessage{}
+    impl GameMessage for TestMessage {}
 
     #[test]
     fn receive_corrupt_message() {
@@ -175,8 +179,11 @@ mod tests {
             .spawn(move || {
                 let mut reactor = Core::new().expect("Failed to create reactor for network server");
                 remote_tx.send(reactor.remote()).expect("Receiver hung up");
-                reactor.run(futures::future::empty::<(), ()>()).expect("Network server reactor failed");
-            }).expect("Failed to spawn server thread");
+                reactor
+                    .run(futures::future::empty::<(), ()>())
+                    .expect("Network server reactor failed");
+            })
+            .expect("Failed to spawn server thread");
         let remote = remote_rx.recv().expect("Sender hung up");
 
         // Spawn network server on other thread.
@@ -199,17 +206,15 @@ mod tests {
         // Oops, it's lowercase; it won't match any message type!
         let dest_addr = format!("127.0.0.1:{}", server_port);
         let dest_addr: SocketAddr = dest_addr.parse().unwrap();
-        let f = socket.send_dgram(b"\"hello\"", dest_addr).and_then(
-            |(socket2, _buf)| {
+        let f = socket
+            .send_dgram(b"\"hello\"", dest_addr)
+            .and_then(|(socket2, _buf)| {
                 // Wait a bit; delivery order isn't guaranteed,
                 // even though it will almost certainly be fine on localhost.
-                Timeout::new(Duration::from_millis(10), &handle).expect("Failed to set timeout").and_then(
-                    move |_| {
-                        socket2.send_dgram(b"{\"Game\":{}}", dest_addr)
-                    }
-                )
-            },
-        );
+                Timeout::new(Duration::from_millis(10), &handle)
+                    .expect("Failed to set timeout")
+                    .and_then(move |_| socket2.send_dgram(b"{\"Game\":{}}", dest_addr))
+            });
         reactor.run(f).expect("Test reactor failed");
 
         // Sleep a while to make sure we receive the message.
@@ -217,8 +222,13 @@ mod tests {
 
         // Take a look at what was received. Only one message should have made
         // it through to the RecvSystem channel.
-        let recv_wire_message = recv_rx.recv().expect("Should have been something on the channel");
-        assert_eq!(recv_wire_message.message, Ok(WireMessage::Game(TestMessage{})));
+        let recv_wire_message = recv_rx
+            .recv()
+            .expect("Should have been something on the channel");
+        assert_eq!(
+            recv_wire_message.message,
+            Ok(WireMessage::Game(TestMessage {}))
+        );
         // There shouldn't be any more messages on the channel.
         assert_eq!(recv_rx.try_recv(), Err(mpsc::TryRecvError::Empty));
 

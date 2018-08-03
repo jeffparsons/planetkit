@@ -1,10 +1,10 @@
 use na;
-use specs;
-use specs::{ReadStorage, WriteStorage, Read};
 use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, WriteStorage};
 
-use types::*;
 use super::Velocity;
+use types::*;
 use Spatial;
 
 pub struct VelocitySystem {
@@ -28,15 +28,12 @@ impl<'a> specs::System<'a> for VelocitySystem {
 
     fn run(&mut self, data: Self::SystemData) {
         use specs::Join;
-        let (
-            dt,
-            mut spatials,
-            velocities,
-        ) = data;
+        let (dt, mut spatials, velocities) = data;
         for (spatial, velocity) in (&mut spatials, &velocities).join() {
             // Apply velocity to spatial.
             let mut local_transform = spatial.local_transform();
-            let translation = na::Translation3::<f64>::from_vector(velocity.local_velocity() * dt.0);
+            let translation =
+                na::Translation3::<f64>::from_vector(velocity.local_velocity() * dt.0);
             local_transform.append_translation_mut(&translation);
             spatial.set_local_transform(local_transform);
         }

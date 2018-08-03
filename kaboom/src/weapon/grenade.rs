@@ -1,24 +1,16 @@
-use specs::{
-    self,
-    Entity,
-    Read,
-    Write,
-    LazyUpdate,
-    Entities,
-    ReadStorage,
-};
-use slog::Logger;
 use ncollide3d::shape::ShapeHandle;
+use slog::Logger;
+use specs::{self, Entities, Entity, LazyUpdate, Read, ReadStorage, Write};
 
-use pk::types::*;
-use pk::render;
 use pk::cell_dweller::CellDweller;
-use pk::physics::Velocity;
 use pk::physics::Mass;
+use pk::physics::Velocity;
+use pk::physics::{Collider, RigidBody, WorldResource};
+use pk::render;
+use pk::types::*;
 use pk::Spatial;
-use pk::physics::{WorldResource, RigidBody, Collider};
 
-use ::player::PlayerId;
+use player::PlayerId;
 
 pub struct Grenade {
     pub time_to_live_seconds: f64,
@@ -68,12 +60,12 @@ pub fn shoot_grenade(
     let mut bullet_visual = render::Visual::new_empty();
     bullet_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let cd = cell_dwellers.get(cell_dweller_entity).expect(
-        "Someone deleted the controlled entity's CellDweller",
-    );
-    let cd_spatial = spatials.get(cell_dweller_entity).expect(
-        "Someone deleted the controlled entity's Spatial",
-    );
+    let cd = cell_dwellers
+        .get(cell_dweller_entity)
+        .expect("Someone deleted the controlled entity's CellDweller");
+    let cd_spatial = spatials
+        .get(cell_dweller_entity)
+        .expect("Someone deleted the controlled entity's Spatial");
     // Get the associated globe entity, complaining loudly if we fail.
     let globe_entity = match cd.globe_entity {
         Some(globe_entity) => globe_entity,
@@ -86,10 +78,7 @@ pub fn shoot_grenade(
         }
     };
     // Put bullet where player is.
-    let bullet_spatial = Spatial::new(
-        globe_entity,
-        cd_spatial.local_transform(),
-    );
+    let bullet_spatial = Spatial::new(globe_entity, cd_spatial.local_transform());
 
     // Shoot the bullet slightly up and away from us.
     //
@@ -129,7 +118,7 @@ pub fn shoot_grenade(
     updater.insert(entity, bullet_visual);
     updater.insert(entity, bullet_spatial);
     updater.insert(entity, bullet_velocity);
-    updater.insert(entity, Mass{});
+    updater.insert(entity, Mass {});
     updater.insert(entity, Grenade::new(fired_by_player_id));
     updater.insert(entity, Collider::new(collider_handle));
     updater.insert(entity, RigidBody::new(rigid_body_handle));

@@ -1,4 +1,4 @@
-use grid::{GridCoord, GridPoint3, Dir};
+use grid::{Dir, GridCoord, GridPoint3};
 
 use super::transform::*;
 use super::turn::turn_around_and_face_neighbor;
@@ -167,9 +167,8 @@ fn maybe_rebase_on_adjacent_root_following_movement(
     *pos = new_pos;
     *dir = new_dir;
 
-    let next_pos = adjacent_pos_in_dir(*pos, *dir).expect(
-        "Caller should have assured we're pointing at a hex edge.",
-    );
+    let next_pos = adjacent_pos_in_dir(*pos, *dir)
+        .expect("Caller should have assured we're pointing at a hex edge.");
 
     // Next check if `pos` doesn't need to be re-based on a neighboring root quad
     // because it's `next_pos` is still in this root. Note that we're not checking

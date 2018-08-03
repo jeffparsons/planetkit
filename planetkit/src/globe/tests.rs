@@ -17,8 +17,7 @@ fn find_spawn_points() {
             // chunks loaded over time.
             let mut globe = Globe::new_earth_scale_example();
             globe.air_above_random_surface_dry_land(
-                &mut rng,
-                5, // Min air cells above
+                &mut rng, 5, // Min air cells above
                 5, // Max distance from starting point
                 3, // Max attempts
             )

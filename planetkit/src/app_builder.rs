@@ -1,15 +1,17 @@
 use std::sync::mpsc;
 
-use slog;
-#[cfg(not(target_os="emscripten"))] use slog_term;
-#[cfg(not(target_os="emscripten"))] use slog_async;
 use shred;
+use slog;
+#[cfg(not(target_os = "emscripten"))]
+use slog_async;
+#[cfg(not(target_os = "emscripten"))]
+use slog_term;
 use specs;
 
-use ::app::App;
-use ::cell_dweller;
-use ::window;
-use ::net::{ServerResource, GameMessage};
+use app::App;
+use cell_dweller;
+use net::{GameMessage, ServerResource};
+use window;
 
 /// Builder for [`App`].
 ///
@@ -31,12 +33,12 @@ pub struct AppBuilder {
 
 impl AppBuilder {
     pub fn new() -> AppBuilder {
-        use ::LogResource;
+        use LogResource;
 
         // Set up logger.
         // REVISIT: make logger configurable? E.g. based on whether on web or not.
         // Or just commit to a specific kind of drain for emscripten?
-        #[cfg(not(target_os="emscripten"))]
+        #[cfg(not(target_os = "emscripten"))]
         let drain = {
             use slog::Drain;
 
@@ -44,7 +46,7 @@ impl AppBuilder {
             let drain = slog_term::FullFormat::new(decorator).build().fuse();
             slog_async::Async::new(drain).build().fuse()
         };
-        #[cfg(target_os="emscripten")]
+        #[cfg(target_os = "emscripten")]
         let drain = slog::Discard;
         let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));
 
@@ -92,30 +94,37 @@ impl AppBuilder {
     }
 
     pub fn with_systems<F: AddSystemsFn<'static, 'static>>(mut self, add_systems_fn: F) -> Self {
-        self.dispatcher_builder = add_systems_fn(&self.root_log, &mut self.world, self.dispatcher_builder);
+        self.dispatcher_builder =
+            add_systems_fn(&self.root_log, &mut self.world, self.dispatcher_builder);
         self
     }
 
     // TODO: Remark (assert!) on how this must
     // be called before adding any networking-related systems.
     pub fn with_networking<G: GameMessage>(mut self) -> Self {
-        self.world.add_resource(ServerResource::<G>::new(&self.root_log));
+        self.world
+            .add_resource(ServerResource::<G>::new(&self.root_log));
         self
     }
 
     /// Add a few systems that you're likely to want, especially if you're just getting
     /// started with PlanetKit and want to get up and running quickly.
     pub fn with_common_systems(mut self) -> Self {
-        use ::globe;
+        use globe;
 
         // Set up input adapters.
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();
-        self.movement_input_adapter = Some(Box::new(cell_dweller::MovementInputAdapter::new(movement_input_sender)));
+        self.movement_input_adapter = Some(Box::new(cell_dweller::MovementInputAdapter::new(
+            movement_input_sender,
+        )));
 
         let (mining_input_sender, mining_input_receiver) = mpsc::channel();
-        self.mining_input_adapter = Some(Box::new(cell_dweller::MiningInputAdapter::new(mining_input_sender)));
+        self.mining_input_adapter = Some(Box::new(cell_dweller::MiningInputAdapter::new(
+            mining_input_sender,
+        )));
 
-        let movement_sys = cell_dweller::MovementSystem::new(movement_input_receiver, &self.root_log);
+        let movement_sys =
+            cell_dweller::MovementSystem::new(movement_input_receiver, &self.root_log);
 
         let mining_sys = cell_dweller::MiningSystem::new(mining_input_receiver, &self.root_log);
 
@@ -131,8 +140,11 @@ impl AppBuilder {
             0.05, // Seconds between geometry creation
         );
 
-        self.with_systems(|_logger: &slog::Logger, _world: &mut specs::World, dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
-            dispatcher_builder
+        self.with_systems(
+            |_logger: &slog::Logger,
+             _world: &mut specs::World,
+             dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
+                dispatcher_builder
                 // Try to get stuff most directly linked to input done first
                 // to avoid another frame of lag.
                 .with(movement_sys, "cd_movement", &[])
@@ -143,22 +155,18 @@ impl AppBuilder {
                 // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
                 // to be able to run it in parallel.
                 .with(chunk_view_sys, "chunk_view", &[])
-        })
+            },
+        )
     }
 }
 
-pub trait AddSystemsFn<'a, 'b>
-    : FnOnce(&slog::Logger,
-   &mut specs::World,
-   specs::DispatcherBuilder<'a, 'b>)
-   -> specs::DispatcherBuilder<'a, 'b> {
-}
-
-impl<'a, 'b, F> AddSystemsFn<'a, 'b> for F
-where
-    F: FnOnce(&slog::Logger,
-       &mut specs::World,
-       specs::DispatcherBuilder<'a, 'b>)
-       -> specs::DispatcherBuilder<'a, 'b>,
+pub trait AddSystemsFn<'a, 'b>:
+    FnOnce(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>)
+        -> specs::DispatcherBuilder<'a, 'b>
 {
 }
+
+impl<'a, 'b, F> AddSystemsFn<'a, 'b> for F where
+    F: FnOnce(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>)
+        -> specs::DispatcherBuilder<'a, 'b>
+{}

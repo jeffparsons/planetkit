@@ -1,21 +1,21 @@
-use std::sync::{Arc, Mutex};
-use gfx;
-use gfx::Primitive;
-use gfx::state::Rasterizer;
-use vecmath;
 use camera_controllers;
+use gfx;
+use gfx::state::Rasterizer;
+use gfx::Primitive;
+use slog::Logger;
 use specs;
 use specs::Entities;
 use specs::{Read, ReadStorage};
-use slog::Logger;
+use std::sync::{Arc, Mutex};
+use vecmath;
 
 use super::default_pipeline::pipe;
 use super::mesh::MeshGuts;
 use super::EncoderChannel;
-use super::Visual;
 use super::MeshRepository;
-use Spatial;
+use super::Visual;
 use camera::DefaultCamera;
+use Spatial;
 
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.

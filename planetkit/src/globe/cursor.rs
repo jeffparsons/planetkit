@@ -1,7 +1,7 @@
-use grid::GridPoint3;
-use super::{Globe, ChunkOrigin};
-use super::chunk::{Chunk, Cell};
+use super::chunk::{Cell, Chunk};
+use super::{ChunkOrigin, Globe};
 use globe::globe::GlobeGuts;
+use grid::GridPoint3;
 
 // TODO: describe how it only changes between chunks when _necessary_,
 // with reference to shared cells. Also remark on the fact that we might
@@ -116,7 +116,8 @@ macro_rules! cursor {
                 }
 
                 let pos = self.pos;
-                let current_chunk_contains_pos = self.current_chunk()
+                let current_chunk_contains_pos = self
+                    .current_chunk()
                     .map(|chunk| chunk.contains_pos(pos))
                     .unwrap_or(false);
                 if current_chunk_contains_pos {
@@ -135,7 +136,7 @@ macro_rules! cursor {
                 self.set_current_chunk(chunk_origin);
             }
         }
-    }
+    };
 }
 
 // Lifetimes are different because we can't hand out a mutable `Cell` reference
@@ -196,9 +197,8 @@ impl<'a> CursorMut<'a> {
     }
 
     fn current_chunk(&mut self) -> Option<&mut Chunk> {
-        self.current_chunk_origin.and_then(move |chunk_origin| {
-            self.globe.chunks_mut().get_mut(&chunk_origin)
-        })
+        self.current_chunk_origin
+            .and_then(move |chunk_origin| self.globe.chunks_mut().get_mut(&chunk_origin))
     }
 
     fn set_current_chunk(&mut self, new_chunk_origin: ChunkOrigin) {

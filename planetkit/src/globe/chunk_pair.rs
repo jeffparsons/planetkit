@@ -1,7 +1,7 @@
 //! Tracking cells shared between neighboring chunks.
 
-use grid::{GridPoint3, PosInOwningRoot};
 use super::ChunkOrigin;
+use grid::{GridPoint3, PosInOwningRoot};
 
 #[derive(Hash, PartialEq, Eq)]
 pub struct ChunkPairOrigins {

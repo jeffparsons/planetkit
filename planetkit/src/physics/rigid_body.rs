@@ -1,5 +1,5 @@
-use specs;
 use nphysics3d::object::BodyHandle;
+use specs;
 
 /// A rigid body simulated by nphysics.
 pub struct RigidBody {

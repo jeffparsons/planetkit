@@ -1,33 +1,45 @@
 // NOTE: Lots of this stuff doesn't work on the web yet.
 // Most of the module is disabled for Emscripten.
 
-#[cfg(not(target_os="emscripten"))] mod recv_system;
-#[cfg(not(target_os="emscripten"))] mod send_system;
-#[cfg(not(target_os="emscripten"))] mod new_peer_system;
-#[cfg(not(target_os="emscripten"))] mod server;
-#[cfg(not(target_os="emscripten"))] mod server_resource;
-#[cfg(not(target_os="emscripten"))] mod udp;
-#[cfg(not(target_os="emscripten"))] mod tcp;
+#[cfg(not(target_os = "emscripten"))]
+mod new_peer_system;
+#[cfg(not(target_os = "emscripten"))]
+mod recv_system;
+#[cfg(not(target_os = "emscripten"))]
+mod send_system;
+#[cfg(not(target_os = "emscripten"))]
+mod server;
+#[cfg(not(target_os = "emscripten"))]
+mod server_resource;
+#[cfg(not(target_os = "emscripten"))]
+mod tcp;
+#[cfg(not(target_os = "emscripten"))]
+mod udp;
 
 #[cfg(test)]
 mod tests;
 
-use std::fmt::Debug;
-use std::net::SocketAddr;
 use std::collections::vec_deque::VecDeque;
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::net::SocketAddr;
 use std::ops::Range;
 
-use serde::Serialize;
-use serde::de::DeserializeOwned;
 use futures;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use specs;
 
-#[cfg(not(target_os="emscripten"))] pub use self::recv_system::RecvSystem;
-#[cfg(not(target_os="emscripten"))] pub use self::send_system::SendSystem;
-#[cfg(not(target_os="emscripten"))] pub use self::new_peer_system::NewPeerSystem;
-#[cfg(not(target_os="emscripten"))] pub use self::server::Server;
-#[cfg(not(target_os="emscripten"))] pub use self::server_resource::ServerResource;
+#[cfg(not(target_os = "emscripten"))]
+pub use self::new_peer_system::NewPeerSystem;
+#[cfg(not(target_os = "emscripten"))]
+pub use self::recv_system::RecvSystem;
+#[cfg(not(target_os = "emscripten"))]
+pub use self::send_system::SendSystem;
+#[cfg(not(target_os = "emscripten"))]
+pub use self::server::Server;
+#[cfg(not(target_os = "emscripten"))]
+pub use self::server_resource::ServerResource;
 
 // TODO: all this naming is pretty shoddy, and evolved in an awkward
 // way that makes it super unclear what's for what.
@@ -41,7 +53,10 @@ use specs;
 //
 // Exists primarily as a way to aggregate all the super-traits we expect,
 // especially around being able to serialize it.
-pub trait GameMessage : 'static + Serialize + DeserializeOwned + Debug + Eq + PartialEq + Send + Sync + Clone {}
+pub trait GameMessage:
+    'static + Serialize + DeserializeOwned + Debug + Eq + PartialEq + Send + Sync + Clone
+{
+}
 
 // TODO: identify self in every message. Make this a struct wrapping the enum,
 // or include your identity in Goodbye and a Game wrapper?

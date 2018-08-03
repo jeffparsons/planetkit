@@ -1,30 +1,21 @@
+use futures;
+use slog::Logger;
 use specs;
 use specs::{Read, Write};
-use slog::Logger;
-use futures;
 
 use super::{
-    GameMessage,
-    WireMessage,
-    SendWireMessage,
-    SendMessageQueue,
-    RecvMessage,
-    RecvMessageQueue,
-    NetworkPeers,
-    NetworkPeer,
-    Destination,
-    PeerId,
-    Transport,
-    NodeResource,
+    Destination, GameMessage, NetworkPeer, NetworkPeers, NodeResource, PeerId, RecvMessage,
+    RecvMessageQueue, SendMessageQueue, SendWireMessage, Transport, WireMessage,
 };
 
-pub struct SendSystem<G: GameMessage>{
+pub struct SendSystem<G: GameMessage> {
     log: Logger,
     send_udp_tx: futures::sync::mpsc::Sender<SendWireMessage<G>>,
 }
 
 impl<G> SendSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
     pub fn new(parent_log: &Logger, world: &mut specs::World) -> SendSystem<G> {
         // Take channel end we need from ServerResource.
@@ -39,7 +30,12 @@ impl<G> SendSystem<G>
         system
     }
 
-    fn send_message(&mut self, game_message: G, dest_peer: &mut NetworkPeer<G>, transport: Transport) {
+    fn send_message(
+        &mut self,
+        game_message: G,
+        dest_peer: &mut NetworkPeer<G>,
+        transport: Transport,
+    ) {
         // Decide whether the message should go over TCP or UDP.
         match transport {
             Transport::UDP => {
@@ -53,11 +49,13 @@ impl<G> SendSystem<G>
                     message: WireMessage::Game(game_message),
                 };
 
-                self.send_udp_tx.try_send(send_wire_message).unwrap_or_else(|err| {
-                    error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
-                    ()
-                });
-            },
+                self.send_udp_tx
+                    .try_send(send_wire_message)
+                    .unwrap_or_else(|err| {
+                        error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
+                        ()
+                    });
+            }
             Transport::TCP => {
                 // Look up TCP sender channel for this peer.
                 // (Peer ID 0 refers to self, and isn't in the vec.)
@@ -74,7 +72,8 @@ impl<G> SendSystem<G>
 }
 
 impl<'a, G> specs::System<'a> for SendSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
     type SystemData = (
         Write<'a, SendMessageQueue<G>>,
@@ -84,12 +83,8 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (
-            mut send_message_queue,
-            mut recv_message_queue,
-            mut network_peers,
-            node_resource,
-        ) = data;
+        let (mut send_message_queue, mut recv_message_queue, mut network_peers, node_resource) =
+            data;
 
         // Send everything in send queue to UDP/TCP server.
         while let Some(message) = send_message_queue.queue.pop_front() {
@@ -103,12 +98,10 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                     // sometimes allows for more general code, rather than
                     // specialising between client or server case.
                     if peer_id.0 == 0 {
-                        recv_message_queue.queue.push_back(
-                            RecvMessage {
-                                source: peer_id,
-                                game_message: message.game_message,
-                            }
-                        );
+                        recv_message_queue.queue.push_back(RecvMessage {
+                            source: peer_id,
+                            game_message: message.game_message,
+                        });
                     } else {
                         self.send_message(
                             message.game_message,
@@ -116,16 +109,12 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                             message.transport,
                         );
                     }
-                },
+                }
                 Destination::EveryoneElse => {
                     for peer in network_peers.peers.iter_mut() {
-                        self.send_message(
-                            message.game_message.clone(),
-                            peer,
-                            message.transport,
-                        );
+                        self.send_message(message.game_message.clone(), peer, message.transport);
                     }
-                },
+                }
                 Destination::EveryoneElseExcept(peer_id) => {
                     // Everyone except yourself and another specified peer.
                     // Useful if we just got an update (vs. polite request) from
@@ -135,21 +124,15 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                         if peer.id == peer_id || peer.id.0 == 0 {
                             continue;
                         }
-                        self.send_message(
-                            message.game_message.clone(),
-                            peer,
-                            message.transport,
-                        );
+                        self.send_message(message.game_message.clone(), peer, message.transport);
                     }
-                },
+                }
                 Destination::Master => {
                     if node_resource.is_master {
-                        recv_message_queue.queue.push_back(
-                            RecvMessage {
-                                source: PeerId(0),
-                                game_message: message.game_message,
-                            }
-                        );
+                        recv_message_queue.queue.push_back(RecvMessage {
+                            source: PeerId(0),
+                            game_message: message.game_message,
+                        });
                     } else {
                         for peer in network_peers.peers.iter_mut() {
                             self.send_message(
@@ -159,23 +142,17 @@ impl<'a, G> specs::System<'a> for SendSystem<G>
                             );
                         }
                     }
-                },
+                }
                 Destination::EveryoneIncludingSelf => {
                     // Send to everyone else.
                     for peer in network_peers.peers.iter_mut() {
-                        self.send_message(
-                            message.game_message.clone(),
-                            peer,
-                            message.transport,
-                        );
+                        self.send_message(message.game_message.clone(), peer, message.transport);
                     }
                     // Send to self.
-                    recv_message_queue.queue.push_back(
-                        RecvMessage {
-                            source: PeerId(0),
-                            game_message: message.game_message,
-                        }
-                    );
+                    recv_message_queue.queue.push_back(RecvMessage {
+                        source: PeerId(0),
+                        game_message: message.game_message,
+                    });
                 }
             }
         }

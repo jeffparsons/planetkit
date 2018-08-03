@@ -1,12 +1,12 @@
-use specs;
-use specs::{ReadStorage, WriteStorage, Read, Entities};
 use slog::Logger;
+use specs;
+use specs::{Entities, Read, ReadStorage, WriteStorage};
 
-use types::*;
-use super::Velocity;
 use super::Mass;
-use Spatial;
+use super::Velocity;
 use globe::Globe;
+use types::*;
+use Spatial;
 
 // TODO: Reimplement gravity in Nphysics.
 
@@ -35,17 +35,10 @@ impl<'a> specs::System<'a> for GravitySystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use specs::Join;
         use spatial::SpatialStorage;
+        use specs::Join;
 
-        let (
-            dt,
-            entities,
-            spatials,
-            mut velocities,
-            masses,
-            globes,
-        ) = data;
+        let (dt, entities, spatials, mut velocities, masses, globes) = data;
 
         // For now just find the first globe, and assume that's
         // the one we're supposed to be accelerating towards.
@@ -59,7 +52,10 @@ impl<'a> specs::System<'a> for GravitySystem {
             // Accelerate toward the globe. Might as well use Earth gravity for now.
             // Do it "backwards" because we need to strip off the mass's orientation.
             //
-            let mass_from_globe = spatials.a_relative_to_b(mass_entity, globe_entity).translation.vector;
+            let mass_from_globe = spatials
+                .a_relative_to_b(mass_entity, globe_entity)
+                .translation
+                .vector;
             let gravity_direction = -mass_from_globe.normalize();
             let acceleration = gravity_direction * 9.8 * dt.0;
             *velocity.local_velocity_mut() += acceleration;

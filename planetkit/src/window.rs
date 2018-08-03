@@ -1,11 +1,11 @@
-use piston_window::PistonWindow;
 use glutin_window::GlutinWindow;
+use piston_window::PistonWindow;
 use slog::Logger;
 
 pub fn make_window(log: &Logger) -> PistonWindow {
     use opengl_graphics::OpenGL;
-    use piston::window::WindowSettings;
     use piston::window::AdvancedWindow;
+    use piston::window::WindowSettings;
     use piston_window::PistonWindow;
 
     // Change this to OpenGL::V2_1 if not working.

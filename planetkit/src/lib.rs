@@ -35,45 +35,44 @@ the line. This would imply significant API breakage.
 
 // Hook up Clippy plugin if explicitly requested.
 // You should only do this on nightly Rust.
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
-
+#![cfg_attr(feature = "clippy", feature(plugin))]
+#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(all(feature = "nightly", test), feature(test))]
 
 extern crate bytes;
 extern crate chrono;
-extern crate rand;
-extern crate noise;
-extern crate piston;
-extern crate graphics;
 extern crate glutin_window;
+extern crate graphics;
+extern crate noise;
 extern crate opengl_graphics;
+extern crate piston;
+extern crate rand;
 #[macro_use]
 extern crate gfx;
-extern crate gfx_device_gl;
-extern crate piston_window;
 extern crate camera_controllers;
-extern crate vecmath;
-extern crate shader_version;
+extern crate gfx_device_gl;
 extern crate nalgebra as na;
-extern crate nphysics3d;
 extern crate ncollide3d;
+extern crate nphysics3d;
+extern crate piston_window;
+extern crate shader_version;
+extern crate vecmath;
 #[macro_use]
 extern crate slog;
-extern crate slog_term;
-extern crate slog_async;
 extern crate shred;
+extern crate slog_async;
+extern crate slog_term;
 #[macro_use]
 extern crate shred_derive;
-extern crate specs;
 extern crate num_traits;
+extern crate specs;
 #[macro_use]
 extern crate itertools;
 #[cfg(test)]
 #[macro_use]
 extern crate approx;
-extern crate froggy;
 extern crate arrayvec;
+extern crate froggy;
 extern crate futures;
 #[macro_use]
 extern crate serde_derive;
@@ -81,25 +80,29 @@ extern crate serde;
 extern crate serde_json;
 
 // Stuff we can't run on the web yet.
-#[cfg(not(target_os="emscripten"))] extern crate tokio_core;
-#[cfg(not(target_os="emscripten"))] extern crate tokio_io;
-#[cfg(not(target_os="emscripten"))] extern crate tokio_codec;
+#[cfg(not(target_os = "emscripten"))]
+extern crate tokio_codec;
+#[cfg(not(target_os = "emscripten"))]
+extern crate tokio_core;
+#[cfg(not(target_os = "emscripten"))]
+extern crate tokio_io;
 
-#[cfg(all(feature = "nightly", test))] extern crate test;
+#[cfg(all(feature = "nightly", test))]
+extern crate test;
 
-pub mod input_adapter;
-pub mod grid;
-pub mod globe;
-pub mod types;
 pub mod app;
-pub mod window;
-pub mod render;
-pub mod simple;
-pub mod cell_dweller;
-pub mod movement;
 pub mod camera;
+pub mod cell_dweller;
+pub mod globe;
+pub mod grid;
+pub mod input_adapter;
+pub mod movement;
 pub mod net;
 pub mod physics;
+pub mod render;
+pub mod simple;
+pub mod types;
+pub mod window;
 
 mod spatial;
 pub use spatial::Spatial;

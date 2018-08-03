@@ -1,15 +1,15 @@
-use specs;
-use specs::{ReadStorage, WriteStorage, Read, Write};
 use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, Write, WriteStorage};
 
 use pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
 use pk::globe::Globe;
-use pk::net::{SendMessageQueue, NodeResource, Destination, Transport, SendMessage, NetMarker};
+use pk::net::{Destination, NetMarker, NodeResource, SendMessage, SendMessageQueue, Transport};
 
-use ::health::Health;
-use ::fighter::Fighter;
-use ::game_state::GameState;
-use ::message::Message;
+use fighter::Fighter;
+use game_state::GameState;
+use health::Health;
+use message::Message;
 
 /// Identifies fighters that have run out of health,
 /// awards points to their killer, and respawns the victim.
@@ -18,9 +18,7 @@ pub struct DeathSystem {
 }
 
 impl DeathSystem {
-    pub fn new(
-        parent_log: &Logger,
-    ) -> DeathSystem {
+    pub fn new(parent_log: &Logger) -> DeathSystem {
         DeathSystem {
             log: parent_log.new(o!()),
         }
@@ -40,8 +38,8 @@ impl<'a> specs::System<'a> for DeathSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use specs::Join;
         use rand::thread_rng;
+        use specs::Join;
 
         let (
             mut healths,
@@ -60,7 +58,9 @@ impl<'a> specs::System<'a> for DeathSystem {
         }
 
         // Find any dead fighters.
-        for (cd, fighter, health, net_marker) in (&mut cell_dwellers, &fighters, &mut healths, &net_markers).join() {
+        for (cd, fighter, health, net_marker) in
+            (&mut cell_dwellers, &fighters, &mut healths, &net_markers).join()
+        {
             if health.hp <= 0 {
                 // If it was a player that caused them to be harmed,
                 // then award a point to that player.
@@ -68,11 +68,13 @@ impl<'a> specs::System<'a> for DeathSystem {
                     // Victim might have left the game.
                     let players = &mut game_state.players;
                     // Temp hacks to get around multi-borrowing.
-                    let victim = players.get(fighter.player_id.0 as usize)
+                    let victim = players
+                        .get(fighter.player_id.0 as usize)
                         .map(|victim_player| (victim_player.id, victim_player.name.clone()));
                     if let Some((victim_id, victim_name)) = victim {
                         // Killer might have left the game.
-                        if let Some(killer) = players.get_mut(last_damaged_by_player_id.0 as usize) {
+                        if let Some(killer) = players.get_mut(last_damaged_by_player_id.0 as usize)
+                        {
                             if killer.id == victim_id {
                                 // Oops. Lost points for a self-kill.
                                 killer.points -= 1;
@@ -143,25 +145,21 @@ impl<'a> specs::System<'a> for DeathSystem {
                 cd.set_grid_point(new_fighter_pos);
 
                 // Tell everyone else that the "respawned" player was been moved.
-                send_message_queue.queue.push_back(
-                    SendMessage {
-                        // In practice, if you're the server this will mean "all clients"
-                        // because all of them need to know about the change, and if you're
-                        // a client then for now your only peer will be the server.
-                        // All of this will obviously need to be revisited if we allow
-                        // connecting to multiple servers, or to other non-server peers.
-                        destination: Destination::EveryoneElse,
-                        game_message: Message::CellDweller(
-                            CellDwellerMessage::SetPos(SetPosMessage {
-                                entity_id: net_marker.id,
-                                new_pos: cd.pos,
-                                new_dir: cd.dir,
-                                new_last_turn_bias: cd.last_turn_bias,
-                            })
-                        ),
-                        transport: Transport::UDP,
-                    }
-                );
+                send_message_queue.queue.push_back(SendMessage {
+                    // In practice, if you're the server this will mean "all clients"
+                    // because all of them need to know about the change, and if you're
+                    // a client then for now your only peer will be the server.
+                    // All of this will obviously need to be revisited if we allow
+                    // connecting to multiple servers, or to other non-server peers.
+                    destination: Destination::EveryoneElse,
+                    game_message: Message::CellDweller(CellDwellerMessage::SetPos(SetPosMessage {
+                        entity_id: net_marker.id,
+                        new_pos: cd.pos,
+                        new_dir: cd.dir,
+                        new_last_turn_bias: cd.last_turn_bias,
+                    })),
+                    transport: Transport::UDP,
+                });
             }
         }
     }

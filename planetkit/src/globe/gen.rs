@@ -1,9 +1,9 @@
 use noise;
 
-use grid::{GridPoint2, GridPoint3};
-use super::spec::Spec;
-use ::globe::ChunkOrigin;
 use super::chunk::{Cell, Material};
+use super::spec::Spec;
+use globe::ChunkOrigin;
+use grid::{GridPoint2, GridPoint3};
 
 // TODO: turn this into a component that we can slap onto a Globe
 // or other globe-oid (distant point?).
@@ -31,8 +31,8 @@ pub struct SimpleGen {
 
 impl SimpleGen {
     pub fn new(spec: Spec) -> SimpleGen {
-        use noise::Seedable;
         use noise::MultiFractal;
+        use noise::Seedable;
 
         assert!(spec.is_valid(), "Invalid globe spec!");
 

@@ -1,9 +1,9 @@
 use std::sync::mpsc;
 
-use slog;
-use globe;
-use specs::{self, Builder};
 use cell_dweller;
+use globe;
+use slog;
+use specs::{self, Builder};
 use types::*;
 
 // TODO: make a proper test harness using `App`, `piston::window::NoWindow`,
@@ -42,8 +42,7 @@ impl Walker {
         movement_sys.set_step_height(100);
 
         let physics_sys = cell_dweller::PhysicsSystem::new(
-            &root_log,
-            0.1, // Seconds between falls
+            &root_log, 0.1, // Seconds between falls
         );
 
         // Make a dispatcher and add all our systems.
@@ -66,29 +65,31 @@ impl Walker {
         let globe_entity = world.create_entity().with(globe).build();
 
         // Find globe surface and put player character on it.
-        use grid::{GridPoint3, Dir};
         use globe::chunk::Material;
+        use grid::{Dir, GridPoint3};
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
             let mut globes = world.write_storage::<globe::Globe>();
-            let globe = globes.get_mut(globe_entity).expect(
-                "Uh oh, where did our Globe go?",
-            );
+            let globe = globes
+                .get_mut(globe_entity)
+                .expect("Uh oh, where did our Globe go?");
             globe.find_lowest_cell_containing(guy_pos, Material::Air)
         };
 
-        let guy_entities: Vec<_> = (0..walker_count).map(|_| {
-            world
-                .create_entity()
-                .with(cell_dweller::CellDweller::new(
-                    guy_pos,
-                    Dir::default(),
-                    globe_spec,
-                    Some(globe_entity),
-                ))
-                .with(::Spatial::new_root())
-                .build()
-        }).collect();
+        let guy_entities: Vec<_> = (0..walker_count)
+            .map(|_| {
+                world
+                    .create_entity()
+                    .with(cell_dweller::CellDweller::new(
+                        guy_pos,
+                        Dir::default(),
+                        globe_spec,
+                        Some(globe_entity),
+                    ))
+                    .with(::Spatial::new_root())
+                    .build()
+            })
+            .collect();
 
         Walker {
             movement_input_sender: movement_input_sender,
@@ -203,7 +204,9 @@ pub mod benches {
         let mut walker = Walker::new(1);
         // Start by moving everyone away from the origin.
         walker.tick_lots(1000);
-        b.iter(|| { walker.tick_lots(10); });
+        b.iter(|| {
+            walker.tick_lots(10);
+        });
     }
 
     // These multi-walker tests are to make sure we don't get pathological performance
@@ -217,7 +220,9 @@ pub mod benches {
         let mut walker = Walker::new(2);
         // Start by moving everyone away from the origin.
         walker.tick_lots(1000);
-        b.iter(|| { walker.tick_lots(10); });
+        b.iter(|| {
+            walker.tick_lots(10);
+        });
     }
 
     #[bench]
@@ -225,6 +230,8 @@ pub mod benches {
         let mut walker = Walker::new(3);
         // Start by moving everyone away from the origin.
         walker.tick_lots(1000);
-        b.iter(|| { walker.tick_lots(10); });
+        b.iter(|| {
+            walker.tick_lots(10);
+        });
     }
 }

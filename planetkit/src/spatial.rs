@@ -95,9 +95,9 @@ where
     S: MaybeMutStorage<'e, Spatial>,
 {
     fn depth_of(&self, entity: Entity) -> i32 {
-        let spatial = self.get(entity).expect(
-            "Given entity doesn't have a Spatial",
-        );
+        let spatial = self
+            .get(entity)
+            .expect("Given entity doesn't have a Spatial");
         match spatial.parent_entity {
             None => 0,
             Some(parent) => 1 + self.depth_of(parent),
@@ -105,9 +105,9 @@ where
     }
 
     fn root_of(&self, entity: Entity) -> Entity {
-        let spatial = self.get(entity).expect(
-            "Given entity doesn't have a Spatial",
-        );
+        let spatial = self
+            .get(entity)
+            .expect("Given entity doesn't have a Spatial");
         match spatial.parent_entity {
             None => entity,
             Some(parent) => self.root_of(parent),
@@ -134,7 +134,8 @@ where
         let mut depth_delta = self.depth_of(a) - self.depth_of(b);
         while depth_delta > 0 {
             // If `a` was deeper, find its ancestor with same height as `b`.
-            a = self.get(a)
+            a = self
+                .get(a)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
                 .expect("I thought this Spatial had a parent...");
@@ -142,7 +143,8 @@ where
         }
         while depth_delta < 0 {
             // If `b` was deeper, find its ancestor with same height as `a`.
-            b = self.get(b)
+            b = self
+                .get(b)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
                 .expect("I thought this Spatial had a parent...");
@@ -153,13 +155,15 @@ where
         // depth, it's just a matter of ascending each path one step at a time
         // until they intersect.
         while a != b {
-            a = self.get(a)
+            a = self
+                .get(a)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
                 .expect(
                     "I thought this Spatial had a parent; maybe a and b do not share a root...",
                 );
-            b = self.get(b)
+            b = self
+                .get(b)
                 .expect("Entity isn't a Spatial")
                 .parent_entity
                 .expect(
@@ -191,19 +195,19 @@ where
         } else {
             // TODO: factor this out; it seems to be a common pattern...
             let a_spatial = self.get(a).expect("Entity isn't a Spatial");
-            let parent = a_spatial.parent_entity.expect(
-                "I thought this Spatial had a parent...",
-            );
-            self.a_local_transform_relative_to_ancestor_b(parent, a_spatial.local_transform(), b) *
-                a_local_transform
+            let parent = a_spatial
+                .parent_entity
+                .expect("I thought this Spatial had a parent...");
+            self.a_local_transform_relative_to_ancestor_b(parent, a_spatial.local_transform(), b)
+                * a_local_transform
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use specs::{self, Builder};
     use na;
+    use specs::{self, Builder};
 
     use super::*;
 
@@ -319,9 +323,10 @@ mod tests {
         // Look off to wherever.
         let target = Pt3::new(123.0, 321.0, 456.0);
         let new_earth_transform = Iso3::look_at_rh(&eye, &target, &Vec3::y());
-        spatials.get_mut(ss.earth).unwrap().set_local_transform(
-            new_earth_transform,
-        );
+        spatials
+            .get_mut(ss.earth)
+            .unwrap()
+            .set_local_transform(new_earth_transform);
 
         let earth_from_polar_satellite = spatials.a_relative_to_b(ss.earth, ss.polar_satellite);
         assert_relative_eq!(

@@ -11,11 +11,15 @@ impl Root {
     }
 
     pub fn next_east(&self) -> Root {
-        Root { index: ((self.index + 1) % 5) }
+        Root {
+            index: ((self.index + 1) % 5),
+        }
     }
 
     pub fn next_west(&self) -> Root {
-        Root { index: ((self.index + (5 - 1)) % 5) }
+        Root {
+            index: ((self.index + (5 - 1)) % 5),
+        }
     }
 }
 

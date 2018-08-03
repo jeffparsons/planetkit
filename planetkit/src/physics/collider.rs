@@ -1,5 +1,5 @@
-use specs;
 use nphysics3d::object::ColliderHandle;
+use specs;
 
 /// A rigid body simulated by nphysics.
 pub struct Collider {

@@ -2,9 +2,9 @@ use pk::net::GameMessage;
 
 use pk::cell_dweller::CellDwellerMessage;
 
-use ::player::PlayerMessage;
+use player::PlayerMessage;
 
-use ::weapon::WeaponMessage;
+use weapon::WeaponMessage;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum Message {
@@ -12,4 +12,4 @@ pub enum Message {
     Player(PlayerMessage),
     Weapon(WeaponMessage),
 }
-impl GameMessage for Message{}
+impl GameMessage for Message {}

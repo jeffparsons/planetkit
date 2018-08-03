@@ -1,8 +1,8 @@
-use specs;
-use grid::{GridCoord, GridPoint3, PosInOwningRoot};
-use globe::ChunkOrigin;
-use globe::{origin_of_chunk_owning, chunks_containing_point};
 use globe::chunk_pair::PointPair;
+use globe::ChunkOrigin;
+use globe::{chunks_containing_point, origin_of_chunk_owning};
+use grid::{GridCoord, GridPoint3, PosInOwningRoot};
+use specs;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum Material {
@@ -109,8 +109,8 @@ impl Chunk {
         }
 
         // Map neighbor chunk origins to neighbors for easy lookup during construction.
-        use std::collections::HashMap;
         use globe::ChunkSharedPoints;
+        use std::collections::HashMap;
         let mut upstream_neighbors_by_origin = HashMap::<ChunkOrigin, UpstreamNeighbor>::new();
         let mut downstream_neighbors_by_origin = HashMap::<ChunkOrigin, DownstreamNeighbor>::new();
 
@@ -129,7 +129,9 @@ impl Chunk {
             );
             let we_own_this_point = owning_chunk_origin == self.origin;
 
-            for (chunk_origin, equivalent_point) in chunks_containing_point(our_point, root_resolution, self.chunk_resolution) {
+            for (chunk_origin, equivalent_point) in
+                chunks_containing_point(our_point, root_resolution, self.chunk_resolution)
+            {
                 if chunk_origin == self.origin {
                     // We're looking at the same chunk; we'll never need to copy to/from self!
                     continue;
@@ -175,23 +177,25 @@ impl Chunk {
         // Sort the points inside these for cache-friendliness.
         self.upstream_neighbors = upstream_neighbors_by_origin.values().cloned().collect();
         for upstream_neighbor in &mut self.upstream_neighbors {
-            upstream_neighbor.shared_cells.sort_by(|point_pair_a,
-             point_pair_b| {
-                // Comparing by source points should give us some tiny cache locality benefit.
-                // So would sorting by sink points, but hopefully better one sorted than neither.
-                // TODO: check whether this helps at all.
-                semi_arbitrary_compare(point_pair_a.source.pos(), &point_pair_b.source.pos())
-            });
+            upstream_neighbor
+                .shared_cells
+                .sort_by(|point_pair_a, point_pair_b| {
+                    // Comparing by source points should give us some tiny cache locality benefit.
+                    // So would sorting by sink points, but hopefully better one sorted than neither.
+                    // TODO: check whether this helps at all.
+                    semi_arbitrary_compare(point_pair_a.source.pos(), &point_pair_b.source.pos())
+                });
         }
         self.downstream_neighbors = downstream_neighbors_by_origin.values().cloned().collect();
         for downstream_neighbor in &mut self.downstream_neighbors {
-            downstream_neighbor.shared_cells.sort_by(|point_pair_a,
-             point_pair_b| {
-                // Comparing by sink points should give us some tiny cache locality benefit.
-                // So would sorting by source points, but hopefully better one sorted than neither.
-                // TODO: check whether this helps at all.
-                semi_arbitrary_compare(&point_pair_a.sink, &point_pair_b.sink)
-            });
+            downstream_neighbor
+                .shared_cells
+                .sort_by(|point_pair_a, point_pair_b| {
+                    // Comparing by sink points should give us some tiny cache locality benefit.
+                    // So would sorting by source points, but hopefully better one sorted than neither.
+                    // TODO: check whether this helps at all.
+                    semi_arbitrary_compare(&point_pair_a.sink, &point_pair_b.sink)
+                });
         }
     }
 
@@ -255,8 +259,7 @@ impl Chunk {
             // Chunks don't share cells in the z-direction,
             // but do in the x- and y-directions.
             &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
-        )
-        {
+        ) {
             let corner_pos = GridPoint3::new(origin.pos().root, *x, *y, *z);
             // Find all its neighbors and their chunks' origins.
             //
@@ -267,8 +270,8 @@ impl Chunk {
             // here is actually just a hack workaround for not having that.
             //
             // TODO: that actually exists now! See `EquivalentPoints`.
-            use grid::Neighbors;
             use super::origin_of_chunk_in_same_root_containing;
+            use grid::Neighbors;
             let neighbors = Neighbors::new(corner_pos, root_resolution);
             for neighbor in neighbors {
                 let neighbor_chunk_origin = origin_of_chunk_in_same_root_containing(

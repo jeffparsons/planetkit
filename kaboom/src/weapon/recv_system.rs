@@ -1,16 +1,16 @@
-use specs;
-use specs::{Read, Write, Entities, LazyUpdate, ReadStorage};
 use slog::Logger;
+use specs;
+use specs::{Entities, LazyUpdate, Read, ReadStorage, Write};
 
-use pk::Spatial;
-use pk::net::{EntityIds, SendMessageQueue, Destination, Transport, SendMessage};
 use pk::cell_dweller::CellDweller;
+use pk::net::{Destination, EntityIds, SendMessage, SendMessageQueue, Transport};
 use pk::physics::WorldResource;
+use pk::Spatial;
 
-use ::message::Message;
-use super::RecvMessageQueue;
-use super::{WeaponMessage, NewGrenadeMessage};
 use super::grenade::shoot_grenade;
+use super::RecvMessageQueue;
+use super::{NewGrenadeMessage, WeaponMessage};
+use message::Message;
 
 pub struct RecvSystem {
     log: Logger,
@@ -19,7 +19,7 @@ pub struct RecvSystem {
 impl RecvSystem {
     pub fn new(parent_log: &Logger) -> RecvSystem {
         RecvSystem {
-            log: parent_log.new(o!("system" => "weapon_recv"))
+            log: parent_log.new(o!("system" => "weapon_recv")),
         }
     }
 }
@@ -60,35 +60,35 @@ impl<'a> specs::System<'a> for RecvSystem {
                     // and then only the server will actually trigger an explosion
                     // when the grenade runs out of time.
                     // TODO: not this!
-                    send_message_queue.queue.push_back(
-                        SendMessage {
-                            destination: Destination::EveryoneIncludingSelf,
-                            game_message: Message::Weapon(
-                                WeaponMessage::NewGrenade(
-                                    NewGrenadeMessage {
-                                        fired_by_player_id: shoot_grenade_message.fired_by_player_id,
-                                        fired_by_cell_dweller_entity_id: shoot_grenade_message.fired_by_cell_dweller_entity_id,
-                                    }
-                                )
-                            ),
-                            // TODO: does it matter if we miss one — maybe UDP?
-                            // TCP for now, then solve this by having TTL on some entities.
-                            // Or a standard "TTL / clean-me-up" component type! :)
-                            transport: Transport::TCP,
-                        }
-                    );
-                },
+                    send_message_queue.queue.push_back(SendMessage {
+                        destination: Destination::EveryoneIncludingSelf,
+                        game_message: Message::Weapon(WeaponMessage::NewGrenade(
+                            NewGrenadeMessage {
+                                fired_by_player_id: shoot_grenade_message.fired_by_player_id,
+                                fired_by_cell_dweller_entity_id: shoot_grenade_message
+                                    .fired_by_cell_dweller_entity_id,
+                            },
+                        )),
+                        // TODO: does it matter if we miss one — maybe UDP?
+                        // TCP for now, then solve this by having TTL on some entities.
+                        // Or a standard "TTL / clean-me-up" component type! :)
+                        transport: Transport::TCP,
+                    });
+                }
                 WeaponMessage::NewGrenade(new_grenade_message) => {
                     trace!(self.log, "Spawning grenade because server asked me to"; "message" => format!("{:?}", new_grenade_message));
 
                     // Look up the entity from its global ID.
-                    let cell_dweller_entity = match entity_ids.mapping.get(&new_grenade_message.fired_by_cell_dweller_entity_id) {
+                    let cell_dweller_entity = match entity_ids
+                        .mapping
+                        .get(&new_grenade_message.fired_by_cell_dweller_entity_id)
+                    {
                         Some(ent) => ent.clone(),
                         // We probably just don't know about it yet.
                         None => {
                             debug!(self.log, "Unknown CellDweller fired a grenade"; "entity_id" => new_grenade_message.fired_by_cell_dweller_entity_id);
                             continue;
-                        },
+                        }
                     };
 
                     shoot_grenade(
@@ -101,7 +101,7 @@ impl<'a> specs::System<'a> for RecvSystem {
                         new_grenade_message.fired_by_player_id,
                         &mut world_resource,
                     );
-                },
+                }
             }
         }
     }

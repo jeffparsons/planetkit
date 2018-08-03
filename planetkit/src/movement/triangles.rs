@@ -45,7 +45,7 @@
 // This may all look pretty hairy (and it is) but it's also fairly
 // easy to thoroughly test; see `test.rs`.
 
-use grid::{GridCoord, DirIndex, RootIndex};
+use grid::{DirIndex, GridCoord, RootIndex};
 
 pub struct Triangle {
     // Position in root in terms of x-resolutions.
@@ -92,7 +92,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 1
     Triangle {
         apex: [1, 0],
@@ -120,7 +119,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 2
     Triangle {
         apex: [0, 1],
@@ -148,7 +146,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 3
     Triangle {
         apex: [1, 1],
@@ -176,7 +173,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 4
     Triangle {
         apex: [0, 1],
@@ -204,7 +200,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 5
     Triangle {
         apex: [1, 0],
@@ -232,7 +227,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 6
     Triangle {
         apex: [0, 1],
@@ -260,7 +254,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 7
     Triangle {
         apex: [1, 1],
@@ -288,7 +281,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 8
     Triangle {
         apex: [0, 2],
@@ -316,7 +308,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 9
     Triangle {
         apex: [1, 2],
@@ -344,7 +335,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 10
     Triangle {
         apex: [0, 2],
@@ -372,7 +362,6 @@ pub static TRIANGLES: [Triangle; 12] = [
             },
         ],
     },
-
     // 11
     Triangle {
         apex: [1, 1],

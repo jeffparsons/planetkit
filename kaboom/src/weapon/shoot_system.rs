@@ -1,18 +1,18 @@
-use std::sync::mpsc;
-use specs;
-use specs::{Read, Write, ReadStorage, WriteStorage};
-use slog::Logger;
 use piston::input::Input;
+use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, Write, WriteStorage};
+use std::sync::mpsc;
 
 use pk::cell_dweller::ActiveCellDweller;
-use pk::types::*;
 use pk::input_adapter;
-use pk::net::{SendMessageQueue, Destination, Transport, SendMessage, NetMarker};
+use pk::net::{Destination, NetMarker, SendMessage, SendMessageQueue, Transport};
+use pk::types::*;
 
 use super::{ShootGrenadeMessage, WeaponMessage};
-use ::fighter::Fighter;
-use ::client_state::ClientState;
-use ::message::Message;
+use client_state::ClientState;
+use fighter::Fighter;
+use message::Message;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,
@@ -26,8 +26,8 @@ impl ShootInputAdapter {
 
 impl input_adapter::InputAdapter for ShootInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{Button, ButtonState};
         use piston::input::keyboard::Key;
+        use piston::input::{Button, ButtonState};
 
         if let &Input::Button(button_args) = input_event {
             if let Button::Keyboard(key) = button_args.button {
@@ -53,10 +53,7 @@ pub struct ShootSystem {
 }
 
 impl ShootSystem {
-    pub fn new(
-        input_receiver: mpsc::Receiver<ShootEvent>,
-        parent_log: &Logger,
-    ) -> ShootSystem {
+    pub fn new(input_receiver: mpsc::Receiver<ShootEvent>, parent_log: &Logger) -> ShootSystem {
         ShootSystem {
             input_receiver: input_receiver,
             log: parent_log.new(o!()),
@@ -113,19 +110,27 @@ impl<'a> specs::System<'a> for ShootSystem {
 
         // Assume it is a fighter, because those are the only cell dwellers
         // you're allowed to control in this game.
-        let active_fighter = fighters.get_mut(active_cell_dweller_entity).expect("Cell dweller should have had a fighter attached!");
+        let active_fighter = fighters
+            .get_mut(active_cell_dweller_entity)
+            .expect("Cell dweller should have had a fighter attached!");
 
         // Count down until we're allowed to shoot next.
         if active_fighter.seconds_until_next_shot > 0.0 {
-            active_fighter.seconds_until_next_shot = (active_fighter.seconds_until_next_shot - dt.0).max(0.0);
+            active_fighter.seconds_until_next_shot =
+                (active_fighter.seconds_until_next_shot - dt.0).max(0.0);
         }
         let still_waiting_to_shoot = active_fighter.seconds_until_next_shot > 0.0;
 
-        if self.shoot && ! still_waiting_to_shoot{
+        if self.shoot && !still_waiting_to_shoot {
             self.shoot = false;
 
-            let fired_by_player_id = client_state.player_id.expect("There should be a current player.");
-            let fired_by_cell_dweller_entity_id = net_markers.get(active_cell_dweller_entity).expect("Active cell dweller should have global identity").id;
+            let fired_by_player_id = client_state
+                .player_id
+                .expect("There should be a current player.");
+            let fired_by_cell_dweller_entity_id = net_markers
+                .get(active_cell_dweller_entity)
+                .expect("Active cell dweller should have global identity")
+                .id;
 
             // Place the bullet in the same location as the player,
             // relative to the same globe.
@@ -133,20 +138,14 @@ impl<'a> specs::System<'a> for ShootSystem {
 
             // Ask the server/master to spawn a grenade.
             // (TODO: really need to decide on termonology around server/master/client/peer/etc.)
-            send_message_queue.queue.push_back(
-                SendMessage {
-                    destination: Destination::Master,
-                    game_message: Message::Weapon(
-                        WeaponMessage::ShootGrenade(
-                            ShootGrenadeMessage {
-                                fired_by_player_id: fired_by_player_id,
-                                fired_by_cell_dweller_entity_id: fired_by_cell_dweller_entity_id,
-                            }
-                        )
-                    ),
-                    transport: Transport::UDP,
-                }
-            );
+            send_message_queue.queue.push_back(SendMessage {
+                destination: Destination::Master,
+                game_message: Message::Weapon(WeaponMessage::ShootGrenade(ShootGrenadeMessage {
+                    fired_by_player_id: fired_by_player_id,
+                    fired_by_cell_dweller_entity_id: fired_by_cell_dweller_entity_id,
+                })),
+                transport: Transport::UDP,
+            });
 
             // Reset time until we can shoot again.
             active_fighter.seconds_until_next_shot = active_fighter.seconds_between_shots;

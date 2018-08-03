@@ -1,15 +1,9 @@
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc as stdmpsc;
 use futures::sync::mpsc as futmpsc;
 use slog::Logger;
+use std::sync::mpsc as stdmpsc;
+use std::sync::{Arc, Mutex};
 
-use super::{
-    Server,
-    GameMessage,
-    SendWireMessage,
-    RecvWireMessage,
-    NewPeer,
-};
+use super::{GameMessage, NewPeer, RecvWireMessage, SendWireMessage, Server};
 
 pub struct ServerResource<G> {
     pub server: Arc<Mutex<Server<G>>>,
@@ -33,12 +27,7 @@ impl<G: GameMessage> ServerResource<G> {
         // TODO: how big is reasonable? Just go unbounded?
         let (send_udp_tx, send_udp_rx) = futmpsc::channel::<SendWireMessage<G>>(1000);
 
-        let server = Server::<G>::new(
-            &parent_log,
-            recv_tx,
-            new_peer_tx,
-            send_udp_rx,
-        );
+        let server = Server::<G>::new(&parent_log, recv_tx, new_peer_tx, send_udp_rx);
         ServerResource {
             server: Arc::new(Mutex::new(server)),
             recv_rx: Arc::new(Mutex::new(Some(recv_rx))),

@@ -1,20 +1,20 @@
 // Don't make `globe` public; we re-export the
 // main bits at this level below.
+pub mod chunk;
+mod chunk_origin;
+mod chunk_pair;
+mod chunk_shared_points;
+mod chunk_system;
+mod chunk_view;
+mod chunk_view_system;
+mod cursor;
+mod gen;
 mod globe;
 mod globe_ext;
 pub mod icosahedron;
-mod spec;
-pub mod chunk;
-mod view;
-mod gen;
-mod chunk_view;
-mod chunk_view_system;
-mod chunk_system;
-mod cursor;
-mod chunk_origin;
 mod iters;
-mod chunk_shared_points;
-mod chunk_pair;
+mod spec;
+mod view;
 
 #[cfg(test)]
 mod tests;
@@ -22,18 +22,18 @@ mod tests;
 use types::*;
 
 // TODO: be selective in what you export; no wildcards!
-pub use self::globe::Globe;
-pub use self::spec::*;
-pub use self::view::*;
+pub use self::chunk_origin::*;
+pub use self::chunk_shared_points::ChunkSharedPoints;
+pub use self::chunk_system::ChunkSystem;
 pub use self::chunk_view::*;
 pub use self::chunk_view_system::*;
-pub use self::chunk_system::ChunkSystem;
 pub use self::cursor::{Cursor, CursorMut};
-pub use self::chunk_origin::*;
+pub use self::globe::Globe;
 pub use self::iters::*;
-pub use self::chunk_shared_points::ChunkSharedPoints;
+pub use self::spec::*;
+pub use self::view::*;
 
-use grid::{GridCoord, GridPoint3, Root, PosInOwningRoot};
+use grid::{GridCoord, GridPoint3, PosInOwningRoot, Root};
 
 // TODO: move project into icosahedron module.
 
@@ -280,7 +280,5 @@ pub fn origin_of_chunk_owning(
 }
 
 pub fn is_point_shared(point: GridPoint3, chunk_resolution: [GridCoord; 3]) -> bool {
-    (point.x % chunk_resolution[0]) == 0
-    ||
-    (point.y % chunk_resolution[1]) == 0
+    (point.x % chunk_resolution[0]) == 0 || (point.y % chunk_resolution[1]) == 0
 }

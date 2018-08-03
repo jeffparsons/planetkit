@@ -1,10 +1,10 @@
 use na;
 
-use grid::{GridCoord, GridPoint3, Dir};
 use grid::cell_shape::NEIGHBOR_OFFSETS;
+use grid::{Dir, GridCoord, GridPoint3};
 
-use super::triangles::*;
 use super::transform::*;
+use super::triangles::*;
 
 /// Get next cell in direction faced by `dir`, without considering
 /// movement between roots. Note that this may therefore return positions
@@ -82,9 +82,7 @@ pub fn closest_triangle_to_point(
             // Hex distance from apex to pos
             apex_to_pos.x + apex_to_pos.y
         })
-        .expect(
-            "There should have been exactly three items; this shouldn't be possible!",
-        )
+        .expect("There should have been exactly three items; this shouldn't be possible!")
 }
 
 /// For whatever 1-3 triangles `pos` is sitting atop, find the one
@@ -131,9 +129,7 @@ pub fn triangle_on_pos_with_closest_mid_axis(
             }
             a.abs()
         })
-        .expect(
-            "There should have been 1-3 triangles; did you call this with a non-pentagon pos?",
-        )
+        .expect("There should have been 1-3 triangles; did you call this with a non-pentagon pos?")
 }
 
 pub fn is_pentagon(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {

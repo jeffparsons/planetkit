@@ -1,5 +1,5 @@
-use specs;
 use froggy;
+use specs;
 
 use super::MeshWrapper;
 use super::ProtoMesh;

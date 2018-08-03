@@ -1,16 +1,13 @@
+use slog::Logger;
 use specs;
 use specs::Write;
-use slog::Logger;
 
 use pk::cell_dweller;
-use pk::net::{
-    SendMessage,
-    SendMessageQueue,
-};
+use pk::net::{SendMessage, SendMessageQueue};
 
-use ::message::Message;
+use message::Message;
 
-pub struct SendMuxSystem{
+pub struct SendMuxSystem {
     log: Logger,
     initialized: bool,
 }
@@ -31,10 +28,7 @@ impl<'a> specs::System<'a> for SendMuxSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (
-            mut send_message_queue,
-            mut cell_dweller_send_queue,
-        ) = data;
+        let (mut send_message_queue, mut cell_dweller_send_queue) = data;
 
         if !self.initialized {
             // Signal to CellDweller module that we want it
@@ -48,13 +42,11 @@ impl<'a> specs::System<'a> for SendMuxSystem {
         // Drain the cell_dweller queue into the send_message queue.
         while let Some(message) = cell_dweller_send_queue.queue.pop_front() {
             trace!(self.log, "Forwarding cell dweller message to send message queue"; "message" => format!("{:?}", message));
-            send_message_queue.queue.push_back(
-                SendMessage {
-                    destination: message.destination,
-                    game_message: Message::CellDweller(message.game_message),
-                    transport: message.transport,
-                }
-            );
+            send_message_queue.queue.push_back(SendMessage {
+                destination: message.destination,
+                game_message: Message::CellDweller(message.game_message),
+                transport: message.transport,
+            });
         }
     }
 }

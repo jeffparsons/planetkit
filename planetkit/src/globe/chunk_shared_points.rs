@@ -1,8 +1,8 @@
-use std::ops;
 use itertools;
+use std::ops;
 
-use grid::{Root, GridCoord, GridPoint3};
 use super::ChunkOrigin;
+use grid::{GridCoord, GridPoint3, Root};
 
 /// Iterate over all the points in a chunk that are shared with any
 /// other chunk. That is, those on the planes of x=0, x=max, y=0, and y=max,
@@ -19,10 +19,7 @@ pub struct ChunkSharedPoints {
     y_max: GridCoord,
     iter: itertools::ConsTuples<
         itertools::Product<
-            itertools::Product<
-                ops::Range<GridCoord>,
-                ops::Range<GridCoord>,
-            >,
+            itertools::Product<ops::Range<GridCoord>, ops::Range<GridCoord>>,
             ops::Range<GridCoord>,
         >,
         ((GridCoord, GridCoord), GridCoord),
@@ -80,8 +77,8 @@ impl Iterator for ChunkSharedPoints {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn chunk_shared_points() {

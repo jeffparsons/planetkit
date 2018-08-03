@@ -1,6 +1,6 @@
 use specs::Entity;
 
-use ::player::PlayerId;
+use player::PlayerId;
 
 /// `World`-global resource for client-specific game state.
 #[derive(Default)]

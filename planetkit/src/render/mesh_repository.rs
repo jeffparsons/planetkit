@@ -1,11 +1,11 @@
 use std::any;
 
+use froggy;
 use gfx;
 use slog::Logger;
-use froggy;
 
-use super::Vertex;
 use super::mesh::Mesh;
+use super::Vertex;
 
 // Hide the concrete type of the `Mesh` (specifically the graphics backend)
 // by use of `Any`. TODO: there has GOT to be a better way to do this. All I really
@@ -59,9 +59,9 @@ impl<R: gfx::Resources> MeshRepository<R> {
 
     pub fn add_mesh(&mut self, mesh: Mesh<R>) -> froggy::Pointer<MeshWrapper> {
         trace!(self.log, "Adding mesh");
-        self.mesh_storage.create(
-            MeshWrapper { mesh: Box::new(mesh) },
-        )
+        self.mesh_storage.create(MeshWrapper {
+            mesh: Box::new(mesh),
+        })
     }
 
     /// Destroy any unused meshes by asking the `froggy::Storage` to catch
@@ -76,8 +76,8 @@ impl<'a, R: gfx::Resources> MeshRepository<R> {
         let mesh_wrapper = &mut self.mesh_storage[&mesh_pointer];
         let any_mesh_with_extra_constraints = &mut *mesh_wrapper.mesh;
         let any_mesh = any_mesh_with_extra_constraints as &mut any::Any;
-        any_mesh.downcast_mut::<Mesh<R>>().expect(
-            "Unless we're mixing graphics backends, this should be impossible.",
-        )
+        any_mesh
+            .downcast_mut::<Mesh<R>>()
+            .expect("Unless we're mixing graphics backends, this should be impossible.")
     }
 }

@@ -1,35 +1,29 @@
 use std::sync::mpsc;
 
+use slog::Logger;
 use specs;
 use specs::{Read, Write};
-use slog::Logger;
 
 use super::{
-    GameMessage,
-    RecvMessage,
-    WireMessage,
-    RecvWireMessage,
-    RecvMessageQueue,
-    NetworkPeers,
+    GameMessage, NetworkPeers, RecvMessage, RecvMessageQueue, RecvWireMessage, WireMessage,
 };
 
-pub struct RecvSystem<G: GameMessage>{
+pub struct RecvSystem<G: GameMessage> {
     log: Logger,
     // Channel for slurping wire messages from network server.
     recv_rx: mpsc::Receiver<RecvWireMessage<G>>,
 }
 
 impl<G> RecvSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
-    pub fn new(
-        parent_log: &Logger,
-        world: &mut specs::World,
-    ) -> RecvSystem<G> {
+    pub fn new(parent_log: &Logger, world: &mut specs::World) -> RecvSystem<G> {
         // Take wire message receiver from ServerResource.
         use super::ServerResource;
         let server_resource = world.write_resource::<ServerResource<G>>();
-        let recv_rx = server_resource.recv_rx
+        let recv_rx = server_resource
+            .recv_rx
             .lock()
             .expect("Couldn't get lock on wire message receiver")
             .take()
@@ -43,18 +37,13 @@ impl<G> RecvSystem<G>
 }
 
 impl<'a, G> specs::System<'a> for RecvSystem<G>
-    where G: GameMessage
+where
+    G: GameMessage,
 {
-    type SystemData = (
-        Write<'a, RecvMessageQueue<G>>,
-        Read<'a, NetworkPeers<G>>,
-    );
+    type SystemData = (Write<'a, RecvMessageQueue<G>>, Read<'a, NetworkPeers<G>>);
 
     fn run(&mut self, data: Self::SystemData) {
-        let (
-            mut recv_message_queue,
-            network_peers,
-        ) = data;
+        let (mut recv_message_queue, network_peers) = data;
 
         // Slurp everything the server sent us.
         loop {
@@ -79,7 +68,9 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
             // TODO: ruh roh, what if two clients connect from the same IP?
             // We need to make peers always identify themselves in every message,
             // (and then use the HMAC to validate identity and message).
-            let peer_id = match network_peers.peers.iter()
+            let peer_id = match network_peers
+                .peers
+                .iter()
                 .find(|peer| peer.socket_addr == src)
             {
                 Some(peer) => peer.id,
@@ -92,7 +83,10 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
             let game_message = match message {
                 WireMessage::Game(game_message) => game_message,
                 _ => {
-                    warn!(self.log, "Don't yet know how to do anything with non-game messages");
+                    warn!(
+                        self.log,
+                        "Don't yet know how to do anything with non-game messages"
+                    );
                     continue;
                 }
             };
@@ -108,7 +102,6 @@ impl<'a, G> specs::System<'a> for RecvSystem<G>
                 game_message: game_message,
             };
             recv_message_queue.queue.push_back(recv_message);
-
         }
     }
 }

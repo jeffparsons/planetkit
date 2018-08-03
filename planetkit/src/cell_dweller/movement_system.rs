@@ -1,28 +1,17 @@
-use std::sync::mpsc;
-use specs;
-use specs::{Read, ReadStorage, WriteStorage, Write};
-use slog::Logger;
 use piston::input::Input;
+use slog::Logger;
+use specs;
+use specs::{Read, ReadStorage, Write, WriteStorage};
+use std::sync::mpsc;
 
-use types::*;
-use super::{
-    CellDweller,
-    ActiveCellDweller,
-    SendMessageQueue,
-    CellDwellerMessage,
-    SetPosMessage,
-};
-use Spatial;
-use movement::*;
-use globe::Globe;
+use super::{ActiveCellDweller, CellDweller, CellDwellerMessage, SendMessageQueue, SetPosMessage};
 use globe::chunk::Material;
+use globe::Globe;
 use input_adapter;
-use ::net::{
-    SendMessage,
-    Transport,
-    Destination,
-    NetMarker,
-};
+use movement::*;
+use net::{Destination, NetMarker, SendMessage, Transport};
+use types::*;
+use Spatial;
 
 // TODO: own file?
 pub struct MovementInputAdapter {
@@ -37,8 +26,8 @@ impl MovementInputAdapter {
 
 impl input_adapter::InputAdapter for MovementInputAdapter {
     fn handle(&self, input_event: &Input) {
-        use piston::input::{Button, ButtonState};
         use piston::input::keyboard::Key;
+        use piston::input::{Button, ButtonState};
 
         if let &Input::Button(button_args) = input_event {
             if let Button::Keyboard(key) = button_args.button {
@@ -48,18 +37,36 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
                 };
                 match key {
                     // Arrow keys.
-                    Key::Up => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
-                    Key::Down => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::Up => self
+                        .sender
+                        .send(MovementEvent::StepForward(is_down))
+                        .unwrap(),
+                    Key::Down => self
+                        .sender
+                        .send(MovementEvent::StepBackward(is_down))
+                        .unwrap(),
                     Key::Left => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
                     Key::Right => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
                     // IJKL keys.
-                    Key::I => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
-                    Key::K => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::I => self
+                        .sender
+                        .send(MovementEvent::StepForward(is_down))
+                        .unwrap(),
+                    Key::K => self
+                        .sender
+                        .send(MovementEvent::StepBackward(is_down))
+                        .unwrap(),
                     Key::J => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
                     Key::L => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
                     // WASD keys.
-                    Key::W => self.sender.send(MovementEvent::StepForward(is_down)).unwrap(),
-                    Key::S => self.sender.send(MovementEvent::StepBackward(is_down)).unwrap(),
+                    Key::W => self
+                        .sender
+                        .send(MovementEvent::StepForward(is_down))
+                        .unwrap(),
+                    Key::S => self
+                        .sender
+                        .send(MovementEvent::StepBackward(is_down))
+                        .unwrap(),
                     Key::A => self.sender.send(MovementEvent::TurnLeft(is_down)).unwrap(),
                     Key::D => self.sender.send(MovementEvent::TurnRight(is_down)).unwrap(),
                     _ => (),
@@ -155,22 +162,18 @@ impl MovementSystem {
         let mut new_last_turn_bias = cd.last_turn_bias;
 
         match forward_or_backward {
-            ForwardOrBackward::Forward => {
-                step_forward_and_face_neighbor(
-                    &mut new_pos,
-                    &mut new_dir,
-                    globe.spec().root_resolution,
-                    &mut new_last_turn_bias,
-                )
-            }
-            ForwardOrBackward::Backward => {
-                step_backward_and_face_neighbor(
-                    &mut new_pos,
-                    &mut new_dir,
-                    globe.spec().root_resolution,
-                    &mut new_last_turn_bias,
-                )
-            }
+            ForwardOrBackward::Forward => step_forward_and_face_neighbor(
+                &mut new_pos,
+                &mut new_dir,
+                globe.spec().root_resolution,
+                &mut new_last_turn_bias,
+            ),
+            ForwardOrBackward::Backward => step_backward_and_face_neighbor(
+                &mut new_pos,
+                &mut new_dir,
+                globe.spec().root_resolution,
+                &mut new_last_turn_bias,
+            ),
         }.expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
@@ -226,12 +229,12 @@ impl<'a> specs::System<'a> for MovementSystem {
             Some(entity) => entity,
             None => return,
         };
-        let cd = cell_dwellers.get_mut(active_cell_dweller_entity).expect(
-            "Someone deleted the controlled entity's CellDweller",
-        );
-        let spatial = spatials.get_mut(active_cell_dweller_entity).expect(
-            "Someone deleted the controlled entity's Spatial",
-        );
+        let cd = cell_dwellers
+            .get_mut(active_cell_dweller_entity)
+            .expect("Someone deleted the controlled entity's CellDweller");
+        let spatial = spatials
+            .get_mut(active_cell_dweller_entity)
+            .expect("Someone deleted the controlled entity's Spatial");
 
         // Get the associated globe, complaining loudly if we fail.
         let globe_entity = match cd.globe_entity {
@@ -254,7 +257,6 @@ impl<'a> specs::System<'a> for MovementSystem {
                 return;
             }
         };
-
 
         // Count down until we're allowed to move next.
         if cd.seconds_until_next_move > 0.0 {
@@ -313,23 +315,21 @@ impl<'a> specs::System<'a> for MovementSystem {
                 // if you're using asynchronous channels -- is this
                 // actually a serious consideration?). Then if there's
                 // a network system hooked up, then it can broadcast it.
-                send_message_queue.queue.push_back(
-                    SendMessage {
-                        // In practice, if you're the server this will mean "all clients"
-                        // because all of them need to know about the change, and if you're
-                        // a client then for now your only peer will be the server.
-                        // All of this will obviously need to be revisited if we allow
-                        // connecting to multiple servers, or to other non-server peers.
-                        destination: Destination::EveryoneElse,
-                        game_message: CellDwellerMessage::SetPos(SetPosMessage {
-                            entity_id: entity_id,
-                            new_pos: cd.pos,
-                            new_dir: cd.dir,
-                            new_last_turn_bias: cd.last_turn_bias,
-                        }),
-                        transport: Transport::UDP,
-                    }
-                )
+                send_message_queue.queue.push_back(SendMessage {
+                    // In practice, if you're the server this will mean "all clients"
+                    // because all of them need to know about the change, and if you're
+                    // a client then for now your only peer will be the server.
+                    // All of this will obviously need to be revisited if we allow
+                    // connecting to multiple servers, or to other non-server peers.
+                    destination: Destination::EveryoneElse,
+                    game_message: CellDwellerMessage::SetPos(SetPosMessage {
+                        entity_id: entity_id,
+                        new_pos: cd.pos,
+                        new_dir: cd.dir,
+                        new_last_turn_bias: cd.last_turn_bias,
+                    }),
+                    transport: Transport::UDP,
+                })
             }
 
             spatial.set_local_transform(cd.get_real_transform_and_mark_as_clean());

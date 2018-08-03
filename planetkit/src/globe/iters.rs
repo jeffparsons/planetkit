@@ -1,5 +1,5 @@
-use grid::{GridCoord, GridPoint3};
 use super::ChunkOrigin;
+use grid::{GridCoord, GridPoint3};
 
 // TODO: rename this file; probably neater to have smaller files
 // rather than having multiple non-trivial iterators together.
@@ -115,8 +115,7 @@ impl ChunksInSameRootContainingPoint {
                 self.point.root,
                 chunk_x,
                 chunk_y,
-                self.point.z / self.chunk_resolution[2] *
-                    self.chunk_resolution[2],
+                self.point.z / self.chunk_resolution[2] * self.chunk_resolution[2],
             ),
             self.root_resolution,
             self.chunk_resolution,
@@ -175,20 +174,15 @@ impl Iterator for ChunksInSameRootContainingPoint {
 pub fn chunks_containing_point(
     point: GridPoint3,
     root_resolution: [GridCoord; 2],
-    chunk_resolution: [GridCoord; 3]
+    chunk_resolution: [GridCoord; 3],
 ) -> impl Iterator<Item = (ChunkOrigin, GridPoint3)> {
-    use ::grid::EquivalentPoints;
     use super::ChunksInSameRootContainingPoint;
+    use grid::EquivalentPoints;
 
-    EquivalentPoints::new(point, root_resolution).flat_map(move |equivalent_point|
-        ChunksInSameRootContainingPoint::new(
-            equivalent_point,
-            root_resolution,
-            chunk_resolution,
-        ).map(move |chunk_origin|
-            (chunk_origin, equivalent_point)
-        )
-    )
+    EquivalentPoints::new(point, root_resolution).flat_map(move |equivalent_point| {
+        ChunksInSameRootContainingPoint::new(equivalent_point, root_resolution, chunk_resolution)
+            .map(move |chunk_origin| (chunk_origin, equivalent_point))
+    })
 }
 
 #[cfg(test)]
