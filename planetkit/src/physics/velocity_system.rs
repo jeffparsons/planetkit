@@ -33,7 +33,7 @@ impl<'a> specs::System<'a> for VelocitySystem {
             // Apply velocity to spatial.
             let mut local_transform = spatial.local_transform();
             let translation =
-                na::Translation3::<f64>::from_vector(velocity.local_velocity() * dt.0);
+                na::Translation3::<f64>::from(velocity.local_velocity() * dt.0);
             local_transform.append_translation_mut(&translation);
             spatial.set_local_transform(local_transform);
         }

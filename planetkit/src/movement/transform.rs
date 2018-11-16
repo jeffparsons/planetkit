@@ -63,7 +63,7 @@ pub fn world_to_local(
 
     // Translate `pos` relative to `apex` ignoring orientation.
     let pos2 = Pos2::new(pos.x, pos.y);
-    let pos_from_tri_apex = Pos2::from_coordinates(pos2 - apex);
+    let pos_from_tri_apex = Pos2::from(pos2 - apex);
 
     // Compute rotation required to express `pos` and `dir` relative to apex.
     let x_dir = tri.x_dir;

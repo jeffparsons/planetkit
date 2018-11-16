@@ -139,7 +139,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             // in view space positive z points out of the screen.)
             let view: Isometry3<f32> = Isometry3::look_at_rh(
                 &Point3::origin(),
-                &Point3::from_coordinates(Vector3::z()),
+                &Point3::from(Vector3::z()),
                 &Vector3::y(),
             );
 

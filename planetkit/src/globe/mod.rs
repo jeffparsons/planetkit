@@ -187,7 +187,7 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
         pt_in_root_quad[1] -= 1.0;
         f + fe * (1.0 - pt_in_root_quad[0]) + fd * (1.0 - pt_in_root_quad[1])
     };
-    Pt3::from_coordinates(pos_on_icosahedron.coords.normalize())
+    Pt3::from(pos_on_icosahedron.coords.normalize())
 }
 
 /// Calculate the origin of a chunk that contains the given `pos`,

@@ -141,7 +141,7 @@ impl View {
                     // Emit each top vertex of whatever shape we're using for this cell.
                     let offsets = &cell_shape.top_outline_dir_offsets;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = Pt3::from_coordinates(
+                        let vertex_pt3 = Pt3::from(
                             self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
@@ -165,7 +165,7 @@ impl View {
                     }
                     let first_side_top_vertex_index = first_top_vertex_index + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = Pt3::from_coordinates(
+                        let vertex_pt3 = Pt3::from(
                             self.spec.cell_top_vertex(grid_point, *offset) - chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));
@@ -179,7 +179,7 @@ impl View {
                     let first_side_bottom_vertex_index =
                         first_side_top_vertex_index + offsets.len() as u32;
                     for offset in offsets.iter() {
-                        let vertex_pt3 = Pt3::from_coordinates(
+                        let vertex_pt3 = Pt3::from(
                             self.spec.cell_bottom_vertex(grid_point, *offset) - chunk_origin_pos,
                         );
                         vertex_data.push(render::Vertex::new_from_pt3(vertex_pt3, cell_color));

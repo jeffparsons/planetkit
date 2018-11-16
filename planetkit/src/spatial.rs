@@ -312,7 +312,7 @@ mod tests {
         );
 
         // Rotate the Earth a bit and make sure it doesn't make a difference.
-        let eye = Pt3::from_coordinates(
+        let eye = Pt3::from(
             spatials
                 .get(ss.earth)
                 .unwrap()
