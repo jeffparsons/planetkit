@@ -2,14 +2,14 @@ use slog::Logger;
 use specs;
 use specs::{Read, ReadStorage, Write, WriteStorage};
 
-use pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
-use pk::globe::Globe;
-use pk::net::{Destination, NetMarker, NodeResource, SendMessage, SendMessageQueue, Transport};
+use crate::pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
+use crate::pk::globe::Globe;
+use crate::pk::net::{Destination, NetMarker, NodeResource, SendMessage, SendMessageQueue, Transport};
 
-use fighter::Fighter;
-use game_state::GameState;
-use health::Health;
-use message::Message;
+use crate::fighter::Fighter;
+use crate::game_state::GameState;
+use crate::health::Health;
+use crate::message::Message;
 
 /// Identifies fighters that have run out of health,
 /// awards points to their killer, and respawns the victim.

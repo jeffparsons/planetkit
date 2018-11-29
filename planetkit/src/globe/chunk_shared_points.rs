@@ -2,7 +2,7 @@ use itertools;
 use std::ops;
 
 use super::ChunkOrigin;
-use grid::{GridCoord, GridPoint3, Root};
+use crate::grid::{GridCoord, GridPoint3, Root};
 
 /// Iterate over all the points in a chunk that are shared with any
 /// other chunk. That is, those on the planes of x=0, x=max, y=0, and y=max,
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn all_shared_points_are_in_same_chunk() {
-        use globe::origin_of_chunk_in_same_root_containing;
+        use crate::globe::origin_of_chunk_in_same_root_containing;
 
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
         const CHUNK_RESOLUTION: [GridCoord; 3] = [8, 8, 64];

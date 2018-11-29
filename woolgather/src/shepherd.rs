@@ -1,9 +1,9 @@
-use pk;
-use pk::cell_dweller;
-use pk::globe;
-use pk::grid;
-use pk::render;
-use pk::types::*;
+use crate::pk;
+use crate::pk::cell_dweller;
+use crate::pk::globe;
+use crate::pk::grid;
+use crate::pk::render;
+use crate::pk::types::*;
 use specs::{self, Builder};
 
 /// Create the player character: a shepherd who must find and rescue the sheep

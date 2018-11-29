@@ -105,14 +105,14 @@ pub mod types;
 pub mod window;
 
 mod spatial;
-pub use spatial::Spatial;
-pub use spatial::SpatialStorage;
+pub use crate::spatial::Spatial;
+pub use crate::spatial::SpatialStorage;
 
 mod log_resource;
-pub use log_resource::LogResource;
+pub use crate::log_resource::LogResource;
 
 mod app_builder;
-pub use app_builder::AppBuilder;
+pub use crate::app_builder::AppBuilder;
 
 #[cfg(test)]
 mod integration_tests;

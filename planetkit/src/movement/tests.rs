@@ -1,7 +1,7 @@
 use super::triangles::TRIANGLES;
 use super::*;
-use grid::{Dir, GridPoint3};
-use na;
+use crate::grid::{Dir, GridPoint3};
+use crate::na;
 
 const RESOLUTION: [i64; 2] = [32, 64];
 

@@ -1,4 +1,4 @@
-use grid::{Dir, GridCoord, GridPoint3};
+use crate::grid::{Dir, GridCoord, GridPoint3};
 
 use super::transform::*;
 use super::turn::turn_around_and_face_neighbor;

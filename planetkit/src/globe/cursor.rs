@@ -1,7 +1,7 @@
 use super::chunk::{Cell, Chunk};
 use super::{ChunkOrigin, Globe};
-use globe::globe::GlobeGuts;
-use grid::GridPoint3;
+use crate::globe::globe::GlobeGuts;
+use crate::grid::GridPoint3;
 
 // TODO: describe how it only changes between chunks when _necessary_,
 // with reference to shared cells. Also remark on the fact that we might

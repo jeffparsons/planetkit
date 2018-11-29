@@ -30,9 +30,9 @@ mod weapon;
 use std::sync::mpsc;
 
 use clap::{AppSettings, Arg, SubCommand};
-use message::Message;
-use recv_demux_system::RecvDemuxSystem;
-use send_mux_system::SendMuxSystem;
+use crate::message::Message;
+use crate::recv_demux_system::RecvDemuxSystem;
+use crate::send_mux_system::SendMuxSystem;
 
 fn main() {
     let matches = clap::App::new("Kaboom")
@@ -80,7 +80,7 @@ fn main() {
     // NLL SVP.
     {
         use piston_window::AdvancedWindow;
-        use pk::net::ServerResource;
+        use crate::pk::net::ServerResource;
         use std::net::SocketAddr;
 
         // Systems we added will have ensured ServerResource is present.
@@ -119,7 +119,7 @@ fn add_systems(
     // TODO: systems should register these.
     world.register::<weapon::Grenade>();
     world.register::<fighter::Fighter>();
-    world.register::<::health::Health>();
+    world.register::<crate::health::Health>();
 
     let game_system = game_system::GameSystem::new(logger);
     let new_peer_system = pk::net::NewPeerSystem::<Message>::new(logger, world);

@@ -7,9 +7,9 @@ use std::sync::mpsc;
 use super::{
     ActiveCellDweller, CellDweller, CellDwellerMessage, SendMessageQueue, TryPickUpBlockMessage,
 };
-use globe::Globe;
-use input_adapter;
-use net::{Destination, NetMarker, SendMessage, Transport};
+use crate::globe::Globe;
+use crate::input_adapter;
+use crate::net::{Destination, NetMarker, SendMessage, Transport};
 
 // TODO: own file?
 pub struct MiningInputAdapter {

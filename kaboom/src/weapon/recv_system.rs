@@ -2,15 +2,15 @@ use slog::Logger;
 use specs;
 use specs::{Entities, LazyUpdate, Read, ReadStorage, Write};
 
-use pk::cell_dweller::CellDweller;
-use pk::net::{Destination, EntityIds, SendMessage, SendMessageQueue, Transport};
-use pk::physics::WorldResource;
-use pk::Spatial;
+use crate::pk::cell_dweller::CellDweller;
+use crate::pk::net::{Destination, EntityIds, SendMessage, SendMessageQueue, Transport};
+use crate::pk::physics::WorldResource;
+use crate::pk::Spatial;
 
 use super::grenade::shoot_grenade;
 use super::RecvMessageQueue;
 use super::{NewGrenadeMessage, WeaponMessage};
-use message::Message;
+use crate::message::Message;
 
 pub struct RecvSystem {
     log: Logger,

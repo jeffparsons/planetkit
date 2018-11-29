@@ -2,21 +2,21 @@ use slog::Logger;
 use specs;
 use specs::{Entities, LazyUpdate, Read, ReadStorage, Write, WriteStorage};
 
-use pk;
-use pk::camera::DefaultCamera;
-use pk::cell_dweller::{ActiveCellDweller, CellDweller};
-use pk::globe::Globe;
-use pk::net::{
+use crate::pk;
+use crate::pk::camera::DefaultCamera;
+use crate::pk::cell_dweller::{ActiveCellDweller, CellDweller};
+use crate::pk::globe::Globe;
+use crate::pk::net::{
     Destination, EntityIds, NetMarker, NetworkPeers, NodeResource, PeerId, SendMessage,
     SendMessageQueue, Transport,
 };
 
-use client_state::ClientState;
-use fighter::{self, Fighter};
-use game_state::GameState;
-use message::Message;
-use planet;
-use player::{self, Player, PlayerId, PlayerMessage};
+use crate::client_state::ClientState;
+use crate::fighter::{self, Fighter};
+use crate::game_state::GameState;
+use crate::message::Message;
+use crate::planet;
+use crate::player::{self, Player, PlayerId, PlayerMessage};
 
 /// System to drive the top-level state machine for level and game state.
 pub struct GameSystem {

@@ -2,10 +2,10 @@ use slog::Logger;
 use specs;
 use specs::Write;
 
-use pk::cell_dweller;
-use pk::net::{SendMessage, SendMessageQueue};
+use crate::pk::cell_dweller;
+use crate::pk::net::{SendMessage, SendMessageQueue};
 
-use message::Message;
+use crate::message::Message;
 
 pub struct SendMuxSystem {
     log: Logger,

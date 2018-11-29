@@ -4,9 +4,9 @@ use specs::{Entities, Read, ReadStorage, WriteStorage};
 
 use super::Mass;
 use super::Velocity;
-use globe::Globe;
-use types::*;
-use Spatial;
+use crate::globe::Globe;
+use crate::types::*;
+use crate::Spatial;
 
 // TODO: Reimplement gravity in Nphysics.
 
@@ -35,7 +35,7 @@ impl<'a> specs::System<'a> for GravitySystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use spatial::SpatialStorage;
+        use crate::spatial::SpatialStorage;
         use specs::Join;
 
         let (dt, entities, spatials, mut velocities, masses, globes) = data;

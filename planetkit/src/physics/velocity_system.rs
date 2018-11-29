@@ -1,11 +1,11 @@
-use na;
+use crate::na;
 use slog::Logger;
 use specs;
 use specs::{Read, ReadStorage, WriteStorage};
 
 use super::Velocity;
-use types::*;
-use Spatial;
+use crate::types::*;
+use crate::Spatial;
 
 pub struct VelocitySystem {
     _log: Logger,

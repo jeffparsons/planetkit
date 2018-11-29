@@ -1,8 +1,8 @@
 use specs;
 use specs::{Entities, LazyUpdate, Read};
 
-use pk;
-use pk::globe::{Globe, Spec};
+use crate::pk;
+use crate::pk::globe::{Globe, Spec};
 
 // Create a planet to fight on.
 pub fn create(entities: &Entities, updater: &Read<LazyUpdate>) -> specs::Entity {

@@ -7,10 +7,10 @@ use slog::Logger;
 use specs;
 use std::sync::{mpsc, Arc, Mutex};
 
-use input_adapter::InputAdapter;
-use render;
-use render::{Mesh, MeshRepository, Visual};
-use types::*;
+use crate::input_adapter::InputAdapter;
+use crate::render;
+use crate::render::{Mesh, MeshRepository, Visual};
+use crate::types::*;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use camera_controllers::CameraPerspective;

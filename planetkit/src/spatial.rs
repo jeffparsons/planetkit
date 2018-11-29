@@ -206,7 +206,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use na;
+    use crate::na;
     use specs::{self, Builder};
 
     use super::*;

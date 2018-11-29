@@ -2,7 +2,7 @@ use std::collections::vec_deque::VecDeque;
 
 use specs;
 
-use pk::net::{PeerId, RecvMessage};
+use crate::pk::net::{PeerId, RecvMessage};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone, Copy)]
 pub struct PlayerId(pub u16);

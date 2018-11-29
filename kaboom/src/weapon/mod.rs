@@ -12,7 +12,7 @@ pub use self::shoot_system::ShootSystem;
 
 use std::collections::vec_deque::VecDeque;
 
-use pk::net::RecvMessage;
+use crate::pk::net::RecvMessage;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum WeaponMessage {
@@ -25,13 +25,13 @@ pub enum WeaponMessage {
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct ShootGrenadeMessage {
-    fired_by_player_id: ::player::PlayerId,
+    fired_by_player_id: crate::player::PlayerId,
     fired_by_cell_dweller_entity_id: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct NewGrenadeMessage {
-    fired_by_player_id: ::player::PlayerId,
+    fired_by_player_id: crate::player::PlayerId,
     fired_by_cell_dweller_entity_id: u64,
 }
 

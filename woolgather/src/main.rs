@@ -28,7 +28,7 @@ fn add_systems(
 }
 
 fn create_entities(world: &mut specs::World) {
-    use pk::cell_dweller::ActiveCellDweller;
+    use crate::pk::cell_dweller::ActiveCellDweller;
 
     // TODO: this should all actually be done by a game system,
     // rather than in the app builder. Because, e.g. if you change levels,

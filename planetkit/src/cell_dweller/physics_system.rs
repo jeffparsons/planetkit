@@ -3,10 +3,10 @@ use specs;
 use specs::{Read, ReadStorage, WriteStorage};
 
 use super::CellDweller;
-use globe::chunk::Material;
-use globe::Globe;
-use types::*;
-use Spatial;
+use crate::globe::chunk::Material;
+use crate::globe::Globe;
+use crate::types::*;
+use crate::Spatial;
 
 pub struct PhysicsSystem {
     log: Logger,

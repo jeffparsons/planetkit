@@ -1,7 +1,7 @@
-use globe::chunk_pair::PointPair;
-use globe::ChunkOrigin;
-use globe::{chunks_containing_point, origin_of_chunk_owning};
-use grid::{GridCoord, GridPoint3, PosInOwningRoot};
+use crate::globe::chunk_pair::PointPair;
+use crate::globe::ChunkOrigin;
+use crate::globe::{chunks_containing_point, origin_of_chunk_owning};
+use crate::grid::{GridCoord, GridPoint3, PosInOwningRoot};
 use specs;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -102,14 +102,14 @@ impl Chunk {
     ///
     /// Panics if called more than once; it is for initialization only.
     fn populate_neighboring_chunks(&mut self, root_resolution: [GridCoord; 2]) {
-        use grid::semi_arbitrary_compare;
+        use crate::grid::semi_arbitrary_compare;
 
         if self.upstream_neighbors.len() > 0 || self.downstream_neighbors.len() > 0 {
             panic!("Tried to initialize chunk multiple times.");
         }
 
         // Map neighbor chunk origins to neighbors for easy lookup during construction.
-        use globe::ChunkSharedPoints;
+        use crate::globe::ChunkSharedPoints;
         use std::collections::HashMap;
         let mut upstream_neighbors_by_origin = HashMap::<ChunkOrigin, UpstreamNeighbor>::new();
         let mut downstream_neighbors_by_origin = HashMap::<ChunkOrigin, DownstreamNeighbor>::new();
@@ -271,7 +271,7 @@ impl Chunk {
             //
             // TODO: that actually exists now! See `EquivalentPoints`.
             use super::origin_of_chunk_in_same_root_containing;
-            use grid::Neighbors;
+            use crate::grid::Neighbors;
             let neighbors = Neighbors::new(corner_pos, root_resolution);
             for neighbor in neighbors {
                 let neighbor_chunk_origin = origin_of_chunk_in_same_root_containing(

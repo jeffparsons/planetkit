@@ -19,7 +19,7 @@ mod view;
 #[cfg(test)]
 mod tests;
 
-use types::*;
+use crate::types::*;
 
 // TODO: be selective in what you export; no wildcards!
 pub use self::chunk_origin::*;
@@ -33,7 +33,7 @@ pub use self::iters::*;
 pub use self::spec::*;
 pub use self::view::*;
 
-use grid::{GridCoord, GridPoint3, PosInOwningRoot, Root};
+use crate::grid::{GridCoord, GridPoint3, PosInOwningRoot, Root};
 
 // TODO: move project into icosahedron module.
 

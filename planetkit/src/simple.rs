@@ -1,11 +1,11 @@
 use specs;
 use specs::{Builder, Entities, LazyUpdate, Read};
 
-use camera::DefaultCamera;
-use cell_dweller;
-use globe;
-use render;
-use types::*;
+use crate::camera::DefaultCamera;
+use crate::cell_dweller;
+use crate::globe;
+use crate::render;
+use crate::types::*;
 
 // TODO: Retire most of this stuff. Or, rather, turn it into
 // a module (eventually split out into a separate crate) of easy-to-combine
@@ -27,7 +27,7 @@ pub fn create_simple_globe_now(world: &mut specs::World) -> specs::Entity {
     world
         .create_entity()
         .with(globe)
-        .with(::Spatial::new_root())
+        .with(crate::Spatial::new_root())
         .build()
 }
 
@@ -38,7 +38,7 @@ pub fn create_simple_player_character_now(
     use rand::{SeedableRng, XorShiftRng};
 
     // Find a suitable spawn point for the player character at the globe surface.
-    use grid::Dir;
+    use crate::grid::Dir;
     let (globe_spec, player_character_pos) = {
         let mut globe_storage = world.write_storage::<globe::Globe>();
         let globe = globe_storage
@@ -72,7 +72,7 @@ pub fn create_simple_player_character_now(
         .with(player_character_visual)
         // The CellDweller's transformation will be set based
         // on its coordinates in cell space.
-        .with(::Spatial::new(globe_entity, Iso3::identity()))
+        .with(crate::Spatial::new(globe_entity, Iso3::identity()))
         .build();
     // Set our new character as the currently controlled cell dweller.
     world
@@ -91,9 +91,9 @@ pub fn create_simple_chase_camera_now(
     let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
     let camera_entity = world
         .create_entity()
-        .with(::Spatial::new(player_character_entity, camera_transform))
+        .with(crate::Spatial::new(player_character_entity, camera_transform))
         .build();
-    use camera::DefaultCamera;
+    use crate::camera::DefaultCamera;
     // TODO: gah, where does this belong?
     world.add_resource(DefaultCamera {
         camera_entity: Some(camera_entity),
@@ -114,7 +114,7 @@ pub fn create_simple_chase_camera(
     let entity = entities.create();
     updater.insert(
         entity,
-        ::Spatial::new(player_character_entity, camera_transform),
+        crate::Spatial::new(player_character_entity, camera_transform),
     );
     default_camera.camera_entity = Some(entity);
     entity

@@ -2,15 +2,15 @@ use ncollide3d::shape::ShapeHandle;
 use slog::Logger;
 use specs::{self, Entities, Entity, LazyUpdate, Read, ReadStorage, Write};
 
-use pk::cell_dweller::CellDweller;
-use pk::physics::Mass;
-use pk::physics::Velocity;
-use pk::physics::{Collider, RigidBody, WorldResource};
-use pk::render;
-use pk::types::*;
-use pk::Spatial;
+use crate::pk::cell_dweller::CellDweller;
+use crate::pk::physics::Mass;
+use crate::pk::physics::Velocity;
+use crate::pk::physics::{Collider, RigidBody, WorldResource};
+use crate::pk::render;
+use crate::pk::types::*;
+use crate::pk::Spatial;
 
-use player::PlayerId;
+use crate::player::PlayerId;
 
 pub struct Grenade {
     pub time_to_live_seconds: f64,

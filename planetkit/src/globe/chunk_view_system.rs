@@ -1,14 +1,14 @@
-use na;
+use crate::na;
 use slog::Logger;
 use specs;
 use specs::Entities;
 use specs::{Read, Write, WriteStorage};
 
-use globe::{ChunkView, Globe, View};
-use physics::{Collider, RemoveColliderQueue, WorldResource};
-use render::{ProtoMesh, Vertex, Visual};
-use types::*;
-use Spatial;
+use crate::globe::{ChunkView, Globe, View};
+use crate::physics::{Collider, RemoveColliderQueue, WorldResource};
+use crate::render::{ProtoMesh, Vertex, Visual};
+use crate::types::*;
+use crate::Spatial;
 
 // For now, just creates up to 1 chunk view per tick,
 // until we have created views for all chunks.
@@ -41,7 +41,7 @@ impl ChunkViewSystem {
         chunk_views: WriteStorage<'a, ChunkView>,
         world_resource: &mut Write<WorldResource>,
         colliders: &mut WriteStorage<Collider>,
-        remove_collider_queue_resource: &mut Write<::physics::RemoveColliderQueue>,
+        remove_collider_queue_resource: &mut Write<crate::physics::RemoveColliderQueue>,
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.
@@ -80,7 +80,7 @@ impl ChunkViewSystem {
             // TODO: this might also need to be done any time any of its neighboring
             // chunks changes, because we cull invisible cells, and what cells are
             // visible partly depends on what's in neighboring chunks.
-            use globe::globe::GlobeGuts;
+            use crate::globe::globe::GlobeGuts;
             let spec = globe.spec();
             {
                 // Ew, can I please have non-lexical borrow scopes?
@@ -130,7 +130,7 @@ impl ChunkViewSystem {
             // with each event?)
             //
             // See <https://github.com/slide-rs/specs/issues/361>.
-            use physics::RemoveColliderMessage;
+            use crate::physics::RemoveColliderMessage;
             let mut removed_collider = false; // Hax to not need NLL
             if let Some(collider) = colliders.get(chunk_view_ent) {
                 let remove_collider_queue = &mut remove_collider_queue_resource.queue;
@@ -254,7 +254,7 @@ impl ChunkViewSystem {
             // with each event?)
             //
             // See <https://github.com/slide-rs/specs/issues/361>.
-            use physics::RemoveColliderMessage;
+            use crate::physics::RemoveColliderMessage;
 
             // We won't have made a collider if the chunk view
             // would've been an empty mesh.
@@ -276,7 +276,7 @@ impl ChunkViewSystem {
         visuals: &mut WriteStorage<'a, Visual>,
         spatials: &mut WriteStorage<'a, Spatial>,
     ) {
-        use globe::globe::GlobeGuts;
+        use crate::globe::globe::GlobeGuts;
         let globe_spec = globe.spec();
         for chunk in globe.chunks_mut().values_mut() {
             if chunk.view_entity.is_some() {
@@ -290,7 +290,7 @@ impl ChunkViewSystem {
             let chunk_transform = Iso3::new(chunk_origin_pos.coords, na::zero());
 
             // We'll fill it in later.
-            let empty_visual = ::render::Visual::new_empty();
+            let empty_visual = crate::render::Visual::new_empty();
             // TODO: Use `create_later_build`, now that it exists?
             // Updated TODO: figure out what the new API is for that.
             // ^^ YES, definitely use that.
@@ -318,8 +318,8 @@ impl<'a> specs::System<'a> for ChunkViewSystem {
         WriteStorage<'a, Spatial>,
         WriteStorage<'a, ChunkView>,
         Write<'a, WorldResource>,
-        Write<'a, ::physics::RemoveColliderQueue>,
-        WriteStorage<'a, ::physics::Collider>,
+        Write<'a, crate::physics::RemoveColliderQueue>,
+        WriteStorage<'a, crate::physics::Collider>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

@@ -2,8 +2,8 @@ use noise;
 
 use super::chunk::{Cell, Material};
 use super::spec::Spec;
-use globe::ChunkOrigin;
-use grid::{GridPoint2, GridPoint3};
+use crate::globe::ChunkOrigin;
+use crate::grid::{GridPoint2, GridPoint3};
 
 // TODO: turn this into a component that we can slap onto a Globe
 // or other globe-oid (distant point?).

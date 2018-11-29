@@ -1,6 +1,6 @@
 use gfx;
 
-use types::Pt3;
+use crate::types::Pt3;
 
 // Pretty basic pipeline currently used for terrain.
 //

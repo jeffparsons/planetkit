@@ -23,7 +23,7 @@ use nphysics3d::object::{BodyHandle, ColliderHandle};
 use nphysics3d::world::World;
 use std::collections::vec_deque::VecDeque;
 
-use types::*;
+use crate::types::*;
 
 /// `World`-global resource for nphysics `World`.
 pub struct WorldResource {

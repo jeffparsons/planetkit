@@ -8,10 +8,10 @@ use slog_async;
 use slog_term;
 use specs;
 
-use app::App;
-use cell_dweller;
-use net::{GameMessage, ServerResource};
-use window;
+use crate::app::App;
+use crate::cell_dweller;
+use crate::net::{GameMessage, ServerResource};
+use crate::window;
 
 /// Builder for [`App`].
 ///
@@ -33,7 +33,7 @@ pub struct AppBuilder {
 
 impl AppBuilder {
     pub fn new() -> AppBuilder {
-        use LogResource;
+        use crate::LogResource;
 
         // Set up logger.
         // REVISIT: make logger configurable? E.g. based on whether on web or not.
@@ -54,14 +54,14 @@ impl AppBuilder {
         // TODO: move component type registration elsewhere;
         // AutoSystems that use them should ensure that they are registered.
         let mut world = specs::World::new();
-        world.register::<::cell_dweller::CellDweller>();
-        world.register::<::render::Visual>();
-        world.register::<::Spatial>();
-        world.register::<::physics::Velocity>();
-        world.register::<::physics::Mass>();
-        world.register::<::globe::Globe>();
-        world.register::<::globe::ChunkView>();
-        world.register::<::net::NetMarker>();
+        world.register::<crate::cell_dweller::CellDweller>();
+        world.register::<crate::render::Visual>();
+        world.register::<crate::Spatial>();
+        world.register::<crate::physics::Velocity>();
+        world.register::<crate::physics::Mass>();
+        world.register::<crate::globe::Globe>();
+        world.register::<crate::globe::ChunkView>();
+        world.register::<crate::net::NetMarker>();
 
         // Initialize resources that can't implement `Default`.
         world.add_resource(LogResource::new(&root_log));
@@ -110,7 +110,7 @@ impl AppBuilder {
     /// Add a few systems that you're likely to want, especially if you're just getting
     /// started with PlanetKit and want to get up and running quickly.
     pub fn with_common_systems(mut self) -> Self {
-        use globe;
+        use crate::globe;
 
         // Set up input adapters.
         let (movement_input_sender, movement_input_receiver) = mpsc::channel();

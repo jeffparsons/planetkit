@@ -1,10 +1,10 @@
 use std::sync::mpsc;
 
-use cell_dweller;
-use globe;
+use crate::cell_dweller;
+use crate::globe;
 use slog;
 use specs::{self, Builder};
-use types::*;
+use crate::types::*;
 
 // TODO: make a proper test harness using `App`, `piston::window::NoWindow`,
 // and some custom systems to drive the tests.
@@ -25,10 +25,10 @@ impl Walker {
         let mut world = specs::World::new();
 
         // Register all component types.
-        world.register::<::cell_dweller::CellDweller>();
-        world.register::<::Spatial>();
-        world.register::<::globe::Globe>();
-        world.register::<::net::NetMarker>();
+        world.register::<crate::cell_dweller::CellDweller>();
+        world.register::<crate::Spatial>();
+        world.register::<crate::globe::Globe>();
+        world.register::<crate::net::NetMarker>();
 
         // Create systems.
         let chunk_sys = globe::ChunkSystem::new(&root_log);
@@ -65,8 +65,8 @@ impl Walker {
         let globe_entity = world.create_entity().with(globe).build();
 
         // Find globe surface and put player character on it.
-        use globe::chunk::Material;
-        use grid::{Dir, GridPoint3};
+        use crate::globe::chunk::Material;
+        use crate::grid::{Dir, GridPoint3};
         let mut guy_pos = GridPoint3::default();
         guy_pos = {
             let mut globes = world.write_storage::<globe::Globe>();
@@ -86,7 +86,7 @@ impl Walker {
                         globe_spec,
                         Some(globe_entity),
                     ))
-                    .with(::Spatial::new_root())
+                    .with(crate::Spatial::new_root())
                     .build()
             })
             .collect();
@@ -102,7 +102,7 @@ impl Walker {
     // TODO: track how many steps have actually been taken somehow?
     pub fn tick_lots(&mut self, ticks: usize) {
         // Start our CellDweller moving forward indefinitely.
-        use cell_dweller::MovementEvent;
+        use crate::cell_dweller::MovementEvent;
         self.movement_input_sender
             .send(MovementEvent::StepForward(true))
             .unwrap();
@@ -155,7 +155,7 @@ impl Walker {
 
 #[test]
 fn random_walk_one_walker() {
-    use grid::GridPoint3;
+    use crate::grid::GridPoint3;
 
     let mut walker = Walker::new(1);
     walker.tick_lots(1000);
@@ -163,14 +163,14 @@ fn random_walk_one_walker() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 1);
     let guy_entity = walker.guy_entities.first().unwrap();
-    let cd_storage = walker.world.read_storage::<::cell_dweller::CellDweller>();
+    let cd_storage = walker.world.read_storage::<crate::cell_dweller::CellDweller>();
     let cd = cd_storage.get(guy_entity.clone()).unwrap();
     assert_ne!(cd.pos, GridPoint3::default());
 }
 
 #[test]
 fn random_walk_three_walkers() {
-    use grid::GridPoint3;
+    use crate::grid::GridPoint3;
 
     let mut walker = Walker::new(3);
     walker.tick_lots(1000);
@@ -178,7 +178,7 @@ fn random_walk_three_walkers() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 3);
     for guy_entity in &walker.guy_entities {
-        let cd_storage = walker.world.read_storage::<::cell_dweller::CellDweller>();
+        let cd_storage = walker.world.read_storage::<crate::cell_dweller::CellDweller>();
         let cd = cd_storage.get(guy_entity.clone()).unwrap();
         assert_ne!(cd.pos, GridPoint3::default());
     }

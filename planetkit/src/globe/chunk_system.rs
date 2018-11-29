@@ -4,8 +4,8 @@ use specs::Entities;
 use specs::{ReadStorage, WriteStorage};
 
 use super::{ChunkOrigin, Globe};
-use cell_dweller::CellDweller;
-use grid::PosInOwningRoot;
+use crate::cell_dweller::CellDweller;
+use crate::grid::PosInOwningRoot;
 
 // NOTE: this is currently all pretty awful. See comments throughout.
 

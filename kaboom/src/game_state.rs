@@ -2,7 +2,7 @@ use std::collections::vec_deque::VecDeque;
 
 use specs::Entity;
 
-use player::{Player, PlayerId};
+use crate::player::{Player, PlayerId};
 
 /// `World`-global resource for game state,
 /// largely defined by the server, but much also maintained

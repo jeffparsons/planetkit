@@ -6,10 +6,10 @@ use super::{
     CellDweller, CellDwellerMessage, RecvMessageQueue, RemoveBlockMessage, SendMessage,
     SendMessageQueue,
 };
-use globe::Globe;
-use grid::PosInOwningRoot;
-use net::{Destination, EntityIds, NodeResource, Transport};
-use Spatial;
+use crate::globe::Globe;
+use crate::grid::PosInOwningRoot;
+use crate::net::{Destination, EntityIds, NodeResource, Transport};
+use crate::Spatial;
 
 pub struct RecvSystem {
     log: Logger,
