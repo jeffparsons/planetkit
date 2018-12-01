@@ -8,6 +8,7 @@ description = """
 High-level toolkit for building games based around voxel globes.
 """
 repository = "https://github.com/jeffparsons/planetkit"
+edition = "2018"
 
 [features]
 nightly = []
