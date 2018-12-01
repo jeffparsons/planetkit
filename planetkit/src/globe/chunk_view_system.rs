@@ -137,6 +137,7 @@ impl ChunkViewSystem {
                 remove_collider_queue.push_back(RemoveColliderMessage {
                     handle: collider.collider_handle,
                 });
+                removed_collider = true;
             }
             if removed_collider {
                 colliders.remove(chunk_view_ent);
