@@ -39,9 +39,9 @@ impl ChunkViewSystem {
         // TODO: I made `MaybeMutStorage` for `SpatialStorage`, so just pluck
         // that out somewhere public and use that.
         chunk_views: WriteStorage<'a, ChunkView>,
-        world_resource: &mut Write<WorldResource>,
-        colliders: &mut WriteStorage<Collider>,
-        remove_collider_queue_resource: &mut Write<crate::physics::RemoveColliderQueue>,
+        world_resource: &mut Write<'_, WorldResource>,
+        colliders: &mut WriteStorage<'_, Collider>,
+        remove_collider_queue_resource: &mut Write<'_, crate::physics::RemoveColliderQueue>,
     ) {
         // Throttle rate of geometry creation.
         // We don't want to spend too much doing this.

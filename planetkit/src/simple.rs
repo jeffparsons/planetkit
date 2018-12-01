@@ -62,7 +62,8 @@ pub fn create_simple_player_character_now(
     let mut player_character_visual = render::Visual::new_empty();
     player_character_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let player_character_entity = world.create_entity()
+    let player_character_entity = world
+        .create_entity()
         .with(cell_dweller::CellDweller::new(
             player_character_pos,
             Dir::default(),
@@ -91,7 +92,10 @@ pub fn create_simple_chase_camera_now(
     let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
     let camera_entity = world
         .create_entity()
-        .with(crate::Spatial::new(player_character_entity, camera_transform))
+        .with(crate::Spatial::new(
+            player_character_entity,
+            camera_transform,
+        ))
         .build();
     use crate::camera::DefaultCamera;
     // TODO: gah, where does this belong?
@@ -102,8 +106,8 @@ pub fn create_simple_chase_camera_now(
 }
 
 pub fn create_simple_chase_camera(
-    entities: &Entities,
-    updater: &Read<LazyUpdate>,
+    entities: &Entities<'_>,
+    updater: &Read<'_, LazyUpdate>,
     player_character_entity: specs::Entity,
     default_camera: &mut DefaultCamera,
 ) -> specs::Entity {

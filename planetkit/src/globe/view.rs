@@ -199,7 +199,7 @@ impl View {
         }
     }
 
-    fn cull_cell(&self, cursor: &Cursor) -> bool {
+    fn cull_cell(&self, cursor: &Cursor<'_>) -> bool {
         use crate::grid::Neighbors;
 
         let resolution = cursor.globe().spec().root_resolution;

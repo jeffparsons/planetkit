@@ -37,7 +37,7 @@ pub mod benches {
 
     use super::super::*;
 
-    use globe::GridPoint3;
+    use crate::globe::GridPoint3;
 
     #[bench]
     // # History for picking the "middle of the vector" chunk.
@@ -71,7 +71,7 @@ pub mod benches {
     //       already implemented `Cursor`, because it speeds up looking up a chunk
     //       by its origin, which `Cursor` helps you avoid most of the time.
     fn bench_generate_chunk_geometry(b: &mut Bencher) {
-        use render::Vertex;
+        use crate::render::Vertex;
 
         const ROOT_RESOLUTION: [GridCoord; 2] = [32, 64];
         const CHUNK_RESOLUTION: [GridCoord; 3] = [16, 16, 4];

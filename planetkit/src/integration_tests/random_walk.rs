@@ -2,9 +2,9 @@ use std::sync::mpsc;
 
 use crate::cell_dweller;
 use crate::globe;
+use crate::types::*;
 use slog;
 use specs::{self, Builder};
-use crate::types::*;
 
 // TODO: make a proper test harness using `App`, `piston::window::NoWindow`,
 // and some custom systems to drive the tests.
@@ -163,7 +163,9 @@ fn random_walk_one_walker() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 1);
     let guy_entity = walker.guy_entities.first().unwrap();
-    let cd_storage = walker.world.read_storage::<crate::cell_dweller::CellDweller>();
+    let cd_storage = walker
+        .world
+        .read_storage::<crate::cell_dweller::CellDweller>();
     let cd = cd_storage.get(guy_entity.clone()).unwrap();
     assert_ne!(cd.pos, GridPoint3::default());
 }
@@ -178,7 +180,9 @@ fn random_walk_three_walkers() {
     // Walking should have taken us away from the origin.
     assert_eq!(walker.guy_entities.len(), 3);
     for guy_entity in &walker.guy_entities {
-        let cd_storage = walker.world.read_storage::<crate::cell_dweller::CellDweller>();
+        let cd_storage = walker
+            .world
+            .read_storage::<crate::cell_dweller::CellDweller>();
         let cd = cd_storage.get(guy_entity.clone()).unwrap();
         assert_ne!(cd.pos, GridPoint3::default());
     }

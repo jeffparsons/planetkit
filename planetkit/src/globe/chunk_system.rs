@@ -73,12 +73,11 @@ impl ChunkSystem {
         // We don't care which CellDweller is which, so just store
         // them as a Vec of points.
         use specs::Join;
-        let cd_positions: Vec<_> = cds.join()
+        let cd_positions: Vec<_> = cds
+            .join()
             // Only consider CellDwellers from this globe.
             .filter(|cd| cd.globe_entity == Some(globe_entity))
-            .map(|cd| {
-                cd.real_transform_without_setting_clean().translation.vector
-            })
+            .map(|cd| cd.real_transform_without_setting_clean().translation.vector)
             .collect();
 
         // There are no cell dwellers, so no interesting terrain.
@@ -101,10 +100,14 @@ impl ChunkSystem {
                 // Or even a bounding sphere.
                 // (Cache this per Chunk).
                 let chunk_origin_pos = globe.spec().cell_bottom_center(*chunk_origin.pos());
-                let distance_from_closest_cd = cd_positions.iter()
+                let distance_from_closest_cd = cd_positions
+                    .iter()
                     // TODO: norm_squared; it'll be quicker.
                     .map(|cd_pos| (cd_pos - chunk_origin_pos.coords).norm())
-                    .min_by(|a, b| a.partial_cmp(b).expect("Really shouldn't be possible to get NaN etc. here"))
+                    .min_by(|a, b| {
+                        a.partial_cmp(b)
+                            .expect("Really shouldn't be possible to get NaN etc. here")
+                    })
                     .expect("We already ensured there is at least one CellDweller");
                 (*chunk_origin, distance_from_closest_cd)
             })

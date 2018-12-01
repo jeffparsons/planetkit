@@ -77,7 +77,7 @@ where
     T: specs::Component,
 {
     fn get(&self, e: Entity) -> Option<&T> {
-        (self as &ReadStorage<T>).get(e)
+        (self as &ReadStorage<'_, T>).get(e)
     }
 }
 
@@ -86,7 +86,7 @@ where
     T: specs::Component,
 {
     fn get(&self, e: Entity) -> Option<&T> {
-        (self as &WriteStorage<T>).get(e)
+        (self as &WriteStorage<'_, T>).get(e)
     }
 }
 

@@ -141,8 +141,8 @@ macro_rules! cursor {
 
 // Lifetimes are different because we can't hand out a mutable `Cell` reference
 // that outlives self.
-cursor!{Cursor, &'a Globe, &'a Cell, chunks, get, cell}
-cursor!{CursorMut, &'a mut Globe, &mut Cell, chunks_mut, get_mut, cell_mut}
+cursor! {Cursor, &'a Globe, &'a Cell, chunks, get, cell}
+cursor! {CursorMut, &'a mut Globe, &mut Cell, chunks_mut, get_mut, cell_mut}
 
 impl<'a> Cursor<'a> {
     /// Only use this if you don't care about which chunk

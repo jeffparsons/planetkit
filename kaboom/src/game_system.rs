@@ -35,8 +35,8 @@ impl GameSystem {
 
     fn create_and_broadcast_player(
         &mut self,
-        game_state: &mut Write<GameState>,
-        send_message_queue: &mut Write<SendMessageQueue<Message>>,
+        game_state: &mut Write<'_, GameState>,
+        send_message_queue: &mut Write<'_, SendMessageQueue<Message>>,
         peer_id: PeerId,
     ) {
         let next_player_id = PlayerId(game_state.players.len() as u16);

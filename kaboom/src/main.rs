@@ -1,18 +1,7 @@
-extern crate planetkit as pk;
-extern crate rand;
-extern crate shred;
-extern crate specs;
 #[macro_use]
 extern crate slog;
 #[macro_use]
 extern crate serde_derive;
-extern crate clap;
-extern crate nalgebra as na;
-extern crate ncollide3d;
-extern crate nphysics3d;
-extern crate piston;
-extern crate piston_window;
-extern crate serde;
 
 mod client_state;
 mod death_system;
@@ -29,10 +18,12 @@ mod weapon;
 
 use std::sync::mpsc;
 
-use clap::{AppSettings, Arg, SubCommand};
 use crate::message::Message;
 use crate::recv_demux_system::RecvDemuxSystem;
 use crate::send_mux_system::SendMuxSystem;
+use clap::{self, AppSettings, Arg, SubCommand};
+use planetkit as pk;
+use specs;
 
 fn main() {
     let matches = clap::App::new("Kaboom")
@@ -46,13 +37,10 @@ fn main() {
                     Arg::with_name("SERVER_ADDRESS")
                         .help("The IP or hostname and port of the server to connect to")
                         .required(true)
-                        .index(1)
-                )
+                        .index(1),
+                ),
         )
-        .subcommand(
-            SubCommand::with_name("listen")
-                .about("start a server, and play")
-        )
+        .subcommand(SubCommand::with_name("listen").about("start a server, and play"))
         // TODO: dedicated server, and helper script
         // to launch a dedicated server then connect
         // a client to it.
@@ -79,8 +67,8 @@ fn main() {
     // Should we start a server or connect to one?
     // NLL SVP.
     {
-        use piston_window::AdvancedWindow;
         use crate::pk::net::ServerResource;
+        use piston_window::AdvancedWindow;
         use std::net::SocketAddr;
 
         // Systems we added will have ensured ServerResource is present.

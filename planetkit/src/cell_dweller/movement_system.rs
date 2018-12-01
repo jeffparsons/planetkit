@@ -174,7 +174,8 @@ impl MovementSystem {
                 globe.spec().root_resolution,
                 &mut new_last_turn_bias,
             ),
-        }.expect("CellDweller should have been in good state.");
+        }
+        .expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
         // Usually we'll allow climbing a maximum of one block, but especially in certain tests

@@ -79,7 +79,8 @@ impl CellDweller {
             &mut self.dir,
             self.globe_spec.root_resolution,
             turn_dir,
-        ).expect("This suggests a bug in `movement` code.");
+        )
+        .expect("This suggests a bug in `movement` code.");
         self.is_real_space_transform_dirty = true;
     }
 

@@ -35,7 +35,8 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
     let mut shepherd_visual = render::Visual::new_empty();
     shepherd_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let shepherd_entity = world.create_entity()
+    let shepherd_entity = world
+        .create_entity()
         .with(cell_dweller::CellDweller::new(
             shepherd_pos,
             grid::Dir::default(),

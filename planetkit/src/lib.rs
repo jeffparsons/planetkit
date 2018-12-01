@@ -39,56 +39,37 @@ the line. This would imply significant API breakage.
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(all(feature = "nightly", test), feature(test))]
 
-extern crate bytes;
-extern crate chrono;
-extern crate glutin_window;
-extern crate graphics;
-extern crate noise;
-extern crate opengl_graphics;
-extern crate piston;
-extern crate rand;
 #[macro_use]
 extern crate gfx;
-extern crate camera_controllers;
-extern crate gfx_device_gl;
-extern crate nalgebra as na;
-extern crate ncollide3d;
-extern crate nphysics3d;
-extern crate piston_window;
-extern crate shader_version;
-extern crate vecmath;
 #[macro_use]
 extern crate slog;
-extern crate shred;
-extern crate slog_async;
-extern crate slog_term;
 #[macro_use]
 extern crate shred_derive;
-extern crate num_traits;
-extern crate specs;
 #[macro_use]
 extern crate itertools;
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
-extern crate arrayvec;
-extern crate froggy;
-extern crate futures;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-
-// Stuff we can't run on the web yet.
-#[cfg(not(target_os = "emscripten"))]
-extern crate tokio_codec;
-#[cfg(not(target_os = "emscripten"))]
-extern crate tokio_core;
-#[cfg(not(target_os = "emscripten"))]
-extern crate tokio_io;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
+
+use arrayvec;
+use camera_controllers;
+use froggy;
+use futures;
+use gfx_device_gl;
+use nalgebra as na;
+use noise;
+use rand;
+use serde_json;
+use shred;
+use slog_async;
+use slog_term;
+use specs;
+use vecmath;
 
 pub mod app;
 pub mod camera;

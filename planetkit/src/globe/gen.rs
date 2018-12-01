@@ -46,9 +46,9 @@ impl SimpleGen {
         // changed to deprecate PermutationTable; is it now stored
         // within Fbm? This might be super-slow now...
         let terrain_noise = noise::Fbm::new()
-        // TODO: make wavelength etc. part of spec;
-        // the octaves and wavelength of noise you want
-        // will probably depend on planet size.
+            // TODO: make wavelength etc. part of spec;
+            // the octaves and wavelength of noise you want
+            // will probably depend on planet size.
             .set_octaves(6)
             .set_frequency(1.0 / 700.0)
             // Truncate seed to make it fit what `noise` expects.

@@ -46,14 +46,14 @@ impl specs::Component for Grenade {
 
 /// Spawn a grenade travelling up and forward away from the player.
 pub fn shoot_grenade(
-    entities: &Entities,
-    updater: &Read<LazyUpdate>,
-    cell_dwellers: &ReadStorage<CellDweller>,
+    entities: &Entities<'_>,
+    updater: &Read<'_, LazyUpdate>,
+    cell_dwellers: &ReadStorage<'_, CellDweller>,
     cell_dweller_entity: Entity,
-    spatials: &ReadStorage<Spatial>,
+    spatials: &ReadStorage<'_, Spatial>,
     log: &Logger,
     fired_by_player_id: PlayerId,
-    world_resource: &mut Write<WorldResource>,
+    world_resource: &mut Write<'_, WorldResource>,
 ) {
     // Make visual appearance of bullet.
     // For now this is just an axes mesh.

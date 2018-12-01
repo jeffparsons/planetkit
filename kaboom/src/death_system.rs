@@ -4,7 +4,9 @@ use specs::{Read, ReadStorage, Write, WriteStorage};
 
 use crate::pk::cell_dweller::{CellDweller, CellDwellerMessage, SetPosMessage};
 use crate::pk::globe::Globe;
-use crate::pk::net::{Destination, NetMarker, NodeResource, SendMessage, SendMessageQueue, Transport};
+use crate::pk::net::{
+    Destination, NetMarker, NodeResource, SendMessage, SendMessageQueue, Transport,
+};
 
 use crate::fighter::Fighter;
 use crate::game_state::GameState;
@@ -130,17 +132,15 @@ impl<'a> specs::System<'a> for DeathSystem {
                 let new_fighter_pos = globe
                     .air_above_random_surface_dry_land(
                         &mut thread_rng(),
-                        2, // Min air cells above
-                        5, // Max distance from starting point
+                        2,  // Min air cells above
+                        5,  // Max distance from starting point
                         50, // Max attempts
                     )
                     // TODO: don't panic! Just give up and try again on another tick
                     // if it takes too long on this tick! (Leave the player dead for a while;
                     // we'll probably want to do that soon, anyway: make the screen red for
                     // a couple of seconds while they wait to respawn.)
-                    .expect(
-                        "Oh noes, we took too many attempts to find a decent spawn point!",
-                    );
+                    .expect("Oh noes, we took too many attempts to find a decent spawn point!");
 
                 cd.set_grid_point(new_fighter_pos);
 

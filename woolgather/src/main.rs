@@ -1,13 +1,12 @@
-extern crate planetkit as pk;
-extern crate rand;
-extern crate shred;
-extern crate specs;
 #[macro_use]
 extern crate slog;
 
 mod game_state;
 mod game_system;
 mod shepherd;
+
+use planetkit as pk;
+use specs;
 
 fn main() {
     let mut app = pk::AppBuilder::new()

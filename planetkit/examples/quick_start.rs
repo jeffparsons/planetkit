@@ -1,4 +1,4 @@
-extern crate planetkit as pk;
+use planetkit as pk;
 
 fn main() {
     let mut app = pk::AppBuilder::new().with_common_systems().build_gui();

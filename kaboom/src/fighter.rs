@@ -35,8 +35,8 @@ impl specs::Component for Fighter {
 
 /// Create the player character.
 pub fn create(
-    entities: &Entities,
-    updater: &Read<LazyUpdate>,
+    entities: &Entities<'_>,
+    updater: &Read<'_, LazyUpdate>,
     globe_entity: specs::Entity,
     globe: &mut Globe,
     player_id: PlayerId,

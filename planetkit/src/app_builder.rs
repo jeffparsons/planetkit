@@ -145,28 +145,35 @@ impl AppBuilder {
              _world: &mut specs::World,
              dispatcher_builder: specs::DispatcherBuilder<'static, 'static>| {
                 dispatcher_builder
-                // Try to get stuff most directly linked to input done first
-                // to avoid another frame of lag.
-                .with(movement_sys, "cd_movement", &[])
-                .with(mining_sys, "cd_mining", &["cd_movement"])
-                .with_barrier()
-                .with(cd_physics_sys, "cd_physics", &[])
-                .with(chunk_sys, "chunk", &[])
-                // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
-                // to be able to run it in parallel.
-                .with(chunk_view_sys, "chunk_view", &[])
+                    // Try to get stuff most directly linked to input done first
+                    // to avoid another frame of lag.
+                    .with(movement_sys, "cd_movement", &[])
+                    .with(mining_sys, "cd_mining", &["cd_movement"])
+                    .with_barrier()
+                    .with(cd_physics_sys, "cd_physics", &[])
+                    .with(chunk_sys, "chunk", &[])
+                    // Don't depend on chunk system; chunk view can lag happily, so we'd prefer
+                    // to be able to run it in parallel.
+                    .with(chunk_view_sys, "chunk_view", &[])
             },
         )
     }
 }
 
 pub trait AddSystemsFn<'a, 'b>:
-    FnOnce(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>)
-        -> specs::DispatcherBuilder<'a, 'b>
+    FnOnce(
+    &slog::Logger,
+    &mut specs::World,
+    specs::DispatcherBuilder<'a, 'b>,
+) -> specs::DispatcherBuilder<'a, 'b>
 {
 }
 
 impl<'a, 'b, F> AddSystemsFn<'a, 'b> for F where
-    F: FnOnce(&slog::Logger, &mut specs::World, specs::DispatcherBuilder<'a, 'b>)
-        -> specs::DispatcherBuilder<'a, 'b>
-{}
+    F: FnOnce(
+        &slog::Logger,
+        &mut specs::World,
+        specs::DispatcherBuilder<'a, 'b>,
+    ) -> specs::DispatcherBuilder<'a, 'b>
+{
+}
