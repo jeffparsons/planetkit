@@ -1,6 +1,6 @@
 use specs;
 
-use player::PlayerId;
+use crate::player::PlayerId;
 
 /// Health points, which can be depleted by incurring damage.
 ///

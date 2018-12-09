@@ -1,5 +1,5 @@
 use super::ChunkOrigin;
-use grid::{GridCoord, GridPoint3};
+use crate::grid::{GridCoord, GridPoint3};
 
 // TODO: rename this file; probably neater to have smaller files
 // rather than having multiple non-trivial iterators together.
@@ -177,7 +177,7 @@ pub fn chunks_containing_point(
     chunk_resolution: [GridCoord; 3],
 ) -> impl Iterator<Item = (ChunkOrigin, GridPoint3)> {
     use super::ChunksInSameRootContainingPoint;
-    use grid::EquivalentPoints;
+    use crate::grid::EquivalentPoints;
 
     EquivalentPoints::new(point, root_resolution).flat_map(move |equivalent_point| {
         ChunksInSameRootContainingPoint::new(equivalent_point, root_resolution, chunk_resolution)

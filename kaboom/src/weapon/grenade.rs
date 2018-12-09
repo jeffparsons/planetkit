@@ -2,15 +2,15 @@ use ncollide3d::shape::ShapeHandle;
 use slog::Logger;
 use specs::{self, Entities, Entity, LazyUpdate, Read, ReadStorage, Write};
 
-use pk::cell_dweller::CellDweller;
-use pk::physics::Mass;
-use pk::physics::Velocity;
-use pk::physics::{Collider, RigidBody, WorldResource};
-use pk::render;
-use pk::types::*;
-use pk::Spatial;
+use crate::pk::cell_dweller::CellDweller;
+use crate::pk::physics::Mass;
+use crate::pk::physics::Velocity;
+use crate::pk::physics::{Collider, RigidBody, WorldResource};
+use crate::pk::render;
+use crate::pk::types::*;
+use crate::pk::Spatial;
 
-use player::PlayerId;
+use crate::player::PlayerId;
 
 pub struct Grenade {
     pub time_to_live_seconds: f64,
@@ -46,14 +46,14 @@ impl specs::Component for Grenade {
 
 /// Spawn a grenade travelling up and forward away from the player.
 pub fn shoot_grenade(
-    entities: &Entities,
-    updater: &Read<LazyUpdate>,
-    cell_dwellers: &ReadStorage<CellDweller>,
+    entities: &Entities<'_>,
+    updater: &Read<'_, LazyUpdate>,
+    cell_dwellers: &ReadStorage<'_, CellDweller>,
     cell_dweller_entity: Entity,
-    spatials: &ReadStorage<Spatial>,
+    spatials: &ReadStorage<'_, Spatial>,
     log: &Logger,
     fired_by_player_id: PlayerId,
-    world_resource: &mut Write<WorldResource>,
+    world_resource: &mut Write<'_, WorldResource>,
 ) {
     // Make visual appearance of bullet.
     // For now this is just an axes mesh.

@@ -5,13 +5,13 @@ use specs::{Read, ReadStorage, Write, WriteStorage};
 use std::sync::mpsc;
 
 use super::{ActiveCellDweller, CellDweller, CellDwellerMessage, SendMessageQueue, SetPosMessage};
-use globe::chunk::Material;
-use globe::Globe;
-use input_adapter;
-use movement::*;
-use net::{Destination, NetMarker, SendMessage, Transport};
-use types::*;
-use Spatial;
+use crate::globe::chunk::Material;
+use crate::globe::Globe;
+use crate::input_adapter;
+use crate::movement::*;
+use crate::net::{Destination, NetMarker, SendMessage, Transport};
+use crate::types::*;
+use crate::Spatial;
 
 // TODO: own file?
 pub struct MovementInputAdapter {
@@ -174,7 +174,8 @@ impl MovementSystem {
                 globe.spec().root_resolution,
                 &mut new_last_turn_bias,
             ),
-        }.expect("CellDweller should have been in good state.");
+        }
+        .expect("CellDweller should have been in good state.");
 
         // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
         // Usually we'll allow climbing a maximum of one block, but especially in certain tests

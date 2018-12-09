@@ -5,9 +5,9 @@ mod movement_system;
 mod physics_system;
 mod recv_system;
 
-use grid::{Dir, GridPoint3};
-use movement::TurnDir;
-use net::{RecvMessage, SendMessage};
+use crate::grid::{Dir, GridPoint3};
+use crate::movement::TurnDir;
+use crate::net::{RecvMessage, SendMessage};
 use std::collections::vec_deque::VecDeque;
 
 pub use self::cell_dweller::CellDweller;

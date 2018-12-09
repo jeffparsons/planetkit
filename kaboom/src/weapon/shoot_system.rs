@@ -4,15 +4,15 @@ use specs;
 use specs::{Read, ReadStorage, Write, WriteStorage};
 use std::sync::mpsc;
 
-use pk::cell_dweller::ActiveCellDweller;
-use pk::input_adapter;
-use pk::net::{Destination, NetMarker, SendMessage, SendMessageQueue, Transport};
-use pk::types::*;
+use crate::pk::cell_dweller::ActiveCellDweller;
+use crate::pk::input_adapter;
+use crate::pk::net::{Destination, NetMarker, SendMessage, SendMessageQueue, Transport};
+use crate::pk::types::*;
 
 use super::{ShootGrenadeMessage, WeaponMessage};
-use client_state::ClientState;
-use fighter::Fighter;
-use message::Message;
+use crate::client_state::ClientState;
+use crate::fighter::Fighter;
+use crate::message::Message;
 
 pub struct ShootInputAdapter {
     sender: mpsc::Sender<ShootEvent>,

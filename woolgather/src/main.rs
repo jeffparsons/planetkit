@@ -1,13 +1,12 @@
-extern crate planetkit as pk;
-extern crate rand;
-extern crate shred;
-extern crate specs;
 #[macro_use]
 extern crate slog;
 
 mod game_state;
 mod game_system;
 mod shepherd;
+
+use planetkit as pk;
+use specs;
 
 fn main() {
     let mut app = pk::AppBuilder::new()
@@ -28,7 +27,7 @@ fn add_systems(
 }
 
 fn create_entities(world: &mut specs::World) {
-    use pk::cell_dweller::ActiveCellDweller;
+    use crate::pk::cell_dweller::ActiveCellDweller;
 
     // TODO: this should all actually be done by a game system,
     // rather than in the app builder. Because, e.g. if you change levels,

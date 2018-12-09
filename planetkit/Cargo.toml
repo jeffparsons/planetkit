@@ -8,6 +8,7 @@ description = """
 High-level toolkit for building games based around voxel globes.
 """
 repository = "https://github.com/jeffparsons/planetkit"
+edition = "2018"
 
 [features]
 nightly = []
@@ -55,6 +56,7 @@ serde_json = "1.0.2"
 serde_derive = "1.0.10"
 
 # Stuff we can't run on the web yet.
+[target.'cfg(not(target_os = "emscripten"))'.dependencies]
 tokio-core = { version = "0.1.17", optional = true }
 tokio-io = { version = "0.1.7", optional = true }
 tokio-codec = { version = "0.1.0", optional = true }

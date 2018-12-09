@@ -1,9 +1,9 @@
 use specs;
 
-use globe::Spec;
-use grid::{Dir, GridPoint3};
-use movement::*;
-use types::*;
+use crate::globe::Spec;
+use crate::grid::{Dir, GridPoint3};
+use crate::movement::*;
+use crate::types::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
@@ -79,7 +79,8 @@ impl CellDweller {
             &mut self.dir,
             self.globe_spec.root_resolution,
             turn_dir,
-        ).expect("This suggests a bug in `movement` code.");
+        )
+        .expect("This suggests a bug in `movement` code.");
         self.is_real_space_transform_dirty = true;
     }
 

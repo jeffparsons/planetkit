@@ -1,11 +1,11 @@
 use specs;
 use specs::{Entities, LazyUpdate, Read};
 
-use pk;
-use pk::globe::{Globe, Spec};
+use crate::pk;
+use crate::pk::globe::{Globe, Spec};
 
 // Create a planet to fight on.
-pub fn create(entities: &Entities, updater: &Read<LazyUpdate>) -> specs::Entity {
+pub fn create(entities: &Entities<'_>, updater: &Read<'_, LazyUpdate>) -> specs::Entity {
     // Make it small enough that you can find another person easily enough.
     // TODO: eventually make it scale to the number of players present at the start of each round.
     // TODO: special generator for this; you want to have lava beneath the land

@@ -1,8 +1,8 @@
 use super::CellDweller;
-use globe::chunk::{Cell, Material};
-use globe::Globe;
-use grid::PosInOwningRoot;
-use movement::*;
+use crate::globe::chunk::{Cell, Material};
+use crate::globe::Globe;
+use crate::grid::PosInOwningRoot;
+use crate::movement::*;
 
 /// Assumes that the given CellDweller is indeed attached to the given globe.
 /// May panick if this is not true.
@@ -85,7 +85,7 @@ pub fn pick_up_if_possible(
 }
 
 pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> Cell {
-    use globe::is_point_shared;
+    use crate::globe::is_point_shared;
 
     // Keep for later, so we can return what was in it.
     let cloned_cell = {

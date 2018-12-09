@@ -1,4 +1,4 @@
-use grid::{GridCoord, GridPoint3};
+use crate::grid::{GridCoord, GridPoint3};
 
 /// Wrapper type around a `Pos` that is known to express
 /// a valid chunk origin.

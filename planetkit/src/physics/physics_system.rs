@@ -2,8 +2,8 @@ use specs;
 use specs::{Read, ReadStorage, Write, WriteStorage};
 
 use super::{RigidBody, Velocity, WorldResource};
-use types::*;
-use Spatial;
+use crate::types::*;
+use crate::Spatial;
 
 /// Synchronises state between the Specs and nphysics worlds,
 /// and drives the nphysics simulation.
@@ -74,7 +74,7 @@ impl<'a> specs::System<'a> for PhysicsSystem {
             // Component might not have been cleaned up, even if we've
             // already deleted the corresponding nphysics body.
             if let Some(body) = nphysics_world.rigid_body_mut(rigid_body.body_handle) {
-                body.set_velocity(Velocity::new(velocity.local_velocity(), ::na::zero()));
+                body.set_velocity(Velocity::new(velocity.local_velocity(), crate::na::zero()));
             }
         }
 

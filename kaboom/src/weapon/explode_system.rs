@@ -2,13 +2,13 @@ use slog::Logger;
 use specs;
 use specs::{Entities, Read, ReadStorage, Write, WriteStorage};
 
-use pk::net::NodeResource;
-use pk::physics;
-use pk::types::*;
-use pk::Spatial;
+use crate::pk::net::NodeResource;
+use crate::pk::physics;
+use crate::pk::types::*;
+use crate::pk::Spatial;
 
 use super::grenade::Grenade;
-use health::Health;
+use crate::health::Health;
 
 pub struct ExplodeSystem {
     log: Logger,
@@ -38,7 +38,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        use pk::SpatialStorage;
+        use crate::pk::SpatialStorage;
         use specs::Join;
 
         let (
@@ -114,7 +114,7 @@ impl<'a> specs::System<'a> for ExplodeSystem {
                 // with each event?)
                 //
                 // See <https://github.com/slide-rs/specs/issues/361>.
-                use pk::physics::{RemoveBodyMessage, RemoveColliderMessage};
+                use crate::pk::physics::{RemoveBodyMessage, RemoveColliderMessage};
                 remove_body_queue.push_back(RemoveBodyMessage {
                     handle: rigid_body.body_handle,
                 });

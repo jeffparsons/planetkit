@@ -7,10 +7,10 @@ use slog::Logger;
 use specs;
 use std::sync::{mpsc, Arc, Mutex};
 
-use input_adapter::InputAdapter;
-use render;
-use render::{Mesh, MeshRepository, Visual};
-use types::*;
+use crate::input_adapter::InputAdapter;
+use crate::render;
+use crate::render::{Mesh, MeshRepository, Visual};
+use crate::types::*;
 
 fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
     use camera_controllers::CameraPerspective;
@@ -22,7 +22,8 @@ fn get_projection(w: &PistonWindow) -> [[f32; 4]; 4] {
         near_clip: 0.01,
         far_clip: 100.0,
         aspect_ratio: (draw_size.width as f32) / (draw_size.height as f32),
-    }.projection()
+    }
+    .projection()
 }
 
 pub struct App {
@@ -31,7 +32,7 @@ pub struct App {
     world: specs::World,
     dispatcher: specs::Dispatcher<'static, 'static>,
     encoder_channel: render::EncoderChannel<gfx_device_gl::Resources, gfx_device_gl::CommandBuffer>,
-    input_adapters: Vec<Box<InputAdapter>>,
+    input_adapters: Vec<Box<dyn InputAdapter>>,
     // TEMP: Share with rendering system until the rendering system
     // is smart enough to take full ownership of it.
     projection: Arc<Mutex<[[f32; 4]; 4]>>,
@@ -257,7 +258,7 @@ impl App {
         mesh_repo.collect_garbage();
     }
 
-    pub fn add_input_adapter(&mut self, adapter: Box<InputAdapter>) {
+    pub fn add_input_adapter(&mut self, adapter: Box<dyn InputAdapter>) {
         self.input_adapters.push(adapter);
     }
 }

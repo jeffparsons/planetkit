@@ -3,10 +3,10 @@ use slog::Logger;
 use super::chunk::Material;
 use super::spec::Spec;
 use super::{ChunkOrigin, Cursor, Globe};
-use grid::cell_shape;
-use grid::GridPoint3;
-use render;
-use types::Pt3;
+use crate::grid::cell_shape;
+use crate::grid::GridPoint3;
+use crate::render;
+use crate::types::Pt3;
 
 // TODO: between this and "draw" we now have some confusing names.
 // Shuffle this code into something that implies it's just about
@@ -199,8 +199,8 @@ impl View {
         }
     }
 
-    fn cull_cell(&self, cursor: &Cursor) -> bool {
-        use grid::Neighbors;
+    fn cull_cell(&self, cursor: &Cursor<'_>) -> bool {
+        use crate::grid::Neighbors;
 
         let resolution = cursor.globe().spec().root_resolution;
 

@@ -1,15 +1,15 @@
 use specs;
 use specs::{Entities, LazyUpdate, Read};
 
-use pk;
-use pk::cell_dweller;
-use pk::globe::Globe;
-use pk::grid;
-use pk::render;
-use pk::types::*;
+use crate::pk;
+use crate::pk::cell_dweller;
+use crate::pk::globe::Globe;
+use crate::pk::grid;
+use crate::pk::render;
+use crate::pk::types::*;
 
-use health::Health;
-use player::PlayerId;
+use crate::health::Health;
+use crate::player::PlayerId;
 
 pub struct Fighter {
     pub player_id: PlayerId,
@@ -35,8 +35,8 @@ impl specs::Component for Fighter {
 
 /// Create the player character.
 pub fn create(
-    entities: &Entities,
-    updater: &Read<LazyUpdate>,
+    entities: &Entities<'_>,
+    updater: &Read<'_, LazyUpdate>,
     globe_entity: specs::Entity,
     globe: &mut Globe,
     player_id: PlayerId,
@@ -79,6 +79,6 @@ pub fn create(
     updater.insert(entity, pk::Spatial::new(globe_entity, Iso3::identity()));
     // Give the fighter some starting health.
     updater.insert(entity, Health::new(100));
-    updater.insert(entity, ::fighter::Fighter::new(player_id));
+    updater.insert(entity, crate::fighter::Fighter::new(player_id));
     entity
 }

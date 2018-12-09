@@ -1,9 +1,9 @@
-use pk;
-use pk::cell_dweller;
-use pk::globe;
-use pk::grid;
-use pk::render;
-use pk::types::*;
+use crate::pk;
+use crate::pk::cell_dweller;
+use crate::pk::globe;
+use crate::pk::grid;
+use crate::pk::render;
+use crate::pk::types::*;
 use specs::{self, Builder};
 
 /// Create the player character: a shepherd who must find and rescue the sheep
@@ -35,7 +35,8 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
     let mut shepherd_visual = render::Visual::new_empty();
     shepherd_visual.proto_mesh = Some(render::make_axes_mesh());
 
-    let shepherd_entity = world.create_entity()
+    let shepherd_entity = world
+        .create_entity()
         .with(cell_dweller::CellDweller::new(
             shepherd_pos,
             grid::Dir::default(),

@@ -14,8 +14,8 @@ use super::mesh::MeshGuts;
 use super::EncoderChannel;
 use super::MeshRepository;
 use super::Visual;
-use camera::DefaultCamera;
-use Spatial;
+use crate::camera::DefaultCamera;
+use crate::Spatial;
 
 // System to render all visible entities. This is back-end agnostic;
 // i.e. nothing in it should be tied to OpenGL, Vulkan, etc.
@@ -110,7 +110,7 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
         // Try to draw all visuals.
         use specs::Join;
         for (entity, visual) in (&**entities, visuals).join() {
-            use spatial::SpatialStorage;
+            use crate::spatial::SpatialStorage;
 
             // Don't try to draw things that aren't in the same
             // spatial tree as the camera.
@@ -130,8 +130,8 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             // TODO: cache the model matrix separately per Visual
             // if there's a common ancestor that stays the same
             // for a while.
-            use na;
-            use na::{Isometry3, Point3, Vector3};
+            use crate::na;
+            use crate::na::{Isometry3, Point3, Vector3};
             let model: Isometry3<f32> = na::convert(camera_relative_transform);
 
             // Turn the camera's model transform into a view matrix.

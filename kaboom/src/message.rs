@@ -1,10 +1,10 @@
-use pk::net::GameMessage;
+use crate::pk::net::GameMessage;
 
-use pk::cell_dweller::CellDwellerMessage;
+use crate::pk::cell_dweller::CellDwellerMessage;
 
-use player::PlayerMessage;
+use crate::player::PlayerMessage;
 
-use weapon::WeaponMessage;
+use crate::weapon::WeaponMessage;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum Message {

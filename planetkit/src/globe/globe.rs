@@ -8,7 +8,7 @@ use super::gen::{Gen, SimpleGen};
 use super::spec::Spec;
 use super::ChunkOrigin;
 use super::{origin_of_chunk_in_same_root_containing, origin_of_chunk_owning};
-use grid::{GridPoint3, PosInOwningRoot};
+use crate::grid::{GridPoint3, PosInOwningRoot};
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -374,7 +374,7 @@ impl Globe {
     /// Make sure we are tracking the currency of shared data in all chunks
     /// upstream or downstream of this chunk.
     fn ensure_all_chunk_pairs_present_for(&mut self, chunk: &Chunk) {
-        use globe::chunk_pair::{ChunkPair, ChunkPairOrigins};
+        use crate::globe::chunk_pair::{ChunkPair, ChunkPairOrigins};
         // Copy cached upstream and downstream neighbors from
         // chunks rather than re-computing them for each pair now.
         for upstream_neighbor in &chunk.upstream_neighbors {

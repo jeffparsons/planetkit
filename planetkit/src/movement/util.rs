@@ -1,7 +1,7 @@
-use na;
+use crate::na;
 
-use grid::cell_shape::NEIGHBOR_OFFSETS;
-use grid::{Dir, GridCoord, GridPoint3};
+use crate::grid::cell_shape::NEIGHBOR_OFFSETS;
+use crate::grid::{Dir, GridCoord, GridPoint3};
 
 use super::transform::*;
 use super::triangles::*;

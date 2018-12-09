@@ -2,12 +2,12 @@ use slog::Logger;
 use specs;
 use specs::Write;
 
-use pk::cell_dweller;
-use pk::net::{RecvMessage, RecvMessageQueue};
+use crate::pk::cell_dweller;
+use crate::pk::net::{RecvMessage, RecvMessageQueue};
 
-use message::Message;
-use player;
-use weapon;
+use crate::message::Message;
+use crate::player;
+use crate::weapon;
 
 pub struct RecvDemuxSystem {
     log: Logger,

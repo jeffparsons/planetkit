@@ -12,7 +12,7 @@ use super::Vertex;
 // want is to be able to make a `Pointer` to a trait that `Mesh` implements,
 // and use that to access the `Storage` of the specific type.
 pub struct MeshWrapper {
-    mesh: Box<any::Any + Send + Sync + 'static>,
+    mesh: Box<dyn any::Any + Send + Sync + 'static>,
 }
 
 /// `gfx::Factory` is not `Send`, so we can't send that around
@@ -75,7 +75,7 @@ impl<'a, R: gfx::Resources> MeshRepository<R> {
     pub fn get_mut(&'a mut self, mesh_pointer: &froggy::Pointer<MeshWrapper>) -> &'a mut Mesh<R> {
         let mesh_wrapper = &mut self.mesh_storage[&mesh_pointer];
         let any_mesh_with_extra_constraints = &mut *mesh_wrapper.mesh;
-        let any_mesh = any_mesh_with_extra_constraints as &mut any::Any;
+        let any_mesh = any_mesh_with_extra_constraints as &mut dyn any::Any;
         any_mesh
             .downcast_mut::<Mesh<R>>()
             .expect("Unless we're mixing graphics backends, this should be impossible.")

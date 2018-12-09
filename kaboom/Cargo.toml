@@ -2,6 +2,7 @@
 name = "kaboom"
 version = "0.0.1"
 authors = ["Jeff Parsons <jeff@parsons.io>"]
+edition = "2018"
 
 [dependencies]
 planetkit = { path = "../planetkit" }

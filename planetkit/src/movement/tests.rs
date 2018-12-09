@@ -1,7 +1,7 @@
 use super::triangles::TRIANGLES;
 use super::*;
-use grid::{Dir, GridPoint3};
-use na;
+use crate::grid::{Dir, GridPoint3};
+use crate::na;
 
 const RESOLUTION: [i64; 2] = [32, 64];
 
@@ -390,7 +390,8 @@ fn random_walks() {
                     &mut dir,
                     RESOLUTION,
                     &mut last_turn_bias,
-                ).unwrap(),
+                )
+                .unwrap(),
                 Action::TurnLeft => {
                     turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
                 }
@@ -483,7 +484,8 @@ fn random_walks_retraced_by_stepping_backwards() {
                     &mut dir,
                     RESOLUTION,
                     &mut last_turn_bias,
-                ).unwrap(),
+                )
+                .unwrap(),
                 Action::TurnLeft => {
                     turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap()
                 }

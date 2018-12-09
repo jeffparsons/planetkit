@@ -100,13 +100,13 @@ impl<G: GameMessage> Decoder for Codec<G> {
             })
             .map_err(|error| {
                 warn!(
-                self.log,
-                "Got a bad message from peer";
-                "peer_addr" => format!("{:?}", self.peer_addr),
-                "message_length" => message_length,
-                "buffer" => format!("{:?}", buf),
-                "error" => format!("{:?}", error)
-            );
+                    self.log,
+                    "Got a bad message from peer";
+                    "peer_addr" => format!("{:?}", self.peer_addr),
+                    "message_length" => message_length,
+                    "buffer" => format!("{:?}", buf),
+                    "error" => format!("{:?}", error)
+                );
                 io::Error::new(io::ErrorKind::Other, "Couldn't parse message")
             })
     }
@@ -267,7 +267,7 @@ fn handle_tcp_stream<G: GameMessage>(
     // and register the sender ends of channels
     // to send messages to those connections.
     send_system_new_peer_sender: std::sync::mpsc::Sender<NewPeer<G>>,
-) -> Box<Future<Item = (), Error = std::io::Error>> {
+) -> Box<dyn Future<Item = (), Error = std::io::Error>> {
     use futures::Sink;
     use futures::Stream;
 

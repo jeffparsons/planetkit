@@ -1,11 +1,11 @@
-use na;
+use crate::na;
 use slog::Logger;
 use specs;
 use specs::{Read, ReadStorage, WriteStorage};
 
 use super::Velocity;
-use types::*;
-use Spatial;
+use crate::types::*;
+use crate::Spatial;
 
 pub struct VelocitySystem {
     _log: Logger,
@@ -32,8 +32,7 @@ impl<'a> specs::System<'a> for VelocitySystem {
         for (spatial, velocity) in (&mut spatials, &velocities).join() {
             // Apply velocity to spatial.
             let mut local_transform = spatial.local_transform();
-            let translation =
-                na::Translation3::<f64>::from(velocity.local_velocity() * dt.0);
+            let translation = na::Translation3::<f64>::from(velocity.local_velocity() * dt.0);
             local_transform.append_translation_mut(&translation);
             spatial.set_local_transform(local_transform);
         }

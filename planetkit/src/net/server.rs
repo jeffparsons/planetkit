@@ -67,7 +67,8 @@ impl<G: GameMessage> Server<G> {
             self.send_system_new_peer_sender.clone(),
             self.remote.clone(),
             port,
-        ).into();
+        )
+        .into();
         super::udp::start_udp_server(
             &self.log,
             self.recv_system_sender.clone(),

@@ -1,5 +1,5 @@
 use super::{Dir, GridCoord, GridPoint3, PosInOwningRoot};
-use movement::{move_forward, turn_left_by_one_hex_edge};
+use crate::movement::{move_forward, turn_left_by_one_hex_edge};
 use std::iter::Chain;
 use std::slice;
 

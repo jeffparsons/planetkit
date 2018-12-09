@@ -1,6 +1,6 @@
 use specs;
 
-use globe::ChunkOrigin;
+use crate::globe::ChunkOrigin;
 
 pub struct ChunkView {
     pub globe_entity: specs::Entity,

@@ -1,6 +1,6 @@
-use types::*;
+use crate::types::*;
 
-use grid::{GridCoord, GridPoint2, GridPoint3};
+use crate::grid::{GridCoord, GridPoint2, GridPoint3};
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.

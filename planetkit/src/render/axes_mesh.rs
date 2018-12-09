@@ -1,5 +1,5 @@
 use super::{ProtoMesh, Vertex};
-use globe::icosahedron;
+use crate::globe::icosahedron;
 
 pub const GRAY: [f32; 3] = [0.5, 0.5, 0.5];
 pub const RED: [f32; 3] = [1.0, 0.0, 0.0];

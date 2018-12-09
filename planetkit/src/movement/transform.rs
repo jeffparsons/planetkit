@@ -1,11 +1,11 @@
 /// These functions are used so that most movement calculations can assume we're in the
 /// arctic triangle of root 0 (see `triangles.rs`) to minimise the amount of
 /// special case logic.
-use na;
+use crate::na;
 
 use super::triangles::*;
-use grid::cell_shape::NEIGHBOR_OFFSETS;
-use grid::{Dir, GridCoord, GridPoint3};
+use crate::grid::cell_shape::NEIGHBOR_OFFSETS;
+use crate::grid::{Dir, GridCoord, GridPoint3};
 
 // Use nalgebra for some local transformations.
 // We are ignoring z-axis completely because this kid of movement
@@ -94,7 +94,7 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use grid::{Dir, GridPoint3};
+    use crate::grid::{Dir, GridPoint3};
 
     const RESOLUTION: [i64; 2] = [32, 64];
 

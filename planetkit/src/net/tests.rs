@@ -23,7 +23,7 @@ struct Node {
 
 impl Node {
     pub fn new() -> Node {
-        use LogResource;
+        use crate::LogResource;
 
         let drain = slog::Discard;
         let root_log = slog::Logger::root(drain, o!("pk_version" => env!("CARGO_PKG_VERSION")));

@@ -6,8 +6,8 @@ use rand::Rng;
 use super::chunk::Material;
 use super::globe::Globe;
 use super::CursorMut;
-use grid::random_column;
-use grid::{GridCoord, GridPoint2, GridPoint3, PosInOwningRoot};
+use crate::grid::random_column;
+use crate::grid::{GridCoord, GridPoint2, GridPoint3, PosInOwningRoot};
 
 impl Globe {
     /// Attempt to find dry land at surface level. See `find_dry_land`.
