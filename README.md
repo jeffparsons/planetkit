@@ -11,6 +11,8 @@
 
 Colorful blobs that might one day resemble planets.
 
+Requires the latest stable version of Rust.
+
 ![Screenshot](https://raw.githubusercontent.com/jeffparsons/planetkit/master/screenshot.png)
 
 
