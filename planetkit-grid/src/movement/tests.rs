@@ -1,6 +1,6 @@
 use super::triangles::TRIANGLES;
 use super::*;
-use crate::grid::{Dir, GridPoint3};
+use crate::{Dir, GridPoint3};
 use crate::na;
 
 const RESOLUTION: [i64; 2] = [32, 64];

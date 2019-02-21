@@ -426,7 +426,7 @@ mod tests {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::grid::semi_arbitrary_compare;
+    use crate::semi_arbitrary_compare;
 
     #[test]
     fn points_equivalent_to_north_pole() {

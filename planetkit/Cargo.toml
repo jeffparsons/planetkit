@@ -21,6 +21,7 @@ desktop = ["tokio-core", "tokio-io", "tokio-codec"]
 path = "src/lib.rs"
 
 [dependencies]
+planetkit-grid = { path = "../planetkit-grid" }
 bytes = "0.4.5"
 noise = "0.5.0"
 piston = "0.37.0"

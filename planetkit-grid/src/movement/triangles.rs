@@ -45,7 +45,7 @@
 // This may all look pretty hairy (and it is) but it's also fairly
 // easy to thoroughly test; see `test.rs`.
 
-use crate::grid::{DirIndex, GridCoord, RootIndex};
+use crate::{DirIndex, GridCoord, RootIndex};
 
 pub struct Triangle {
     // Position in root in terms of x-resolutions.

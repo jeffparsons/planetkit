@@ -4,8 +4,8 @@
 use crate::na;
 
 use super::triangles::*;
-use crate::grid::cell_shape::NEIGHBOR_OFFSETS;
-use crate::grid::{Dir, GridCoord, GridPoint3};
+use crate::cell_shape::NEIGHBOR_OFFSETS;
+use crate::{Dir, GridCoord, GridPoint3};
 
 // Use nalgebra for some local transformations.
 // We are ignoring z-axis completely because this kid of movement
@@ -94,7 +94,7 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grid::{Dir, GridPoint3};
+    use crate::{Dir, GridPoint3};
 
     const RESOLUTION: [i64; 2] = [32, 64];
 

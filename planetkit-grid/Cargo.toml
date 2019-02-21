@@ -1,0 +1,27 @@
+[package]
+name = "planetkit-grid"
+version = "0.0.1"
+authors = ["Jeff Parsons <jeff@parsons.io>"]
+license = "MIT/Apache-2.0"
+description = """
+Types representing positions and directions on 2- and 3-dimensional geodesic grids.
+"""
+repository = "https://github.com/jeffparsons/planetkit"
+edition = "2018"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+arrayvec = "0.4.5"
+num-traits = "0.2.0"
+nalgebra = "0.16"
+# TODO: Put this behind a non-default feature.
+rand = "0.5.3"
+# TODO: Put all serde-related things behind a default feature.
+serde = "1.0.10"
+serde_json = "1.0.2"
+serde_derive = "1.0.10"
+
+[dev-dependencies]
+itertools = "0.7.1"

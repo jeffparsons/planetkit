@@ -56,28 +56,16 @@ extern crate test;
 #[macro_use]
 extern crate approx;
 
-use arrayvec;
-use camera_controllers;
-use froggy;
-use futures;
-use gfx_device_gl;
 use nalgebra as na;
-use noise;
-use rand;
-use serde_json;
-use shred;
-use slog_async;
-use slog_term;
-use specs;
-use vecmath;
+
+pub use planetkit_grid as grid;
+pub use grid::movement as movement;
 
 pub mod app;
 pub mod camera;
 pub mod cell_dweller;
 pub mod globe;
-pub mod grid;
 pub mod input_adapter;
-pub mod movement;
 pub mod net;
 pub mod physics;
 pub mod render;
