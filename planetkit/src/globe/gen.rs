@@ -3,7 +3,7 @@ use noise;
 use super::chunk::{Cell, Material};
 use super::spec::Spec;
 use crate::globe::ChunkOrigin;
-use crate::grid::{GridPoint2, Point3};
+use crate::grid::{Point2, Point3};
 
 // TODO: turn this into a component that we can slap onto a Globe
 // or other globe-oid (distant point?).
@@ -19,7 +19,7 @@ use crate::grid::{GridPoint2, Point3};
 /// implementations of globes, e.g., a full voxmap based globe,
 /// a distant blob in the sky, to a shiny dot in the distance.
 pub trait Gen: Send + Sync {
-    fn land_height(&self, column: GridPoint2) -> f64;
+    fn land_height(&self, column: Point2) -> f64;
     fn cell_at(&self, grid_point: Point3) -> Cell;
     fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>);
 }
@@ -61,7 +61,7 @@ impl SimpleGen {
 }
 
 impl Gen for SimpleGen {
-    fn land_height(&self, column: GridPoint2) -> f64 {
+    fn land_height(&self, column: Point2) -> f64 {
         use noise::NoiseFn;
 
         // Calculate height for this cell from world spec.

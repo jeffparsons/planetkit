@@ -1,6 +1,6 @@
 use crate::types::*;
 
-use crate::grid::{GridCoord, GridPoint2, Point3};
+use crate::grid::{GridCoord, Point2, Point3};
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.
@@ -125,7 +125,7 @@ impl Spec {
     // This is useful for, e.g., sampling noise to determine elevation
     // at a particular point on the surface, or other places where you're
     // really just talking about longitude/latitude.
-    pub fn cell_center_on_unit_sphere(&self, column: GridPoint2) -> Pt3 {
+    pub fn cell_center_on_unit_sphere(&self, column: Point2) -> Pt3 {
         let res_x = self.root_resolution[0] as f64;
         let res_y = self.root_resolution[1] as f64;
         let pt_in_root_quad = Pt2::new(column.x as f64 / res_x, column.y as f64 / res_y);

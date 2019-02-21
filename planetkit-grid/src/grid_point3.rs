@@ -1,18 +1,18 @@
 use std::cmp::Ordering;
 use std::ops::{Deref, DerefMut};
 
-use super::{GridCoord, GridPoint2, Root, RootIndex};
+use super::{GridCoord, Point2, Root, RootIndex};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
 pub struct Point3 {
-    pub rxy: GridPoint2,
+    pub rxy: Point2,
     pub z: GridCoord,
 }
 
 impl Point3 {
     pub fn new(root: Root, x: GridCoord, y: GridCoord, z: GridCoord) -> Point3 {
         Point3 {
-            rxy: GridPoint2::new(root, x, y),
+            rxy: Point2::new(root, x, y),
             z: z,
         }
     }
@@ -161,18 +161,18 @@ impl<'a> PosInOwningRoot {
     }
 }
 
-// Evil tricks to allow access to GridPoint2 fields from `self.rxy`
+// Evil tricks to allow access to Point2 fields from `self.rxy`
 // as if they belong to `Self`.
 impl Deref for Point3 {
-    type Target = GridPoint2;
+    type Target = Point2;
 
-    fn deref(&self) -> &GridPoint2 {
+    fn deref(&self) -> &Point2 {
         &self.rxy
     }
 }
 
 impl DerefMut for Point3 {
-    fn deref_mut(&mut self) -> &mut GridPoint2 {
+    fn deref_mut(&mut self) -> &mut Point2 {
         &mut self.rxy
     }
 }

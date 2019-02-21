@@ -3,7 +3,7 @@ use std::slice;
 use arrayvec;
 
 use super::ROOTS;
-use super::{GridCoord, GridPoint2, Point3, Root};
+use super::{GridCoord, Point2, Point3, Root};
 
 // We need to handle 9 different cases:
 //
@@ -139,7 +139,7 @@ impl Iterator for NorthPolePoints {
 
     fn next(&mut self) -> Option<Point3> {
         self.roots_iter.next().map(|root| Point3 {
-            rxy: GridPoint2 {
+            rxy: Point2 {
                 root: *root,
                 x: 0,
                 y: 0,
@@ -176,7 +176,7 @@ impl Iterator for SouthPolePoints {
 
     fn next(&mut self) -> Option<Point3> {
         self.roots_iter.next().map(|root| Point3 {
-            rxy: GridPoint2 {
+            rxy: Point2 {
                 root: *root,
                 x: self.x,
                 y: self.y,
@@ -448,7 +448,7 @@ mod tests {
             equivalent_points
                 == vec![
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 0 },
                             x: 0,
                             y: 0,
@@ -456,7 +456,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 1 },
                             x: 0,
                             y: 0,
@@ -464,7 +464,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 2 },
                             x: 0,
                             y: 0,
@@ -472,7 +472,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 0,
                             y: 0,
@@ -480,7 +480,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 0,
                             y: 0,
@@ -511,7 +511,7 @@ mod tests {
             equivalent_points
                 == vec![
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 0 },
                             x: ROOT_RESOLUTION[0],
                             y: ROOT_RESOLUTION[1],
@@ -519,7 +519,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 1 },
                             x: ROOT_RESOLUTION[0],
                             y: ROOT_RESOLUTION[1],
@@ -527,7 +527,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 2 },
                             x: ROOT_RESOLUTION[0],
                             y: ROOT_RESOLUTION[1],
@@ -535,7 +535,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: ROOT_RESOLUTION[0],
                             y: ROOT_RESOLUTION[1],
@@ -543,7 +543,7 @@ mod tests {
                         z: 77,
                     },
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: ROOT_RESOLUTION[0],
                             y: ROOT_RESOLUTION[1],
@@ -575,7 +575,7 @@ mod tests {
                 == vec![
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 0,
                             y: 3,
@@ -584,7 +584,7 @@ mod tests {
                     },
                     // Equivalent point in next root east
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 3,
                             y: 0,
@@ -616,7 +616,7 @@ mod tests {
                 == vec![
                     // Equivalent point in next root east
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 2 },
                             x: 0,
                             y: 3,
@@ -625,7 +625,7 @@ mod tests {
                     },
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 3,
                             y: 0,
@@ -657,7 +657,7 @@ mod tests {
                 == vec![
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 0,
                             y: 13,
@@ -666,7 +666,7 @@ mod tests {
                     },
                     // Equivalent point in next root east
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 8,
                             y: 5,
@@ -698,7 +698,7 @@ mod tests {
                 == vec![
                     // Equivalent point in next root east
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 2 },
                             x: 0,
                             y: 12,
@@ -707,7 +707,7 @@ mod tests {
                     },
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 8,
                             y: 4,
@@ -739,7 +739,7 @@ mod tests {
                 == vec![
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 3,
                             y: 16,
@@ -748,7 +748,7 @@ mod tests {
                     },
                     // Equivalent point in next root east
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 8,
                             y: 11,
@@ -780,7 +780,7 @@ mod tests {
                 == vec![
                     // Equivalent point in next root west
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 3 },
                             x: 3,
                             y: 16,
@@ -789,7 +789,7 @@ mod tests {
                     },
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 8,
                             y: 11,
@@ -821,7 +821,7 @@ mod tests {
                 == vec![
                     // Same point as given
                     Point3 {
-                        rxy: GridPoint2 {
+                        rxy: Point2 {
                             root: Root { index: 4 },
                             x: 3,
                             y: 5,

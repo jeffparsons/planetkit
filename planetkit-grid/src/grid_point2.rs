@@ -2,15 +2,15 @@ use super::Point3;
 use super::{GridCoord, Root, RootIndex};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
-pub struct GridPoint2 {
+pub struct Point2 {
     pub root: Root,
     pub x: GridCoord,
     pub y: GridCoord,
 }
 
-impl GridPoint2 {
-    pub fn new(root: Root, x: GridCoord, y: GridCoord) -> GridPoint2 {
-        GridPoint2 {
+impl Point2 {
+    pub fn new(root: Root, x: GridCoord, y: GridCoord) -> Point2 {
+        Point2 {
             root: root,
             x: x,
             y: y,

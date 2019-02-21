@@ -7,13 +7,13 @@ use super::chunk::Material;
 use super::globe::Globe;
 use super::CursorMut;
 use crate::grid::random_column;
-use crate::grid::{GridCoord, GridPoint2, Point3, PosInOwningRoot};
+use crate::grid::{GridCoord, Point2, Point3, PosInOwningRoot};
 
 impl Globe {
     /// Attempt to find dry land at surface level. See `find_dry_land`.
     pub fn find_surface_dry_land(
         &mut self,
-        column: GridPoint2,
+        column: Point2,
         min_air_cells_above: GridCoord,
         max_distance_from_starting_point: GridCoord,
     ) -> Option<Point3> {
