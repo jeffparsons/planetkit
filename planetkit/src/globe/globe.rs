@@ -8,7 +8,7 @@ use super::gen::{Gen, SimpleGen};
 use super::spec::Spec;
 use super::ChunkOrigin;
 use super::{origin_of_chunk_in_same_root_containing, origin_of_chunk_owning};
-use crate::grid::{GridPoint3, PosInOwningRoot};
+use crate::grid::{Point3, PosInOwningRoot};
 
 // TODO: split out a WorldGen type that handles all the procedural
 // generation, because none of that really needs to be tangled
@@ -242,7 +242,7 @@ impl Globe {
     }
 
     // NOTE: chunk returned probably won't _own_ `pos`.
-    pub fn origin_of_chunk_in_same_root_containing(&self, pos: GridPoint3) -> ChunkOrigin {
+    pub fn origin_of_chunk_in_same_root_containing(&self, pos: Point3) -> ChunkOrigin {
         // Figure out what chunk this is in.
         origin_of_chunk_in_same_root_containing(
             pos,
@@ -254,7 +254,7 @@ impl Globe {
     /// Most `Chunks`s will have an associated `ChunkView`. Indicate that the
     /// chunk (or something else affecting its visibility) has been modified
     /// since the view was last updated.
-    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, point: GridPoint3) {
+    pub fn mark_chunk_views_affected_by_cell_as_dirty(&mut self, point: Point3) {
         use super::chunks_containing_point;
 
         // Currently the views that can be affected are for:
@@ -453,7 +453,7 @@ impl<'a> Globe {
 
     // TODO: proper error type
     // Panic message formerly "Uh oh, I don't know how to handle chunks that aren't loaded yet."
-    pub fn maybe_non_authoritative_cell(&'a self, pos: GridPoint3) -> Result<&'a Cell, ()> {
+    pub fn maybe_non_authoritative_cell(&'a self, pos: Point3) -> Result<&'a Cell, ()> {
         let chunk_origin = self.origin_of_chunk_in_same_root_containing(pos);
         self.chunks
             .get(&chunk_origin)

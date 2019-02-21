@@ -1,14 +1,14 @@
 use specs;
 
 use crate::globe::Spec;
-use crate::grid::{Dir, GridPoint3};
+use crate::grid::{Dir, Point3};
 use crate::movement::*;
 use crate::types::*;
 
 pub struct CellDweller {
     // TODO: make these private and use guts trait pattern to expose them internally.
     // TODO: is this guts pattern worth a separate macro crate of its own?
-    pub pos: GridPoint3,
+    pub pos: Point3,
     pub dir: Dir,
     pub last_turn_bias: TurnDir,
     // Most `CellDweller`s will also be `Spatial`s. Track whether the
@@ -26,7 +26,7 @@ pub struct CellDweller {
 
 impl CellDweller {
     pub fn new(
-        pos: GridPoint3,
+        pos: Point3,
         dir: Dir,
         globe_spec: Spec,
         globe_entity: Option<specs::Entity>,
@@ -48,18 +48,18 @@ impl CellDweller {
         }
     }
 
-    pub fn pos(&self) -> GridPoint3 {
+    pub fn pos(&self) -> Point3 {
         self.pos
     }
 
-    pub fn set_grid_point(&mut self, new_pos: GridPoint3) {
+    pub fn set_grid_point(&mut self, new_pos: Point3) {
         self.pos = new_pos;
         self.is_real_space_transform_dirty = true;
     }
 
     pub fn set_cell_transform(
         &mut self,
-        new_pos: GridPoint3,
+        new_pos: Point3,
         new_dir: Dir,
         new_last_turn_bias: TurnDir,
     ) {

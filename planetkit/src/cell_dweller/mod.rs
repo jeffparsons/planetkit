@@ -5,7 +5,7 @@ mod movement_system;
 mod physics_system;
 mod recv_system;
 
-use crate::grid::{Dir, GridPoint3};
+use crate::grid::{Dir, Point3};
 use crate::movement::TurnDir;
 use crate::net::{RecvMessage, SendMessage};
 use std::collections::vec_deque::VecDeque;
@@ -37,7 +37,7 @@ pub enum CellDwellerMessage {
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct SetPosMessage {
     pub entity_id: u64,
-    pub new_pos: GridPoint3,
+    pub new_pos: Point3,
     pub new_dir: Dir,
     pub new_last_turn_bias: TurnDir,
 }
@@ -49,7 +49,7 @@ pub struct TryPickUpBlockMessage {
     pub cd_entity_id: u64,
     // TODO: what are you trying to pick up? Until we hook that up,
     // just use whatever the server thinks is in front of you.
-    // pub pos: GridPoint3,
+    // pub pos: Point3,
     // TODO: also include the cell dweller's current position.
     // We'll trust that if it's close enough, so that we don't
     // have to worry about missing out on a position update and
@@ -75,7 +75,7 @@ pub struct RemoveBlockMessage {
     //
     // TODO: We should actually be validating EVERYTHING that comes
     // in as a network message.
-    pub pos: GridPoint3,
+    pub pos: Point3,
 }
 
 /// `World`-global resource for outbound cell-dweller network messages.

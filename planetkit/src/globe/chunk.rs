@@ -1,7 +1,7 @@
 use crate::globe::chunk_pair::PointPair;
 use crate::globe::ChunkOrigin;
 use crate::globe::{chunks_containing_point, origin_of_chunk_owning};
-use crate::grid::{GridCoord, GridPoint3, PosInOwningRoot};
+use crate::grid::{GridCoord, Point3, PosInOwningRoot};
 use specs;
 
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -202,7 +202,7 @@ impl Chunk {
     // Panics or returns nonsense if given coordinates of a cell we don't have data for.
     //
     // TODO: _store_ more information to make lookups cheaper.
-    fn cell_index(&self, pos: GridPoint3) -> usize {
+    fn cell_index(&self, pos: Point3) -> usize {
         let local_x = pos.x - self.origin.pos().x;
         let local_y = pos.y - self.origin.pos().y;
         let local_z = pos.z - self.origin.pos().z;
@@ -218,7 +218,7 @@ impl Chunk {
     ///
     /// Note that this does not consider whether or not this chunk _owns_ the
     /// cell at `pos`.
-    pub fn contains_pos(&self, pos: GridPoint3) -> bool {
+    pub fn contains_pos(&self, pos: Point3) -> bool {
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
         let end_x = self.origin.pos().x + self.chunk_resolution[0];
@@ -260,7 +260,7 @@ impl Chunk {
             // but do in the x- and y-directions.
             &[origin.pos().z, origin.pos().z + chunk_resolution[2] - 1]
         ) {
-            let corner_pos = GridPoint3::new(origin.pos().root, *x, *y, *z);
+            let corner_pos = Point3::new(origin.pos().root, *x, *y, *z);
             // Find all its neighbors and their chunks' origins.
             //
             // TODO: does Neighbors actually guarantee that we'll get chunks
@@ -296,13 +296,13 @@ impl<'a> Chunk {
     // - one that is happy to get any old version of the cell.
 
     // Panics if given coordinates of a cell we don't have data for.
-    pub fn cell(&'a self, pos: GridPoint3) -> &'a Cell {
+    pub fn cell(&'a self, pos: Point3) -> &'a Cell {
         let cell_i = self.cell_index(pos);
         &self.cells[cell_i]
     }
 
     // Panics if given coordinates of a cell we don't have data for.
-    pub fn cell_mut(&'a mut self, pos: GridPoint3) -> &'a mut Cell {
+    pub fn cell_mut(&'a mut self, pos: Point3) -> &'a mut Cell {
         let cell_i = self.cell_index(pos);
         &mut self.cells[cell_i]
     }

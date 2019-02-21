@@ -7,7 +7,7 @@ use super::chunk::Material;
 use super::globe::Globe;
 use super::CursorMut;
 use crate::grid::random_column;
-use crate::grid::{GridCoord, GridPoint2, GridPoint3, PosInOwningRoot};
+use crate::grid::{GridCoord, GridPoint2, Point3, PosInOwningRoot};
 
 impl Globe {
     /// Attempt to find dry land at surface level. See `find_dry_land`.
@@ -16,7 +16,7 @@ impl Globe {
         column: GridPoint2,
         min_air_cells_above: GridCoord,
         max_distance_from_starting_point: GridCoord,
-    ) -> Option<GridPoint3> {
+    ) -> Option<Point3> {
         // Use land height from world gen to approximate cell position where we might find land.
         let land_height = self.gen.land_height(column);
         let approx_cell_z = self.spec().approx_cell_z_from_radius(land_height);
@@ -39,10 +39,10 @@ impl Globe {
     /// entities, then you probably want to use the position one above the position returned by this function.
     pub fn find_dry_land(
         &mut self,
-        start_pos: GridPoint3,
+        start_pos: Point3,
         min_air_cells_above: GridCoord,
         max_distance_from_starting_point: GridCoord,
-    ) -> Option<GridPoint3> {
+    ) -> Option<Point3> {
         // Interleave searching up and down at the same time. Start the "down" search at the
         // given `start_pos`, and the "up" search one above it.
         let mut distance_from_start: GridCoord = 0;
@@ -106,7 +106,7 @@ impl Globe {
         min_air_cells_above: GridCoord,
         max_distance_from_starting_point: GridCoord,
         max_attempts: usize,
-    ) -> Option<GridPoint3> {
+    ) -> Option<Point3> {
         let mut attempts_remaining = max_attempts;
         while attempts_remaining > 0 {
             let column = random_column(self.spec().root_resolution, rng);
@@ -136,9 +136,9 @@ impl Globe {
     // track down and destroy all uses of this.
     pub fn find_lowest_cell_containing(
         &mut self,
-        column: GridPoint3,
+        column: Point3,
         material: Material,
-    ) -> GridPoint3 {
+    ) -> Point3 {
         // Translate into owning root, then start at bedrock.
         let mut column = PosInOwningRoot::new(column, self.spec().root_resolution);
         column.set_z(0);

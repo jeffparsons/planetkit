@@ -5,7 +5,7 @@ use crate::na;
 
 use super::triangles::*;
 use crate::cell_shape::NEIGHBOR_OFFSETS;
-use crate::{Dir, GridCoord, GridPoint3};
+use crate::{Dir, GridCoord, Point3};
 
 // Use nalgebra for some local transformations.
 // We are ignoring z-axis completely because this kid of movement
@@ -16,11 +16,11 @@ type PosMat2 = na::Matrix2<GridCoord>;
 /// Transform `pos` and `dir` as specified relative to a given triangles apex,
 /// to be relative to the world, or equivalently to triangle 0 at the north pole.
 pub fn local_to_world(
-    pos: GridPoint3,
+    pos: Point3,
     dir: Dir,
     resolution: [GridCoord; 2],
     tri: &Triangle,
-) -> (GridPoint3, Dir) {
+) -> (Point3, Dir) {
     // Compute rotation `dir` relative to world.
     let x_dir = tri.x_dir;
     let y_dir = (x_dir + 2) % 12;
@@ -53,11 +53,11 @@ pub fn local_to_world(
 
 /// Transform `pos` and `dir` to be relative to the given triangle's apex.
 pub fn world_to_local(
-    pos: GridPoint3,
+    pos: Point3,
     dir: Dir,
     resolution: [GridCoord; 2],
     tri: &Triangle,
-) -> (GridPoint3, Dir) {
+) -> (Point3, Dir) {
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = Pos2::new(tri.apex[0], tri.apex[1]) * resolution[0];
 
@@ -94,14 +94,14 @@ pub fn world_to_local(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Dir, GridPoint3};
+    use crate::{Dir, Point3};
 
     const RESOLUTION: [i64; 2] = [32, 64];
 
     #[test]
     fn world_to_tri_0_facing_x_is_noop() {
         // Transform from north pole to north pole.
-        let pos = GridPoint3::default();
+        let pos = Point3::default();
         let dir = Dir::default();
         let tri = &TRIANGLES[0];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
@@ -116,7 +116,7 @@ mod tests {
         // starting a bit south of the pole and pointing up.
         // NOTE: this isn't a valid direction to move in,
         // but that doesn't matter; it's still valid to transform.
-        let pos = GridPoint3::default().with_x(1).with_y(1);
+        let pos = Point3::default().with_x(1).with_y(1);
         let dir = Dir::new(7);
         let tri = &TRIANGLES[0];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
@@ -128,14 +128,14 @@ mod tests {
     #[test]
     fn world_to_tri_4() {
         // Transform from just below northern tropic, facing north-west.
-        let pos = GridPoint3::default()
+        let pos = Point3::default()
             .with_x(2)
             .with_y(RESOLUTION[1] / 2 - 1);
         let dir = Dir::new(8);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
         // Should now be just below north pole, facing west.
-        assert_eq!(GridPoint3::default().with_x(1).with_y(1), new_pos);
+        assert_eq!(Point3::default().with_x(1).with_y(1), new_pos);
         assert_eq!(Dir::new(10), new_dir);
     }
 
@@ -143,14 +143,14 @@ mod tests {
     fn tri_4_to_world() {
         // Transform from just below north pole, facing west.
 
-        let pos = GridPoint3::default().with_x(1).with_y(1);
+        let pos = Point3::default().with_x(1).with_y(1);
         let dir = Dir::new(10);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = local_to_world(pos, dir, RESOLUTION, tri);
 
         // Should now be just below northern tropic, facing north-west.
         assert_eq!(
-            GridPoint3::default()
+            Point3::default()
                 .with_x(2,)
                 .with_y(RESOLUTION[1] / 2 - 1,),
             new_pos

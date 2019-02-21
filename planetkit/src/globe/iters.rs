@@ -1,5 +1,5 @@
 use super::ChunkOrigin;
-use crate::grid::{GridCoord, GridPoint3};
+use crate::grid::{GridCoord, Point3};
 
 // TODO: rename this file; probably neater to have smaller files
 // rather than having multiple non-trivial iterators together.
@@ -51,7 +51,7 @@ enum CandidateChunk {
 }
 
 pub struct ChunksInSameRootContainingPoint {
-    point: GridPoint3,
+    point: Point3,
     root_resolution: [GridCoord; 2],
     chunk_resolution: [GridCoord; 3],
     next_candidate_chunk: CandidateChunk,
@@ -59,7 +59,7 @@ pub struct ChunksInSameRootContainingPoint {
 
 impl ChunksInSameRootContainingPoint {
     pub fn new(
-        point: GridPoint3,
+        point: Point3,
         root_resolution: [GridCoord; 2],
         chunk_resolution: [GridCoord; 3],
     ) -> ChunksInSameRootContainingPoint {
@@ -111,7 +111,7 @@ impl ChunksInSameRootContainingPoint {
 
     fn chunk_origin(&self, chunk_x: GridCoord, chunk_y: GridCoord) -> Option<ChunkOrigin> {
         Some(ChunkOrigin::new(
-            GridPoint3::new(
+            Point3::new(
                 self.point.root,
                 chunk_x,
                 chunk_y,
@@ -172,10 +172,10 @@ impl Iterator for ChunksInSameRootContainingPoint {
 /// - The chunk origin
 /// - The given point expressed in that chunk's root
 pub fn chunks_containing_point(
-    point: GridPoint3,
+    point: Point3,
     root_resolution: [GridCoord; 2],
     chunk_resolution: [GridCoord; 3],
-) -> impl Iterator<Item = (ChunkOrigin, GridPoint3)> {
+) -> impl Iterator<Item = (ChunkOrigin, Point3)> {
     use super::ChunksInSameRootContainingPoint;
     use crate::grid::EquivalentPoints;
 
@@ -209,7 +209,7 @@ mod tests {
         //          ●
         const ROOT_RESOLUTION: [GridCoord; 2] = [4, 8];
         const CHUNK_RESOLUTION: [GridCoord; 3] = [2, 2, 64];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary; just to make sure it flows throught to the chunk origin returned
             4.into(),
             3,
@@ -223,7 +223,7 @@ mod tests {
         assert_eq!(chunk_origins.len(), 2);
         // This is the chunk just north-west of the point.
         assert!(chunk_origins.contains(&ChunkOrigin::new(
-            GridPoint3::new(
+            Point3::new(
                 // Root made it through
                 4.into(),
                 // This is the chunk just north-west of the point.
@@ -237,7 +237,7 @@ mod tests {
         )));
         // This is the chunk just south-west of the point.
         assert!(chunk_origins.contains(&ChunkOrigin::new(
-            GridPoint3::new(
+            Point3::new(
                 // Root made it through
                 4.into(),
                 // This is the chunk just south-west of the point.
@@ -277,7 +277,7 @@ mod tests {
         const CHUNK_RESOLUTION: [GridCoord; 3] = [2, 2, 64];
         let points = (0..9).flat_map(|y| {
             (0..5).map(move |x| {
-                GridPoint3::new(
+                Point3::new(
                     // Arbitrary
                     3.into(),
                     x,

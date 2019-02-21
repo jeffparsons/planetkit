@@ -1,4 +1,4 @@
-use crate::grid::{GridCoord, GridPoint3};
+use crate::grid::{GridCoord, Point3};
 
 /// Wrapper type around a `Pos` that is known to express
 /// a valid chunk origin.
@@ -8,11 +8,11 @@ use crate::grid::{GridCoord, GridPoint3};
 /// resolutions.
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct ChunkOrigin {
-    pos: GridPoint3,
+    pos: Point3,
 }
 
-impl Into<GridPoint3> for ChunkOrigin {
-    fn into(self) -> GridPoint3 {
+impl Into<Point3> for ChunkOrigin {
+    fn into(self) -> Point3 {
         self.pos
     }
 }
@@ -27,7 +27,7 @@ impl ChunkOrigin {
     //
     // TODO: replace these with debug_asserts and drop the promise of a panic above?
     pub fn new(
-        pos: GridPoint3,
+        pos: Point3,
         root_resolution: [GridCoord; 2],
         chunk_resolution: [GridCoord; 3],
     ) -> ChunkOrigin {
@@ -49,7 +49,7 @@ impl ChunkOrigin {
 
 // TODO: Should this actually be an implementation of Deref? Try it...
 impl<'a> ChunkOrigin {
-    pub fn pos(&'a self) -> &'a GridPoint3 {
+    pub fn pos(&'a self) -> &'a Point3 {
         &self.pos
     }
 }

@@ -1,7 +1,7 @@
 use super::chunk::{Cell, Chunk};
 use super::{ChunkOrigin, Globe};
 use crate::globe::globe::GlobeGuts;
-use crate::grid::GridPoint3;
+use crate::grid::Point3;
 
 // TODO: describe how it only changes between chunks when _necessary_,
 // with reference to shared cells. Also remark on the fact that we might
@@ -23,7 +23,7 @@ use crate::grid::GridPoint3;
 #[derive(Clone)]
 pub struct Cursor<'a> {
     globe: &'a Globe,
-    pos: GridPoint3,
+    pos: Point3,
     // Avoid needing to find a chunk containing `pos` when moving to another cell,
     // if the last chunk we were working in still contains it.
     //
@@ -46,7 +46,7 @@ pub struct Cursor<'a> {
 /// are loaded.
 pub struct CursorMut<'a> {
     globe: &'a mut Globe,
-    pos: GridPoint3,
+    pos: Point3,
     // Avoid needing to find current chunk again when moving to another
     // pos if we're moving into another pos in the same chunk.
     //
@@ -79,11 +79,11 @@ macro_rules! cursor {
                 cursor
             }
 
-            pub fn pos(&self) -> GridPoint3 {
+            pub fn pos(&self) -> Point3 {
                 self.pos
             }
 
-            pub fn set_pos(&mut self, new_pos: GridPoint3) {
+            pub fn set_pos(&mut self, new_pos: Point3) {
                 self.pos = new_pos;
                 self.current_chunk_might_be_dirty = true;
             }
@@ -152,7 +152,7 @@ impl<'a> Cursor<'a> {
     /// If you know that one particular chunk containing a given
     /// cell is loaded, and you want to read from that chunk, you should
     /// use `new_in_chunk` instead.
-    fn new_without_chunk_hint(globe: &'a Globe, pos: GridPoint3) -> Cursor<'a> {
+    fn new_without_chunk_hint(globe: &'a Globe, pos: Point3) -> Cursor<'a> {
         Cursor {
             globe: globe,
             pos: pos,
@@ -187,7 +187,7 @@ impl<'a> CursorMut<'a> {
     /// If you know that one particular chunk containing a given
     /// cell is loaded, and you want to read from that chunk, you should
     /// use `new_in_chunk` instead.
-    fn new_without_chunk_hint(globe: &'a mut Globe, pos: GridPoint3) -> CursorMut<'a> {
+    fn new_without_chunk_hint(globe: &'a mut Globe, pos: Point3) -> CursorMut<'a> {
         CursorMut {
             globe: globe,
             pos: pos,

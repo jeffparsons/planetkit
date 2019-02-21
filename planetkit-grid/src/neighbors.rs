@@ -1,4 +1,4 @@
-use super::{Dir, GridCoord, GridPoint3, PosInOwningRoot};
+use super::{Dir, GridCoord, Point3, PosInOwningRoot};
 use crate::movement::{move_forward, turn_left_by_one_hex_edge};
 use std::iter::Chain;
 use std::slice;
@@ -11,7 +11,7 @@ pub struct Neighbors {
 /// Iterator over the cells sharing an interface with a given `pos`.
 /// Doesn't include diagonal neighbors, e.g., one across and one down.
 impl Neighbors {
-    pub fn new(pos: GridPoint3, resolution: [GridCoord; 2]) -> Neighbors {
+    pub fn new(pos: Point3, resolution: [GridCoord; 2]) -> Neighbors {
         let above_and_below = AboveAndBelow::new(pos);
         let is_away_from_root_edges =
             pos.x > 0 && pos.x < resolution[0] - 1 && pos.y > 0 && pos.y < resolution[1] - 1;
@@ -32,9 +32,9 @@ impl Neighbors {
 }
 
 impl Iterator for Neighbors {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         match self.iter {
             NeighborsImpl::SlowGeneral(ref mut iter) => iter.next(),
             NeighborsImpl::FastIntra(ref mut iter) => iter.next(),
@@ -58,13 +58,13 @@ enum NeighborsImpl {
 /// Doesn't include diagonal neighbors, e.g., one across and one down.
 struct SlowGeneralEdgeNeighbors {
     resolution: [GridCoord; 2],
-    origin: GridPoint3,
-    first_neighbor: Option<GridPoint3>,
+    origin: Point3,
+    first_neighbor: Option<Point3>,
     current_dir: Dir,
 }
 
 impl SlowGeneralEdgeNeighbors {
-    pub fn new(mut pos: GridPoint3, resolution: [GridCoord; 2]) -> SlowGeneralEdgeNeighbors {
+    pub fn new(mut pos: Point3, resolution: [GridCoord; 2]) -> SlowGeneralEdgeNeighbors {
         // Pick a direction that's valid for `pos`.
         // To do this, first express the position in its owning root...
         pos = PosInOwningRoot::new(pos, resolution).into();
@@ -86,9 +86,9 @@ impl SlowGeneralEdgeNeighbors {
 }
 
 impl Iterator for SlowGeneralEdgeNeighbors {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         // Find the neighbor in the current direction.
         let mut pos = self.origin;
         let mut dir = self.current_dir;
@@ -123,12 +123,12 @@ impl Iterator for SlowGeneralEdgeNeighbors {
 /// Assumes that all neighbors are within the same chunk as the center cell.
 /// Behaviour is undefined if this is not true.
 struct FastIntraRootNeighbors {
-    origin: GridPoint3,
+    origin: Point3,
     offsets: slice::Iter<'static, (GridCoord, GridCoord)>,
 }
 
 impl FastIntraRootNeighbors {
-    pub fn new(pos: GridPoint3) -> FastIntraRootNeighbors {
+    pub fn new(pos: Point3) -> FastIntraRootNeighbors {
         use super::cell_shape::NEIGHBOR_OFFSETS;
         FastIntraRootNeighbors {
             origin: pos,
@@ -138,9 +138,9 @@ impl FastIntraRootNeighbors {
 }
 
 impl Iterator for FastIntraRootNeighbors {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.offsets.next().map(|offset| {
             self.origin
                 .with_x(self.origin.x + offset.0)
@@ -154,13 +154,13 @@ impl Iterator for FastIntraRootNeighbors {
 //
 // Does not yield the (invalid) position below if the center cell is at `z == 0`.
 struct AboveAndBelow {
-    origin: GridPoint3,
+    origin: Point3,
     yielded_above: bool,
     yielded_below: bool,
 }
 
 impl AboveAndBelow {
-    pub fn new(pos: GridPoint3) -> AboveAndBelow {
+    pub fn new(pos: Point3) -> AboveAndBelow {
         AboveAndBelow {
             origin: pos,
             yielded_above: false,
@@ -170,9 +170,9 @@ impl AboveAndBelow {
 }
 
 impl Iterator for AboveAndBelow {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         if !self.yielded_above {
             // Yield position above.
             self.yielded_above = true;

@@ -3,7 +3,7 @@ use std::slice;
 use arrayvec;
 
 use super::ROOTS;
-use super::{GridCoord, GridPoint2, GridPoint3, Root};
+use super::{GridCoord, GridPoint2, Point3, Root};
 
 // We need to handle 9 different cases:
 //
@@ -44,7 +44,7 @@ pub struct EquivalentPoints {
 }
 
 impl EquivalentPoints {
-    pub fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> EquivalentPoints {
+    pub fn new(point: Point3, root_resolution: [GridCoord; 2]) -> EquivalentPoints {
         if point.x == 0 && point.y == 0 {
             EquivalentPoints {
                 iter: EquivalentPointsImpl::NorthPole(NorthPolePoints::new(point)),
@@ -99,9 +99,9 @@ impl EquivalentPoints {
 }
 
 impl Iterator for EquivalentPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         match &mut self.iter {
             &mut EquivalentPointsImpl::NorthPole(ref mut iter) => iter.next(),
             &mut EquivalentPointsImpl::SouthPole(ref mut iter) => iter.next(),
@@ -126,7 +126,7 @@ struct NorthPolePoints {
 }
 
 impl NorthPolePoints {
-    fn new(point: GridPoint3) -> NorthPolePoints {
+    fn new(point: Point3) -> NorthPolePoints {
         NorthPolePoints {
             z: point.z,
             roots_iter: ROOTS.iter(),
@@ -135,10 +135,10 @@ impl NorthPolePoints {
 }
 
 impl Iterator for NorthPolePoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
-        self.roots_iter.next().map(|root| GridPoint3 {
+    fn next(&mut self) -> Option<Point3> {
+        self.roots_iter.next().map(|root| Point3 {
             rxy: GridPoint2 {
                 root: *root,
                 x: 0,
@@ -161,7 +161,7 @@ struct SouthPolePoints {
 }
 
 impl SouthPolePoints {
-    fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> SouthPolePoints {
+    fn new(point: Point3, root_resolution: [GridCoord; 2]) -> SouthPolePoints {
         SouthPolePoints {
             x: root_resolution[0],
             y: root_resolution[1],
@@ -172,10 +172,10 @@ impl SouthPolePoints {
 }
 
 impl Iterator for SouthPolePoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
-        self.roots_iter.next().map(|root| GridPoint3 {
+    fn next(&mut self) -> Option<Point3> {
+        self.roots_iter.next().map(|root| Point3 {
             rxy: GridPoint2 {
                 root: *root,
                 x: self.x,
@@ -191,15 +191,15 @@ impl Iterator for SouthPolePoints {
 //
 
 struct EastArcticPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl EastArcticPoints {
-    fn new(point: GridPoint3) -> EastArcticPoints {
+    fn new(point: Point3) -> EastArcticPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_east(),
             // y-axis in arctic maps to x-axis in next root east.
             point.y,
@@ -213,9 +213,9 @@ impl EastArcticPoints {
 }
 
 impl Iterator for EastArcticPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -225,15 +225,15 @@ impl Iterator for EastArcticPoints {
 //
 
 struct WestArcticPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl WestArcticPoints {
-    fn new(point: GridPoint3) -> WestArcticPoints {
+    fn new(point: Point3) -> WestArcticPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_west(),
             // x-axis in arctic maps to y-axis in next root west.
             0,
@@ -247,9 +247,9 @@ impl WestArcticPoints {
 }
 
 impl Iterator for WestArcticPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -259,15 +259,15 @@ impl Iterator for WestArcticPoints {
 //
 
 struct EastTropicsPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl EastTropicsPoints {
-    fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> EastTropicsPoints {
+    fn new(point: Point3, root_resolution: [GridCoord; 2]) -> EastTropicsPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_east(),
             // y-axis in tropics maps to y-axis in next root east,
             // but offset and with max-x.
@@ -282,9 +282,9 @@ impl EastTropicsPoints {
 }
 
 impl Iterator for EastTropicsPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -294,15 +294,15 @@ impl Iterator for EastTropicsPoints {
 //
 
 struct WestTropicsPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl WestTropicsPoints {
-    fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> WestTropicsPoints {
+    fn new(point: Point3, root_resolution: [GridCoord; 2]) -> WestTropicsPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_west(),
             // y-axis at max-x in tropics maps to y-axis in next root east,
             // but offset and with min-x.
@@ -317,9 +317,9 @@ impl WestTropicsPoints {
 }
 
 impl Iterator for WestTropicsPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -329,15 +329,15 @@ impl Iterator for WestTropicsPoints {
 //
 
 struct EastAntarcticPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl EastAntarcticPoints {
-    fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> EastAntarcticPoints {
+    fn new(point: Point3, root_resolution: [GridCoord; 2]) -> EastAntarcticPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_east(),
             // x-axis at max-y in antarctic maps to y-axis in next root east,
             // but offset and with max-x.
@@ -352,9 +352,9 @@ impl EastAntarcticPoints {
 }
 
 impl Iterator for EastAntarcticPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -364,15 +364,15 @@ impl Iterator for EastAntarcticPoints {
 //
 
 struct WestAntarcticPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 2]>,
+    points_iter: arrayvec::IntoIter<[Point3; 2]>,
 }
 
 impl WestAntarcticPoints {
-    fn new(point: GridPoint3, root_resolution: [GridCoord; 2]) -> WestAntarcticPoints {
+    fn new(point: Point3, root_resolution: [GridCoord; 2]) -> WestAntarcticPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 2]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 2]> = ArrayVec::new();
         points.push(point);
-        points.push(GridPoint3::new(
+        points.push(Point3::new(
             point.root.next_west(),
             // y-axis in antarctic maps to x-axis in next root east,
             // but offset and with max-y.
@@ -387,9 +387,9 @@ impl WestAntarcticPoints {
 }
 
 impl Iterator for WestAntarcticPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -399,13 +399,13 @@ impl Iterator for WestAntarcticPoints {
 //
 
 struct InteriorPoints {
-    points_iter: arrayvec::IntoIter<[GridPoint3; 1]>,
+    points_iter: arrayvec::IntoIter<[Point3; 1]>,
 }
 
 impl InteriorPoints {
-    fn new(point: GridPoint3) -> InteriorPoints {
+    fn new(point: Point3) -> InteriorPoints {
         use arrayvec::ArrayVec;
-        let mut points: ArrayVec<[GridPoint3; 1]> = ArrayVec::new();
+        let mut points: ArrayVec<[Point3; 1]> = ArrayVec::new();
         points.push(point);
         InteriorPoints {
             points_iter: points.into_iter(),
@@ -414,9 +414,9 @@ impl InteriorPoints {
 }
 
 impl Iterator for InteriorPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         self.points_iter.next()
     }
 }
@@ -431,7 +431,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_north_pole() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             4.into(),
             // North pole
@@ -441,13 +441,13 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
         assert!(
             equivalent_points
                 == vec![
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 0 },
                             x: 0,
@@ -455,7 +455,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 1 },
                             x: 0,
@@ -463,7 +463,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 2 },
                             x: 0,
@@ -471,7 +471,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 0,
@@ -479,7 +479,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 0,
@@ -494,7 +494,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_south_pole() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             4.into(),
             // South pole
@@ -504,13 +504,13 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 5);
         assert!(
             equivalent_points
                 == vec![
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 0 },
                             x: ROOT_RESOLUTION[0],
@@ -518,7 +518,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 1 },
                             x: ROOT_RESOLUTION[0],
@@ -526,7 +526,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 2 },
                             x: ROOT_RESOLUTION[0],
@@ -534,7 +534,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: ROOT_RESOLUTION[0],
@@ -542,7 +542,7 @@ mod tests {
                         },
                         z: 77,
                     },
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: ROOT_RESOLUTION[0],
@@ -557,7 +557,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_east_arctic() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             3.into(),
             // East arctic
@@ -567,14 +567,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 0,
@@ -583,7 +583,7 @@ mod tests {
                         z: 77,
                     },
                     // Equivalent point in next root east
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 3,
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_west_arctic() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             3.into(),
             // West arctic
@@ -608,14 +608,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Equivalent point in next root east
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 2 },
                             x: 0,
@@ -624,7 +624,7 @@ mod tests {
                         z: 77,
                     },
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 3,
@@ -639,7 +639,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_east_tropics() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             3.into(),
             // East tropics
@@ -649,14 +649,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 0,
@@ -665,7 +665,7 @@ mod tests {
                         z: 77,
                     },
                     // Equivalent point in next root east
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 8,
@@ -680,7 +680,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_west_tropics() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             3.into(),
             // West tropics
@@ -690,14 +690,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Equivalent point in next root east
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 2 },
                             x: 0,
@@ -706,7 +706,7 @@ mod tests {
                         z: 77,
                     },
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 8,
@@ -721,7 +721,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_east_antarctic() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             3.into(),
             // East arctic
@@ -731,14 +731,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 3,
@@ -747,7 +747,7 @@ mod tests {
                         z: 77,
                     },
                     // Equivalent point in next root east
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 8,
@@ -762,7 +762,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_west_antarctic() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             4.into(),
             // East arctic
@@ -772,14 +772,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 2);
         assert!(
             equivalent_points
                 == vec![
                     // Equivalent point in next root west
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 3 },
                             x: 3,
@@ -788,7 +788,7 @@ mod tests {
                         z: 77,
                     },
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 8,
@@ -803,7 +803,7 @@ mod tests {
     #[test]
     fn points_equivalent_to_interior() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [8, 16];
-        let point = GridPoint3::new(
+        let point = Point3::new(
             // Arbitrary root
             4.into(),
             // Not on any root boundary
@@ -813,14 +813,14 @@ mod tests {
             77,
         );
         let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-        let mut equivalent_points: Vec<GridPoint3> = points_iter.collect();
+        let mut equivalent_points: Vec<Point3> = points_iter.collect();
         equivalent_points.sort_by(semi_arbitrary_compare);
         assert_eq!(equivalent_points.len(), 1);
         assert!(
             equivalent_points
                 == vec![
                     // Same point as given
-                    GridPoint3 {
+                    Point3 {
                         rxy: GridPoint2 {
                             root: Root { index: 4 },
                             x: 3,
@@ -837,7 +837,7 @@ mod tests {
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
         for xy in iproduct!(0..(ROOT_RESOLUTION[0] + 1), 0..(ROOT_RESOLUTION[1] + 1)) {
             let (x, y) = xy;
-            let point = GridPoint3::new(
+            let point = Point3::new(
                 // Arbitrary root
                 4.into(),
                 x,
@@ -846,12 +846,12 @@ mod tests {
                 77,
             );
             let points_iter = EquivalentPoints::new(point, ROOT_RESOLUTION);
-            let equivalent_points: HashSet<GridPoint3> = points_iter.collect();
+            let equivalent_points: HashSet<Point3> = points_iter.collect();
             // Make sure that the set of points equivalent to _this_ point is the same
             // as the set we just found.
             for point2 in &equivalent_points {
                 let points_iter2 = EquivalentPoints::new(*point2, ROOT_RESOLUTION);
-                let equivalent_points2: HashSet<GridPoint3> = points_iter2.collect();
+                let equivalent_points2: HashSet<Point3> = points_iter2.collect();
                 assert_eq!(equivalent_points, equivalent_points2);
             }
         }

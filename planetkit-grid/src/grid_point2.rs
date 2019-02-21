@@ -1,4 +1,4 @@
-use super::GridPoint3;
+use super::Point3;
 use super::{GridCoord, Root, RootIndex};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
@@ -35,7 +35,7 @@ impl GridPoint2 {
         new_point
     }
 
-    pub fn with_z(&self, z: GridCoord) -> GridPoint3 {
-        GridPoint3::new(self.root, self.x, self.y, z)
+    pub fn with_z(&self, z: GridCoord) -> Point3 {
+        Point3::new(self.root, self.x, self.y, z)
     }
 }

@@ -4,14 +4,14 @@ use std::ops::{Deref, DerefMut};
 use super::{GridCoord, GridPoint2, Root, RootIndex};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash, Serialize, Deserialize)]
-pub struct GridPoint3 {
+pub struct Point3 {
     pub rxy: GridPoint2,
     pub z: GridCoord,
 }
 
-impl GridPoint3 {
-    pub fn new(root: Root, x: GridCoord, y: GridCoord, z: GridCoord) -> GridPoint3 {
-        GridPoint3 {
+impl Point3 {
+    pub fn new(root: Root, x: GridCoord, y: GridCoord, z: GridCoord) -> Point3 {
+        Point3 {
             rxy: GridPoint2::new(root, x, y),
             z: z,
         }
@@ -42,7 +42,7 @@ impl GridPoint3 {
     }
 }
 
-/// Wrapper type around a `GridPoint3` that is known to be expressed
+/// Wrapper type around a `Point3` that is known to be expressed
 /// in its owning root quad.
 ///
 /// Note that this does not save you from accidentally using
@@ -50,11 +50,11 @@ impl GridPoint3 {
 /// resolutions.
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct PosInOwningRoot {
-    pos: GridPoint3,
+    pos: Point3,
 }
 
-impl Into<GridPoint3> for PosInOwningRoot {
-    fn into(self) -> GridPoint3 {
+impl Into<Point3> for PosInOwningRoot {
+    fn into(self) -> Point3 {
         self.pos
     }
 }
@@ -68,7 +68,7 @@ impl PosInOwningRoot {
     //
     // Behaviour is undefined (nonsense result or panic)
     // if `pos` lies beyond the edges of its root.
-    pub fn new(pos: GridPoint3, resolution: [GridCoord; 2]) -> PosInOwningRoot {
+    pub fn new(pos: Point3, resolution: [GridCoord; 2]) -> PosInOwningRoot {
         debug_assert!(pos.z >= 0);
 
         // Here is the pattern of which root a cell belongs to.
@@ -107,7 +107,7 @@ impl PosInOwningRoot {
         // Special cases for north and south poles
         let pos_in_owning_root = if pos.x == 0 && pos.y == 0 {
             // North pole
-            GridPoint3::new(
+            Point3::new(
                 // First root owns north pole.
                 0.into(),
                 0,
@@ -116,7 +116,7 @@ impl PosInOwningRoot {
             )
         } else if pos.x == end_x && pos.y == end_y {
             // South pole
-            GridPoint3::new(
+            Point3::new(
                 // Last root owns south pole.
                 4.into(),
                 end_x,
@@ -126,15 +126,15 @@ impl PosInOwningRoot {
         } else if pos.y == 0 {
             // Roots don't own their north-west edge;
             // translate to next root's north-east edge.
-            GridPoint3::new(pos.root.next_west(), 0, pos.x, pos.z)
+            Point3::new(pos.root.next_west(), 0, pos.x, pos.z)
         } else if pos.x == end_x && pos.y < half_y {
             // Roots don't own their mid-west edge;
             // translate to the next root's mid-east edge.
-            GridPoint3::new(pos.root.next_west(), 0, half_y + pos.y, pos.z)
+            Point3::new(pos.root.next_west(), 0, half_y + pos.y, pos.z)
         } else if pos.x == end_x {
             // Roots don't own their south-west edge;
             // translate to the next root's south-east edge.
-            GridPoint3::new(pos.root.next_west(), pos.y - half_y, end_y, pos.z)
+            Point3::new(pos.root.next_west(), pos.y - half_y, end_y, pos.z)
         } else {
             // `pos` is either on an edge owned by its root,
             // or somewhere in the middle of the root.
@@ -156,14 +156,14 @@ impl PosInOwningRoot {
 }
 
 impl<'a> PosInOwningRoot {
-    pub fn pos(&'a self) -> &'a GridPoint3 {
+    pub fn pos(&'a self) -> &'a Point3 {
         &self.pos
     }
 }
 
 // Evil tricks to allow access to GridPoint2 fields from `self.rxy`
 // as if they belong to `Self`.
-impl Deref for GridPoint3 {
+impl Deref for Point3 {
     type Target = GridPoint2;
 
     fn deref(&self) -> &GridPoint2 {
@@ -171,7 +171,7 @@ impl Deref for GridPoint3 {
     }
 }
 
-impl DerefMut for GridPoint3 {
+impl DerefMut for Point3 {
     fn deref_mut(&mut self) -> &mut GridPoint2 {
         &mut self.rxy
     }
@@ -181,7 +181,7 @@ impl DerefMut for GridPoint3 {
 ///
 /// Sorting points by this will be cache-friendly when indexing into,
 /// e.g., `Chunk`s, which order their elements by z (coarsest) to x (finest).
-pub fn semi_arbitrary_compare(a: &GridPoint3, b: &GridPoint3) -> Ordering {
+pub fn semi_arbitrary_compare(a: &Point3, b: &Point3) -> Ordering {
     let cmp_root = a.root.index.cmp(&b.root.index);
     if cmp_root != Ordering::Equal {
         return cmp_root;

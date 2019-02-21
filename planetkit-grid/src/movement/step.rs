@@ -1,4 +1,4 @@
-use crate::{Dir, GridCoord, GridPoint3};
+use crate::{Dir, GridCoord, Point3};
 
 use super::transform::*;
 use super::turn::turn_around_and_face_neighbor;
@@ -19,7 +19,7 @@ use super::util::*;
 ///
 /// See `move_forward` for more details`.
 pub fn step_forward_and_face_neighbor(
-    pos: &mut GridPoint3,
+    pos: &mut Point3,
     dir: &mut Dir,
     resolution: [GridCoord; 2],
     last_turn_bias: &mut super::TurnDir,
@@ -53,7 +53,7 @@ pub fn step_forward_and_face_neighbor(
 ///
 /// See `step_forward_and_face_neighbor` for more details`.
 pub fn step_backward_and_face_neighbor(
-    pos: &mut GridPoint3,
+    pos: &mut Point3,
     dir: &mut Dir,
     resolution: [GridCoord; 2],
     last_turn_bias: &mut super::TurnDir,
@@ -94,7 +94,7 @@ pub fn step_backward_and_face_neighbor(
 //
 // TODO: rename to make it obvious this is usually not what you want.
 pub fn move_forward(
-    pos: &mut GridPoint3,
+    pos: &mut Point3,
     dir: &mut Dir,
     resolution: [GridCoord; 2],
 ) -> Result<(), ()> {
@@ -134,7 +134,7 @@ pub fn move_forward(
 /// represent an immediately adjacent cell _if `pos` were if in a hexagon_
 /// (which is not necessarily so).
 fn maybe_rebase_on_adjacent_root_following_movement(
-    pos: &mut GridPoint3,
+    pos: &mut Point3,
     dir: &mut Dir,
     resolution: [GridCoord; 2],
 ) {

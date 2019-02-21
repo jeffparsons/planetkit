@@ -1,6 +1,6 @@
 use crate::types::*;
 
-use crate::grid::{GridCoord, GridPoint2, GridPoint3};
+use crate::grid::{GridCoord, GridPoint2, Point3};
 
 // Contains the specifications (dimensions, seed, etc.)
 // needed to deterministically generate a `Globe`.
@@ -132,18 +132,18 @@ impl Spec {
         super::project(column.root, pt_in_root_quad)
     }
 
-    pub fn cell_center_center(&self, grid_point: GridPoint3) -> Pt3 {
+    pub fn cell_center_center(&self, grid_point: Point3) -> Pt3 {
         let radius = self.floor_radius + self.block_height * (grid_point.z as f64 + 0.5);
         radius * self.cell_center_on_unit_sphere(grid_point.rxy)
     }
 
-    pub fn cell_bottom_center(&self, grid_point: GridPoint3) -> Pt3 {
+    pub fn cell_bottom_center(&self, grid_point: Point3) -> Pt3 {
         let radius = self.floor_radius + self.block_height * (grid_point.z as f64);
         radius * self.cell_center_on_unit_sphere(grid_point.rxy)
     }
 
     // TODO: describe meaning of offsets, where to get it from, etc.?
-    pub fn cell_vertex_on_unit_sphere(&self, grid_point: GridPoint3, offset: [i64; 2]) -> Pt3 {
+    pub fn cell_vertex_on_unit_sphere(&self, grid_point: Point3, offset: [i64; 2]) -> Pt3 {
         let res_x = (self.root_resolution[0] * 6) as f64;
         let res_y = (self.root_resolution[1] * 6) as f64;
         let pt_in_root_quad = Pt2::new(
@@ -153,12 +153,12 @@ impl Spec {
         super::project(grid_point.root, pt_in_root_quad)
     }
 
-    pub fn cell_bottom_vertex(&self, grid_point: GridPoint3, offset: [i64; 2]) -> Pt3 {
+    pub fn cell_bottom_vertex(&self, grid_point: Point3, offset: [i64; 2]) -> Pt3 {
         let radius = self.floor_radius + self.block_height * grid_point.z as f64;
         radius * self.cell_vertex_on_unit_sphere(grid_point, offset)
     }
 
-    pub fn cell_top_vertex(&self, mut grid_point: GridPoint3, offset: [i64; 2]) -> Pt3 {
+    pub fn cell_top_vertex(&self, mut grid_point: Point3, offset: [i64; 2]) -> Pt3 {
         // The top of one cell is the bottom of the next.
         grid_point.z += 1;
         self.cell_bottom_vertex(grid_point, offset)

@@ -2,7 +2,7 @@ use itertools;
 use std::ops;
 
 use super::ChunkOrigin;
-use crate::grid::{GridCoord, GridPoint3, Root};
+use crate::grid::{GridCoord, Point3, Root};
 
 /// Iterate over all the points in a chunk that are shared with any
 /// other chunk. That is, those on the planes of x=0, x=max, y=0, and y=max,
@@ -48,9 +48,9 @@ impl ChunkSharedPoints {
 }
 
 impl Iterator for ChunkSharedPoints {
-    type Item = GridPoint3;
+    type Item = Point3;
 
-    fn next(&mut self) -> Option<GridPoint3> {
+    fn next(&mut self) -> Option<Point3> {
         if let Some(xyz) = self.iter.next() {
             let (x, y, z) = xyz;
             // Only return points that are on x=0, y=0, x=max, or y=max.
@@ -64,7 +64,7 @@ impl Iterator for ChunkSharedPoints {
             let is_shared_point = is_x_lim || is_y_lim;
             if is_shared_point {
                 // It's an x-edge or y-edge point.
-                Some(GridPoint3::new(self.root, x, y, z))
+                Some(Point3::new(self.root, x, y, z))
             } else {
                 // Skip it.
                 self.next()
@@ -85,7 +85,7 @@ mod tests {
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
         const CHUNK_RESOLUTION: [GridCoord; 3] = [8, 8, 64];
         let chunk_origin = ChunkOrigin::new(
-            GridPoint3::new(
+            Point3::new(
                 // Arbitrary; just to make sure it flows throught to the chunk origin returned
                 4.into(),
                 8,
@@ -96,7 +96,7 @@ mod tests {
             CHUNK_RESOLUTION,
         );
         let shared_points_iter = ChunkSharedPoints::new(chunk_origin, CHUNK_RESOLUTION);
-        let shared_points: Vec<GridPoint3> = shared_points_iter.collect();
+        let shared_points: Vec<Point3> = shared_points_iter.collect();
         // Should have as many points as the whole chunk minus the column down
         // the middle of non-shared cells.
         assert_eq!(shared_points.len(), 9 * 9 * 64 - 7 * 7 * 64);
@@ -110,7 +110,7 @@ mod tests {
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
         const CHUNK_RESOLUTION: [GridCoord; 3] = [8, 8, 64];
         let chunk_origin = ChunkOrigin::new(
-            GridPoint3::new(
+            Point3::new(
                 // Arbitrary; just to make sure it flows throught to the chunk origin returned
                 4.into(),
                 8,

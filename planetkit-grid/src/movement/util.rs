@@ -1,7 +1,7 @@
 use crate::na;
 
 use crate::cell_shape::NEIGHBOR_OFFSETS;
-use crate::{Dir, GridCoord, GridPoint3};
+use crate::{Dir, GridCoord, Point3};
 
 use super::transform::*;
 use super::triangles::*;
@@ -13,7 +13,7 @@ use super::triangles::*;
 /// Returns an error if `dir` does not point to a direction that would
 /// represent an immediately adjacent cell if in a hexagon. (Movement
 /// toward vertices is undefined.)
-pub fn adjacent_pos_in_dir(pos: GridPoint3, dir: Dir) -> Result<GridPoint3, ()> {
+pub fn adjacent_pos_in_dir(pos: Point3, dir: Dir) -> Result<Point3, ()> {
     if !dir.points_at_hex_edge() {
         return Err(());
     }
@@ -23,13 +23,13 @@ pub fn adjacent_pos_in_dir(pos: GridPoint3, dir: Dir) -> Result<GridPoint3, ()> 
     // points at edge 0.
     let edge_index = (dir.index / 2) as usize;
     let (dx, dy) = NEIGHBOR_OFFSETS[edge_index];
-    Ok(GridPoint3::new(pos.root, pos.x + dx, pos.y + dy, pos.z))
+    Ok(Point3::new(pos.root, pos.x + dx, pos.y + dy, pos.z))
 }
 
 // Transform (x, y, dir) back to local coordinates near where we started,
 // taking account any change in root required.
 pub fn transform_into_exit_triangle(
-    pos: &mut GridPoint3,
+    pos: &mut Point3,
     dir: &mut Dir,
     resolution: [GridCoord; 2],
     exit: &Exit,
@@ -47,7 +47,7 @@ pub fn transform_into_exit_triangle(
 /// If `pos` is on a pentagon, you probably won't want this.
 /// Consider `triangle_on_pos_with_closest_mid_axis` instead?
 pub fn closest_triangle_to_point(
-    pos: &GridPoint3,
+    pos: &Point3,
     resolution: [GridCoord; 2],
 ) -> &'static Triangle {
     // First we filter down to those where
@@ -94,7 +94,7 @@ pub fn closest_triangle_to_point(
 ///
 /// Panics called with any pos that is not a pentagon.
 pub fn triangle_on_pos_with_closest_mid_axis(
-    pos: &GridPoint3,
+    pos: &Point3,
     dir: &Dir,
     resolution: [GridCoord; 2],
 ) -> &'static Triangle {
@@ -132,7 +132,7 @@ pub fn triangle_on_pos_with_closest_mid_axis(
         .expect("There should have been 1-3 triangles; did you call this with a non-pentagon pos?")
 }
 
-pub fn is_pentagon(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
+pub fn is_pentagon(pos: &Point3, resolution: [GridCoord; 2]) -> bool {
     // There are six pentagons in every root quad:
     //
     //              ◌ north
@@ -155,11 +155,11 @@ pub fn is_pentagon(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
     is_north || is_north_east || is_east || is_west || is_south_west || is_south
 }
 
-pub fn is_on_root_edge(pos: &GridPoint3, resolution: [GridCoord; 2]) -> bool {
+pub fn is_on_root_edge(pos: &Point3, resolution: [GridCoord; 2]) -> bool {
     pos.x == 0 || pos.y == 0 || pos.x == resolution[0] || pos.y == resolution[1]
 }
 
-pub fn debug_assert_pos_within_root(pos: &mut GridPoint3, resolution: [GridCoord; 2]) {
+pub fn debug_assert_pos_within_root(pos: &mut Point3, resolution: [GridCoord; 2]) {
     debug_assert!(
         pos.x >= 0 && pos.y >= 0 && pos.x <= resolution[0] && pos.y <= resolution[1],
         "`pos` was outside its root at the given resolution."

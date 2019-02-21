@@ -66,8 +66,8 @@ impl Walker {
 
         // Find globe surface and put player character on it.
         use crate::globe::chunk::Material;
-        use crate::grid::{Dir, GridPoint3};
-        let mut guy_pos = GridPoint3::default();
+        use crate::grid::{Dir, Point3};
+        let mut guy_pos = Point3::default();
         guy_pos = {
             let mut globes = world.write_storage::<globe::Globe>();
             let globe = globes
@@ -155,7 +155,7 @@ impl Walker {
 
 #[test]
 fn random_walk_one_walker() {
-    use crate::grid::GridPoint3;
+    use crate::grid::Point3;
 
     let mut walker = Walker::new(1);
     walker.tick_lots(1000);
@@ -167,12 +167,12 @@ fn random_walk_one_walker() {
         .world
         .read_storage::<crate::cell_dweller::CellDweller>();
     let cd = cd_storage.get(guy_entity.clone()).unwrap();
-    assert_ne!(cd.pos, GridPoint3::default());
+    assert_ne!(cd.pos, Point3::default());
 }
 
 #[test]
 fn random_walk_three_walkers() {
-    use crate::grid::GridPoint3;
+    use crate::grid::Point3;
 
     let mut walker = Walker::new(3);
     walker.tick_lots(1000);
@@ -184,7 +184,7 @@ fn random_walk_three_walkers() {
             .world
             .read_storage::<crate::cell_dweller::CellDweller>();
         let cd = cd_storage.get(guy_entity.clone()).unwrap();
-        assert_ne!(cd.pos, GridPoint3::default());
+        assert_ne!(cd.pos, Point3::default());
     }
 }
 

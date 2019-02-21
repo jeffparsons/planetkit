@@ -4,7 +4,7 @@ use super::chunk::Material;
 use super::spec::Spec;
 use super::{ChunkOrigin, Cursor, Globe};
 use crate::grid::cell_shape;
-use crate::grid::GridPoint3;
+use crate::grid::Point3;
 use crate::render;
 use crate::types::Pt3;
 
@@ -79,7 +79,7 @@ impl View {
             for cell_y in origin.pos().y..(end_y + 1) {
                 for cell_x in origin.pos().x..(end_x + 1) {
                     // Use cell center as first vertex of each triangle.
-                    let grid_point = GridPoint3::new(origin.pos().root, cell_x, cell_y, cell_z);
+                    let grid_point = Point3::new(origin.pos().root, cell_x, cell_y, cell_z);
 
                     cursor.set_pos(grid_point);
 

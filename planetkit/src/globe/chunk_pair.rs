@@ -1,7 +1,7 @@
 //! Tracking cells shared between neighboring chunks.
 
 use super::ChunkOrigin;
-use crate::grid::{GridPoint3, PosInOwningRoot};
+use crate::grid::{Point3, PosInOwningRoot};
 
 #[derive(Hash, PartialEq, Eq)]
 pub struct ChunkPairOrigins {
@@ -17,5 +17,5 @@ pub struct ChunkPair {
 #[derive(Clone)]
 pub struct PointPair {
     pub source: PosInOwningRoot,
-    pub sink: GridPoint3,
+    pub sink: Point3,
 }

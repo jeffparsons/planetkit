@@ -3,7 +3,7 @@ use noise;
 use super::chunk::{Cell, Material};
 use super::spec::Spec;
 use crate::globe::ChunkOrigin;
-use crate::grid::{GridPoint2, GridPoint3};
+use crate::grid::{GridPoint2, Point3};
 
 // TODO: turn this into a component that we can slap onto a Globe
 // or other globe-oid (distant point?).
@@ -20,7 +20,7 @@ use crate::grid::{GridPoint2, GridPoint3};
 /// a distant blob in the sky, to a shiny dot in the distance.
 pub trait Gen: Send + Sync {
     fn land_height(&self, column: GridPoint2) -> f64;
-    fn cell_at(&self, grid_point: GridPoint3) -> Cell;
+    fn cell_at(&self, grid_point: Point3) -> Cell;
     fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>);
 }
 
@@ -87,7 +87,7 @@ impl Gen for SimpleGen {
         self.spec.ocean_radius + delta
     }
 
-    fn cell_at(&self, grid_point: GridPoint3) -> Cell {
+    fn cell_at(&self, grid_point: Point3) -> Cell {
         let land_height = self.land_height(grid_point.rxy);
         let cell_pt3 = self.spec.cell_center_center(grid_point);
         // TEMP: ...
@@ -135,7 +135,7 @@ impl Gen for SimpleGen {
         for cell_z in origin.z..=end_z {
             for cell_y in origin.y..=end_y {
                 for cell_x in origin.x..=end_x {
-                    let grid_point = GridPoint3::new(origin.root, cell_x, cell_y, cell_z);
+                    let grid_point = Point3::new(origin.root, cell_x, cell_y, cell_z);
                     let mut cell = self.cell_at(grid_point);
                     // Temp hax?
                     let mut rng = rand::thread_rng();

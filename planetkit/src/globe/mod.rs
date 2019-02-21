@@ -33,7 +33,7 @@ pub use self::iters::*;
 pub use self::spec::*;
 pub use self::view::*;
 
-use crate::grid::{GridCoord, GridPoint3, PosInOwningRoot, Root};
+use crate::grid::{GridCoord, Point3, PosInOwningRoot, Root};
 
 // TODO: move project into icosahedron module.
 
@@ -198,7 +198,7 @@ pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
 /// so you should assume that any chunk in this root that contains
 /// the position at all may be returned.
 pub fn origin_of_chunk_in_same_root_containing(
-    pos: GridPoint3,
+    pos: Point3,
     root_resolution: [GridCoord; 2],
     chunk_resolution: [GridCoord; 3],
 ) -> ChunkOrigin {
@@ -226,7 +226,7 @@ pub fn origin_of_chunk_in_same_root_containing(
     let chunk_origin_z = pos.z / chunk_resolution[2] * chunk_resolution[2];
 
     ChunkOrigin::new(
-        GridPoint3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
+        Point3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
         root_resolution,
         chunk_resolution,
     )
@@ -237,7 +237,7 @@ pub fn origin_of_chunk_owning(
     root_resolution: [GridCoord; 2],
     chunk_resolution: [GridCoord; 3],
 ) -> ChunkOrigin {
-    let pos: GridPoint3 = pos_in_owning_root.into();
+    let pos: Point3 = pos_in_owning_root.into();
 
     // Figure out what chunk this is in.
     let end_x = root_resolution[0];
@@ -252,7 +252,7 @@ pub fn origin_of_chunk_owning(
         // (Note that we know we're already looking at the owning root,
         // so we don't need to force this to be the first root.)
         ChunkOrigin::new(
-            GridPoint3::new(pos.root, 0, 0, chunk_origin_z),
+            Point3::new(pos.root, 0, 0, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
@@ -261,7 +261,7 @@ pub fn origin_of_chunk_owning(
         // (Note that we know we're already looking at the owning root,
         // so we don't need to force this to be the last root.)
         ChunkOrigin::new(
-            GridPoint3::new(pos.root, last_chunk_x, last_chunk_y, chunk_origin_z),
+            Point3::new(pos.root, last_chunk_x, last_chunk_y, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
@@ -272,13 +272,13 @@ pub fn origin_of_chunk_owning(
         // Shift everything down by one in y-direction.
         let chunk_origin_y = (pos.y - 1) / chunk_resolution[1] * chunk_resolution[1];
         ChunkOrigin::new(
-            GridPoint3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
+            Point3::new(pos.root, chunk_origin_x, chunk_origin_y, chunk_origin_z),
             root_resolution,
             chunk_resolution,
         )
     }
 }
 
-pub fn is_point_shared(point: GridPoint3, chunk_resolution: [GridCoord; 3]) -> bool {
+pub fn is_point_shared(point: Point3, chunk_resolution: [GridCoord; 3]) -> bool {
     (point.x % chunk_resolution[0]) == 0 || (point.y % chunk_resolution[1]) == 0
 }
