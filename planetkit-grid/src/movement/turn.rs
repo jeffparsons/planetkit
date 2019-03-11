@@ -10,8 +10,8 @@ pub enum TurnDir {
 }
 
 impl TurnDir {
-    pub fn opposite(&self) -> TurnDir {
-        match *self {
+    pub fn opposite(self) -> TurnDir {
+        match self {
             TurnDir::Left => TurnDir::Right,
             TurnDir::Right => TurnDir::Left,
         }
@@ -25,8 +25,8 @@ impl TurnDir {
     /// Note also that this can not rebase on another root quad;
     /// the direction faced will not necessarily be the canonical
     /// representation of that direction.
-    pub fn apply_one_unit(&self, dir: &mut Dir) {
-        match *self {
+    pub fn apply_one_unit(self, dir: &mut Dir) {
+        match self {
             TurnDir::Left => dir.index = (dir.index + 1) % 12,
             TurnDir::Right => dir.index = (dir.index + 12 - 1) % 12,
         };
@@ -40,8 +40,8 @@ impl TurnDir {
     /// Note that this can not rebase on another root quad;
     /// the direction faced will not necessarily be the canonical
     /// representation of that direction.
-    pub fn apply_two_units(&self, dir: &mut Dir) {
-        match *self {
+    pub fn apply_two_units(self, dir: &mut Dir) {
+        match self {
             TurnDir::Left => dir.index = (dir.index + 2) % 12,
             TurnDir::Right => dir.index = (dir.index + 12 - 2) % 12,
         };
@@ -139,7 +139,7 @@ fn maybe_rebase_on_adjacent_root_following_rotation(
         // This only applies if we're sitting and rotating on a pentagon,
         // because that's when it's ambiguous which triangle we should
         // choose otherwise.
-        triangle_on_pos_with_closest_mid_axis(pos, dir, resolution)
+        triangle_on_pos_with_closest_mid_axis(pos, *dir, resolution)
     } else {
         // Pick the closest triangle that is oriented such that `pos` lies
         // between its x-axis and y-axis.

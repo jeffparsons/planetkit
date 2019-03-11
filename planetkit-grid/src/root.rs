@@ -7,16 +7,16 @@ pub struct Root {
 
 impl Root {
     pub fn new(index: RootIndex) -> Root {
-        Root { index: index }
+        Root { index }
     }
 
-    pub fn next_east(&self) -> Root {
+    pub fn next_east(self) -> Root {
         Root {
             index: ((self.index + 1) % 5),
         }
     }
 
-    pub fn next_west(&self) -> Root {
+    pub fn next_west(self) -> Root {
         Root {
             index: ((self.index + (5 - 1)) % 5),
         }

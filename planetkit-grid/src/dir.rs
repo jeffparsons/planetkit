@@ -7,7 +7,7 @@ pub struct Dir {
 
 impl Dir {
     pub fn new(index: DirIndex) -> Dir {
-        Dir { index: index }
+        Dir { index }
     }
 
     /// Returns `true` if `self` points toward an immediately
@@ -21,21 +21,21 @@ impl Dir {
     /// `(Pos, Dir)` onto a root quad that `self` points into,
     /// and then the relevant part of the current cell will
     /// then be equivalent to a hexagon for this purpose.
-    pub fn points_at_hex_edge(&self) -> bool {
+    pub fn points_at_hex_edge(self) -> bool {
         // On a hexagonal cell, any even direction index
         // points to an edge.
         self.index % 2 == 0
     }
 
-    pub fn next_hex_edge_left(&self) -> Dir {
+    pub fn next_hex_edge_left(self) -> Dir {
         Dir::new((self.index + 2) % 12)
     }
 
-    pub fn next_hex_edge_right(&self) -> Dir {
+    pub fn next_hex_edge_right(self) -> Dir {
         Dir::new((self.index + 12 - 2) % 12)
     }
 
-    pub fn opposite(&self) -> Dir {
+    pub fn opposite(self) -> Dir {
         Dir::new((self.index + 6) % 12)
     }
 }

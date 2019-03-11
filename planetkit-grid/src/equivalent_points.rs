@@ -102,16 +102,16 @@ impl Iterator for EquivalentPoints {
     type Item = Point3;
 
     fn next(&mut self) -> Option<Point3> {
-        match &mut self.iter {
-            &mut EquivalentPointsImpl::NorthPole(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::SouthPole(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::EastArctic(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::WestArctic(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::EastTropics(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::WestTropics(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::EastAntarctic(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::WestAntarctic(ref mut iter) => iter.next(),
-            &mut EquivalentPointsImpl::Interior(ref mut iter) => iter.next(),
+        match self.iter {
+            EquivalentPointsImpl::NorthPole(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::SouthPole(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::EastArctic(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::WestArctic(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::EastTropics(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::WestTropics(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::EastAntarctic(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::WestAntarctic(ref mut iter) => iter.next(),
+            EquivalentPointsImpl::Interior(ref mut iter) => iter.next(),
         }
     }
 }

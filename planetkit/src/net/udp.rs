@@ -110,14 +110,13 @@ where
         // Sender future
         let sink = sink.sink_map_err(move |err| {
             error!(sink_error_log, "Unexpected error in sending to sink"; "err" => format!("{}", err));
-            ()
         });
         // Throw away the source and sink when we're done; what else do we want with them? :)
         let tx_f = sink.send_all(send_system_udp_receiver).map(|_| ());
         handle.spawn(tx_f);
 
         // Receiver future
-        let rx_f = stream
+        stream
             .filter(|recv_wire_message| {
                 // TODO: log
                 match recv_wire_message.message {
@@ -141,9 +140,7 @@ where
             .or_else(move |error| {
                 info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
                 futures::future::ok(())
-            });
-
-        rx_f
+            })
     });
 
     // Wait until socket is bound before telling the caller what address we bound.

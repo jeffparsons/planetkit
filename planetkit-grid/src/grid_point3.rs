@@ -13,7 +13,7 @@ impl Point3 {
     pub fn new(root: Root, x: GridCoord, y: GridCoord, z: GridCoord) -> Point3 {
         Point3 {
             rxy: Point2::new(root, x, y),
-            z: z,
+            z,
         }
     }
 

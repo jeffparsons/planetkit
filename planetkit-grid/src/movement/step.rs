@@ -93,11 +93,7 @@ pub fn step_backward_and_face_neighbor(
 /// Both these cases will panic in debug mode.
 //
 // TODO: rename to make it obvious this is usually not what you want.
-pub fn move_forward(
-    pos: &mut Point3,
-    dir: &mut Dir,
-    resolution: [GridCoord; 2],
-) -> Result<(), ()> {
+pub fn move_forward(pos: &mut Point3, dir: &mut Dir, resolution: [GridCoord; 2]) -> Result<(), ()> {
     debug_assert_pos_within_root(pos, resolution);
 
     // Only allow moving into immediately adjacent cells.
@@ -153,7 +149,7 @@ fn maybe_rebase_on_adjacent_root_following_movement(
         //
         // Pick the triangle whose middle axis is closest to dir.
         let dir_we_came_from = dir.opposite();
-        triangle_on_pos_with_closest_mid_axis(pos, &dir_we_came_from, resolution)
+        triangle_on_pos_with_closest_mid_axis(pos, dir_we_came_from, resolution)
     } else {
         // Pick the closest triangle that is oriented such that `pos` lies
         // between its x-axis and y-axis.

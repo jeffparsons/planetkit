@@ -46,10 +46,7 @@ pub fn transform_into_exit_triangle(
 ///
 /// If `pos` is on a pentagon, you probably won't want this.
 /// Consider `triangle_on_pos_with_closest_mid_axis` instead?
-pub fn closest_triangle_to_point(
-    pos: &Point3,
-    resolution: [GridCoord; 2],
-) -> &'static Triangle {
+pub fn closest_triangle_to_point(pos: &Point3, resolution: [GridCoord; 2]) -> &'static Triangle {
     // First we filter down to those where
     // pos lies between the triangle's x-axis and y-axis.
     // (See diagram in `triangles.rs`.)
@@ -95,7 +92,7 @@ pub fn closest_triangle_to_point(
 /// Panics called with any pos that is not a pentagon.
 pub fn triangle_on_pos_with_closest_mid_axis(
     pos: &Point3,
-    dir: &Dir,
+    dir: Dir,
     resolution: [GridCoord; 2],
 ) -> &'static Triangle {
     // If `pos` sits on a pentagon and we're re-basing, then that probably
@@ -120,8 +117,8 @@ pub fn triangle_on_pos_with_closest_mid_axis(
         .min_by_key(|triangle| {
             // Find triangle with minimum angle between its "mid axis"
             // and wherever `pos` is pointing.
-            let middle_axis_dir: i16 = (triangle.x_dir as i16 + 1) % 12;
-            let mut a = middle_axis_dir - dir.index as i16;
+            let middle_axis_dir: i16 = (i16::from(triangle.x_dir) + 1) % 12;
+            let mut a = middle_axis_dir - i16::from(dir.index);
             if a > 6 {
                 a -= 12;
             } else if a < -6 {

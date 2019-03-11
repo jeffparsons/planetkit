@@ -77,7 +77,7 @@ impl SlowGeneralEdgeNeighbors {
             Dir::new(0)
         };
         SlowGeneralEdgeNeighbors {
-            resolution: resolution,
+            resolution,
             origin: pos,
             first_neighbor: None,
             current_dir: start_dir,

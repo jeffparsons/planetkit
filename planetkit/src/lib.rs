@@ -58,8 +58,8 @@ extern crate approx;
 
 use nalgebra as na;
 
+pub use grid::movement;
 pub use planetkit_grid as grid;
-pub use grid::movement as movement;
 
 pub mod app;
 pub mod camera;

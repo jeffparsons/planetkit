@@ -220,7 +220,7 @@ pub fn connect_to_server<G: GameMessage>(
         let socket_future = TcpStream::connect(&addr, &handle);
 
         let cloned_handle = handle.clone();
-        let f = socket_future
+        socket_future
             .and_then(move |socket| {
                 info!(client_log, "Connected!");
 
@@ -245,9 +245,7 @@ pub fn connect_to_server<G: GameMessage>(
                 // TODO: figure out more specific error; decide where each is handled.
                 info!(client_error_log, "Something broke in connecting to server, or handling connection"; "error" => format!("{}", error));
                 futures::future::ok(())
-            });
-
-        f
+            })
     });
 
     // Wait until connection is established.
@@ -282,7 +280,6 @@ fn handle_tcp_stream<G: GameMessage>(
     let sink_error_log = parent_log.new(o!("peer_addr" => format!("{}", peer_addr)));
     let sink = sink.sink_map_err(move |err| {
         error!(sink_error_log, "Unexpected error in sending to sink"; "err" => format!("{}", err));
-        ()
     });
     // Create a channel for the SendSystem to
     // send messages over this TCP connection,

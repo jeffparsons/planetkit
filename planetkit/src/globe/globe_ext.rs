@@ -134,11 +134,7 @@ impl Globe {
     //
     // TODO: now that `air_above_random_surface_dry_land` exists,
     // track down and destroy all uses of this.
-    pub fn find_lowest_cell_containing(
-        &mut self,
-        column: Point3,
-        material: Material,
-    ) -> Point3 {
+    pub fn find_lowest_cell_containing(&mut self, column: Point3, material: Material) -> Point3 {
         // Translate into owning root, then start at bedrock.
         let mut column = PosInOwningRoot::new(column, self.spec().root_resolution);
         column.set_z(0);

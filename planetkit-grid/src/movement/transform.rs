@@ -128,9 +128,7 @@ mod tests {
     #[test]
     fn world_to_tri_4() {
         // Transform from just below northern tropic, facing north-west.
-        let pos = Point3::default()
-            .with_x(2)
-            .with_y(RESOLUTION[1] / 2 - 1);
+        let pos = Point3::default().with_x(2).with_y(RESOLUTION[1] / 2 - 1);
         let dir = Dir::new(8);
         let tri = &TRIANGLES[4];
         let (new_pos, new_dir) = world_to_local(pos, dir, RESOLUTION, tri);
@@ -150,9 +148,7 @@ mod tests {
 
         // Should now be just below northern tropic, facing north-west.
         assert_eq!(
-            Point3::default()
-                .with_x(2,)
-                .with_y(RESOLUTION[1] / 2 - 1,),
+            Point3::default().with_x(2,).with_y(RESOLUTION[1] / 2 - 1,),
             new_pos
         );
         assert_eq!(Dir::new(8), new_dir);

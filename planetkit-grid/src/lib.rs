@@ -4,15 +4,15 @@ extern crate serde_derive;
 #[macro_use]
 extern crate itertools;
 
-use rand::Rng;
 use nalgebra as na;
+use rand::Rng;
 
 pub mod cell_shape;
-pub mod movement;
 mod dir;
 mod equivalent_points;
 mod grid_point2;
 mod grid_point3;
+pub mod movement;
 mod neighbors;
 mod root;
 

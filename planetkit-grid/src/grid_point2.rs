@@ -10,11 +10,7 @@ pub struct Point2 {
 
 impl Point2 {
     pub fn new(root: Root, x: GridCoord, y: GridCoord) -> Point2 {
-        Point2 {
-            root: root,
-            x: x,
-            y: y,
-        }
+        Point2 { root, x, y }
     }
 
     pub fn with_root(&self, new_root_index: RootIndex) -> Self {

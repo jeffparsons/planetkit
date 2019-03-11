@@ -92,10 +92,10 @@ impl Walker {
             .collect();
 
         Walker {
-            movement_input_sender: movement_input_sender,
-            world: world,
-            dispatcher: dispatcher,
-            guy_entities: guy_entities,
+            movement_input_sender,
+            world,
+            dispatcher,
+            guy_entities,
         }
     }
 

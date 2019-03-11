@@ -1,7 +1,7 @@
 use super::triangles::TRIANGLES;
 use super::*;
-use crate::{Dir, Point3};
 use crate::na;
+use crate::{Dir, Point3};
 
 const RESOLUTION: [i64; 2] = [32, 64];
 
@@ -26,10 +26,7 @@ fn move_forward_into_northern_tropic_pentagon() {
     // facing south-east in root 1.
     //
     // Note that it wouldn't be legal to step in this direction.
-    assert_eq!(
-        Point3::default().with_root(1).with_x(RESOLUTION[0]),
-        pos
-    );
+    assert_eq!(Point3::default().with_root(1).with_x(RESOLUTION[0]), pos);
     assert_eq!(Dir::new(3), dir);
 
     // Turn around, and walk back! Note some hacks to get back to a
@@ -42,10 +39,7 @@ fn move_forward_into_northern_tropic_pentagon() {
     move_forward(&mut pos, &mut dir, RESOLUTION).unwrap();
 
     // We should now be back where we started, but facing west.
-    assert_eq!(
-        Point3::default().with_x(1).with_y(RESOLUTION[0] - 1),
-        pos
-    );
+    assert_eq!(Point3::default().with_x(1).with_y(RESOLUTION[0] - 1), pos);
     assert_eq!(Dir::new(10), dir);
 }
 
@@ -55,10 +49,7 @@ fn turn_left_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = Point3::default()
-        .with_root(0)
-        .with_x(apex.x)
-        .with_y(apex.y);
+    let mut pos = Point3::default().with_root(0).with_x(apex.x).with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -113,10 +104,7 @@ fn turn_right_at_northern_tropic() {
     // Start at triangle apex.
     // Both parts of the apex are expressed in terms of x-dimension.
     let apex = na::Point2::new(triangle.apex[0], triangle.apex[1]) * RESOLUTION[0];
-    let mut pos = Point3::default()
-        .with_root(0)
-        .with_x(apex.x)
-        .with_y(apex.y);
+    let mut pos = Point3::default().with_root(0).with_x(apex.x).with_y(apex.y);
     let mut dir = Dir::new(triangle.x_dir);
 
     // Should be facing north in root 0.
@@ -243,8 +231,8 @@ fn walk_anticlockwise_around_all_pentagons() {
             turn_left_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
 
             // Remember where we're supposed to end up.
-            let final_pos = pos.clone();
-            let final_dir = dir.clone();
+            let final_pos = pos;
+            let final_dir = dir;
 
             for _ in 0..5 {
                 // Step forward. This should land us in the equivalent
@@ -294,8 +282,8 @@ fn walk_clockwise_around_all_pentagons() {
             turn_right_by_one_hex_edge(&mut pos, &mut dir, RESOLUTION).unwrap();
 
             // Remember where we're supposed to end up.
-            let final_pos = pos.clone();
-            let final_dir = dir.clone();
+            let final_pos = pos;
+            let final_dir = dir;
 
             for _ in 0..5 {
                 // Step forward. This should land us in the equivalent
