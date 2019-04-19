@@ -15,7 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 arrayvec = "0.4.5"
 num-traits = "0.2.0"
-nalgebra = "0.16"
+nalgebra = "0.17"
 # TODO: Put this behind a non-default feature.
 rand = "0.5.3"
 # TODO: Put all serde-related things behind a default feature.

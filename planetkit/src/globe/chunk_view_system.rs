@@ -163,7 +163,7 @@ impl ChunkViewSystem {
             // are multiple downstream things (visual mesh, physics
             // mesh) derived from a chunk.
             use ncollide3d::shape::{ShapeHandle, TriMesh};
-            use nphysics3d::object::{BodyHandle, Material};
+            use nphysics3d::object::ColliderDesc;
             let chunk_origin_pos = globe.spec().cell_bottom_center(*chunk_view.origin.pos());
             let vertices: Vec<Pt3> = vertex_data
                 .iter()
@@ -178,13 +178,13 @@ impl ChunkViewSystem {
             let tri_mesh = TriMesh::<Real>::new(vertices, indices, None);
             let tri_mesh_handle = ShapeHandle::new(tri_mesh);
             let world = &mut world_resource.world;
-            let collider_handle = world.add_collider(
-                0.01 as Real, // TODO: What's appropriate?
-                tri_mesh_handle,
-                BodyHandle::ground(),
-                Iso3::new(chunk_origin_pos.coords, na::zero()),
-                Material::default(),
-            );
+
+            // Attach it to the ground. (Don't create
+            // a separate body for it.)
+            let collider_handle = ColliderDesc::new(tri_mesh_handle)
+                .position(Iso3::new(chunk_origin_pos.coords, na::zero()))
+                .build(world)
+                .handle();
             colliders
                 .insert(chunk_view_ent, Collider::new(collider_handle))
                 .expect("Component insertion failed. Whyyyy?");

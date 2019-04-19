@@ -89,7 +89,7 @@ pub fn create_simple_chase_camera_now(
     // Create a camera sitting a little bit behind the cell dweller.
     let eye = Pt3::new(0.0, 4.0, -6.0);
     let target = Pt3::origin();
-    let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
+    let camera_transform = Iso3::face_towards(&eye, &target, &Vec3::z());
     let camera_entity = world
         .create_entity()
         .with(crate::Spatial::new(
@@ -114,7 +114,7 @@ pub fn create_simple_chase_camera(
     // Create a camera sitting a little bit behind the cell dweller.
     let eye = Pt3::new(0.0, 4.0, -6.0);
     let target = Pt3::origin();
-    let camera_transform = Iso3::new_observer_frame(&eye, &target, &Vec3::z());
+    let camera_transform = Iso3::face_towards(&eye, &target, &Vec3::z());
     let entity = entities.create();
     updater.insert(
         entity,

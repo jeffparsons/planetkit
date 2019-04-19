@@ -88,30 +88,32 @@ pub fn shoot_grenade(
     // in this case it is a totally innocuous function for extracting
     // the interior value of a unit vector.
     let dir = &cd_spatial.local_transform().rotation;
-    let cd_relative_velocity = (Vec3::z_axis().unwrap() + Vec3::y_axis().unwrap()) * 7.0;
+    let cd_relative_velocity = (Vec3::z_axis().into_inner() + Vec3::y_axis().into_inner()) * 7.0;
     let bullet_velocity = Velocity::new(dir * cd_relative_velocity);
 
     // Add a small ball for the grenade to the physics world.
     use ncollide3d::shape::Ball;
-    use nphysics3d::object::Material;
+    use nphysics3d::object::{ColliderDesc, RigidBodyDesc};
     let ball = Ball::<Real>::new(0.1);
     let ball_handle = ShapeHandle::new(ball);
     let world = &mut world_resource.world;
 
     // Set up rigid body.
-    use nphysics3d::volumetric::Volumetric;
-    let inertia = ball_handle.inertia(1.0);
-    let center_of_mass = ball_handle.center_of_mass();
-    let pos = cd_spatial.local_transform();
-    let rigid_body_handle = world.add_rigid_body(pos, inertia, center_of_mass);
+    let collider_desc = ColliderDesc::new(ball_handle);
+    let rigid_body_handle = RigidBodyDesc::new()
+        .collider(&collider_desc)
+        .position(cd_spatial.local_transform())
+        .build(world)
+        .handle();
 
-    let collider_handle = world.add_collider(
-        0.01 as Real, // TODO: What's appropriate?
-        ball_handle.clone(),
-        rigid_body_handle.clone(),
-        Iso3::identity(),
-        Material::default(),
-    );
+    // Get a handle to the collider that was created
+    // for the grenade.
+    let collider_handle = world
+        .collider_world()
+        .body_colliders(rigid_body_handle)
+        .next()
+        .expect("There should be exactly one associated collider")
+        .handle();
 
     // Build the entity.
     let entity = entities.create();

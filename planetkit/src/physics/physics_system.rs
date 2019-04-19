@@ -62,9 +62,8 @@ impl<'a> specs::System<'a> for PhysicsSystem {
         while let Some(message) = data.remove_collider_queue.queue.pop_front() {
             // If there was also an associated body,
             // this might have been implicitly removed.
-            let collision_world = nphysics_world.collision_world_mut();
-            if collision_world.collision_object(message.handle).is_some() {
-                collision_world.remove(&[message.handle]);
+            if nphysics_world.collider(message.handle).is_some() {
+                nphysics_world.remove_colliders(&[message.handle]);
             }
         }
 
@@ -89,7 +88,7 @@ impl<'a> specs::System<'a> for PhysicsSystem {
             // Component might not have been cleaned up, even if we've
             // already deleted the corresponding nphysics body.
             if let Some(body) = nphysics_world.rigid_body(rigid_body.body_handle) {
-                spatial.set_local_transform(body.position());
+                spatial.set_local_transform(*body.position());
                 velocity.set_local_velocity(body.velocity().linear);
             }
         }

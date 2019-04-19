@@ -98,7 +98,7 @@ impl CellDweller {
         // just use the eye position as a vector; it points up out from
         // the center of the world already!
         let up = eye.coords;
-        Iso3::new_observer_frame(&eye, &target, &up)
+        Iso3::face_towards(&eye, &target, &up)
     }
 
     // Make it a long cumbersome name so you make it explicit you're
