@@ -47,8 +47,8 @@ impl<R: gfx::Resources> Mesh<R> {
         // Don't allow creating empty mesh.
         // Back-end doesn't seem to like this, and it probably represents
         // a mistake if we attempt this anyway.
-        assert!(vertices.len() > 0);
-        assert!(vertex_indices.len() > 0);
+        assert!(!vertices.is_empty());
+        assert!(!vertex_indices.is_empty());
 
         // Create sampler.
         // TODO: surely there are some sane defaults for this stuff
@@ -80,8 +80,8 @@ impl<R: gfx::Resources> Mesh<R> {
             out_depth: output_stencil,
         };
         Mesh {
-            data: data,
-            slice: slice,
+            data,
+            slice,
         }
     }
 }

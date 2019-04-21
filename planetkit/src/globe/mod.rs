@@ -9,6 +9,12 @@ mod chunk_view;
 mod chunk_view_system;
 mod cursor;
 mod gen;
+// It's a private module; allow this.
+// (It's just used for grouping implementation code;
+// not in any public interface. Maybe one day I'll revisit
+// this and make the internal organisation a bit better,
+// but I don't want to be bugged about it for now.)
+#[allow(clippy::module_inception)]
 mod globe;
 mod globe_ext;
 pub mod icosahedron;
@@ -40,7 +46,7 @@ use crate::grid::{GridCoord, Point3, PosInOwningRoot, Root};
 // Project a position in a given root quad into a unit sphere.
 // Assumes that one corner is represented in `pt_in_root_quad`
 // as (0, 0) and the opposite is (1, 1).
-#[cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#[allow(clippy::many_single_char_names)]
 pub fn project(root: Root, mut pt_in_root_quad: Pt2) -> Pt3 {
     // An icosahedron can be flattened into a net comprising 20 triangles:
     //

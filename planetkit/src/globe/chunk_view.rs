@@ -10,8 +10,8 @@ pub struct ChunkView {
 impl ChunkView {
     pub fn new(globe_entity: specs::Entity, origin: ChunkOrigin) -> ChunkView {
         ChunkView {
-            origin: origin,
-            globe_entity: globe_entity,
+            origin,
+            globe_entity,
         }
     }
 }

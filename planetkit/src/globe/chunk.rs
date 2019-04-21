@@ -80,9 +80,9 @@ impl Chunk {
         chunk_resolution: [GridCoord; 3],
     ) -> Chunk {
         let mut chunk = Chunk {
-            origin: origin,
-            cells: cells,
-            chunk_resolution: chunk_resolution,
+            origin,
+            cells,
+            chunk_resolution,
             view_entity: None,
             owned_edge_version: 1,
             upstream_neighbors: Vec::new(),
@@ -104,7 +104,7 @@ impl Chunk {
     fn populate_neighboring_chunks(&mut self, root_resolution: [GridCoord; 2]) {
         use crate::grid::semi_arbitrary_compare;
 
-        if self.upstream_neighbors.len() > 0 || self.downstream_neighbors.len() > 0 {
+        if !self.upstream_neighbors.is_empty() || !self.downstream_neighbors.is_empty() {
             panic!("Tried to initialize chunk multiple times.");
         }
 

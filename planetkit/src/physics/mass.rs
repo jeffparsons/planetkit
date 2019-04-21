@@ -17,3 +17,9 @@ impl Mass {
 impl specs::Component for Mass {
     type Storage = specs::VecStorage<Mass>;
 }
+
+impl Default for Mass {
+    fn default() -> Self {
+        Self::new()
+    }
+}

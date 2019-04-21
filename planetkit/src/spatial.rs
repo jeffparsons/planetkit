@@ -17,7 +17,7 @@ impl Spatial {
     pub fn new(parent_entity: Entity, local_transform: Iso3) -> Spatial {
         Spatial {
             parent_entity: Some(parent_entity),
-            local_transform: local_transform,
+            local_transform,
         }
     }
 
@@ -255,11 +255,11 @@ mod tests {
                 .build();
 
             SolarSystem {
-                world: world,
-                sun: sun,
-                earth: earth,
-                moon: moon,
-                polar_satellite: polar_satellite,
+                world,
+                sun,
+                earth,
+                moon,
+                polar_satellite,
             }
         }
     }

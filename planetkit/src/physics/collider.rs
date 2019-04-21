@@ -8,9 +8,7 @@ pub struct Collider {
 
 impl Collider {
     pub fn new(collider_handle: ColliderHandle) -> Collider {
-        Collider {
-            collider_handle: collider_handle,
-        }
+        Collider { collider_handle }
     }
 }
 

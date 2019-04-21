@@ -23,11 +23,10 @@ where
         let server_resource = world.write_resource::<ServerResource<G>>();
         let send_udp_tx = server_resource.send_udp_tx.clone();
 
-        let system = SendSystem {
+        SendSystem {
             log: parent_log.new(o!()),
-            send_udp_tx: send_udp_tx,
-        };
-        system
+            send_udp_tx,
+        }
     }
 
     fn send_message(
@@ -53,7 +52,6 @@ where
                     .try_send(send_wire_message)
                     .unwrap_or_else(|err| {
                         error!(self.log, "Could send message to UDP client; was the buffer full?"; "err" => format!("{:?}", err));
-                        ()
                     });
             }
             Transport::TCP => {
@@ -64,7 +62,6 @@ where
                 let wire_message = WireMessage::Game(game_message);
                 sender.try_send(wire_message).unwrap_or_else(|err| {
                     error!(self.log, "Could send message to TCP client; was the buffer full?"; "err" => format!("{:?}", err));
-                    ()
                 });
             }
         }

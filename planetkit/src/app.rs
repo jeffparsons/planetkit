@@ -130,18 +130,18 @@ impl App {
 
         App {
             t: 0.0,
-            log: log,
-            world: world,
-            dispatcher: dispatcher,
+            log,
+            world,
+            dispatcher,
             encoder_channel: device_encoder_channel,
             input_adapters: Vec::new(),
-            projection: projection,
+            projection,
             first_person: first_person_mutex_arc,
             factory: factory.clone(),
             output_color: window.output_color.clone(),
             output_stencil: window.output_stencil.clone(),
             mesh_repo: mesh_repo_ptr,
-            window: window,
+            window,
         }
     }
 
@@ -164,7 +164,7 @@ impl App {
             }
 
             if let Some(u) = e.update_args() {
-                self.update(&u);
+                self.update(u);
             }
 
             // Dispatch input events to any systems that care.
@@ -203,11 +203,11 @@ impl App {
         self.encoder_channel.sender.send(encoder).unwrap();
     }
 
-    fn update(&mut self, args: &UpdateArgs) {
+    fn update(&mut self, args: UpdateArgs) {
         self.t += args.dt;
 
         self.world.write_resource::<TimeDeltaResource>().0 = args.dt;
-        self.dispatcher.dispatch(&mut self.world.res);
+        self.dispatcher.dispatch(&self.world.res);
         self.world.maintain();
 
         self.realize_proto_meshes();

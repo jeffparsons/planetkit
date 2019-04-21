@@ -64,9 +64,9 @@ impl ChunksInSameRootContainingPoint {
         chunk_resolution: [GridCoord; 3],
     ) -> ChunksInSameRootContainingPoint {
         ChunksInSameRootContainingPoint {
-            point: point,
-            root_resolution: root_resolution,
-            chunk_resolution: chunk_resolution,
+            point,
+            root_resolution,
+            chunk_resolution,
             next_candidate_chunk: CandidateChunk::SameXSameY,
         }
     }
@@ -283,7 +283,7 @@ mod tests {
                     x,
                     y,
                     // Arbitrary
-                    123456,
+                    123_456,
                 )
             })
         });
@@ -293,9 +293,7 @@ mod tests {
                     .count()
             })
             .collect();
-        // NOTE: this rustfmt_skip doesn't work here, yet, but I think it will in a coming release:
-        // https://github.com/rust-lang-nursery/rustfmt/pull/1811
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         assert_eq!(chunk_counts, vec![
             1, 1, 2, 1, 1,
             1, 1, 2, 1, 1,

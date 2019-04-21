@@ -22,7 +22,7 @@ fn find_spawn_points() {
                 3, // Max attempts
             )
         })
-        .filter(|maybe_pos| maybe_pos.is_some())
+        .filter(Option::is_some)
         .count();
     // Some should eventually succeed, some should give up.
     assert!(successes > 5);

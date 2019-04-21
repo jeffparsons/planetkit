@@ -165,7 +165,7 @@ where
             .expect("Receiver hung up");
 
         let cloned_handle = handle.clone();
-        let f = socket
+        socket
             .incoming()
             .for_each(move |(socket, peer_addr)| {
                 info!(server_log, "New client connected"; "addr" => format!("{}", peer_addr));
@@ -181,12 +181,10 @@ where
             .or_else(move |error| {
                 info!(server_error_log, "Something broke in listening for connections"; "error" => format!("{}", error));
                 futures::future::ok(())
-            });
+            })
 
         // TODO: handle stream disconnection somewhere.
         // (The stream will terminate on first error.)
-
-        f
     });
 
     // Wait until socket is bound before telling the caller what port we bound.
@@ -270,7 +268,7 @@ fn handle_tcp_stream<G: GameMessage>(
     use futures::Stream;
 
     let codec = Codec::<G> {
-        peer_addr: peer_addr,
+        peer_addr,
         log: parent_log.new(o!()),
         _phantom_game_message: std::marker::PhantomData,
     };

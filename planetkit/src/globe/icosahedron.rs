@@ -1,14 +1,16 @@
 // Golden ratio
+#[allow(clippy::unreadable_literal, clippy::excessive_precision)]
 const PHI: f64 = 1.61803398874989484820458683436563811772030917980576286213544862270526046281890244970720720418939113748475;
 
 // Scale factor to get icosahedron with circumscribed sphere of radius 1
+#[allow(clippy::unreadable_literal, clippy::excessive_precision)]
 const SF: f64 = 0.525731112119133606025669084847876607285497932243341781528935523241211146403214018371632628831552570956698521400021;
 
 // Vertices of an icosahedron with circumscribed sphere of radius 1
 // REVISIT: consider precalculating these numbers instead of basing them on the values above.
 const A: f64 = SF;
 const B: f64 = PHI * SF;
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub const VERTICES: [[f64; 3]; 12] = [
     [ 0.0,  A,    B  ],
     [ 0.0, -A,    B  ],
@@ -26,7 +28,7 @@ pub const VERTICES: [[f64; 3]; 12] = [
 
 // TODO: describe the very specific and deliberate
 // order that these faces are in.
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub const FACES: [[usize; 3]; 20] = [
     [ 0,  1,  8  ],
     [ 7,  8,  1  ],

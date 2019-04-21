@@ -17,7 +17,7 @@ impl PhysicsSystem {
     pub fn new(parent_log: &Logger, seconds_between_falls: TimeDelta) -> PhysicsSystem {
         PhysicsSystem {
             log: parent_log.new(o!()),
-            seconds_between_falls: seconds_between_falls,
+            seconds_between_falls,
         }
     }
 

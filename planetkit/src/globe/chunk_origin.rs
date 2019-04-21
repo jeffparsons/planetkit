@@ -43,7 +43,7 @@ impl ChunkOrigin {
         assert_eq!(pos.y, pos.y / chunk_resolution[1] * chunk_resolution[1]);
         assert_eq!(pos.z, pos.z / chunk_resolution[2] * chunk_resolution[2]);
 
-        ChunkOrigin { pos: pos }
+        ChunkOrigin { pos }
     }
 }
 

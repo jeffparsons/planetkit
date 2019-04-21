@@ -25,7 +25,7 @@ impl ChunkViewSystem {
     ) -> ChunkViewSystem {
         ChunkViewSystem {
             log: parent_log.new(o!()),
-            seconds_between_geometry_creation: seconds_between_geometry_creation,
+            seconds_between_geometry_creation,
             seconds_since_last_geometry_creation: 0.0,
         }
     }

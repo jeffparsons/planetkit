@@ -75,9 +75,9 @@ impl View {
         // Chunks don't share cells in the z-direction,
         // but do in the x- and y-directions.
         let end_z = origin.pos().z + self.spec.chunk_resolution[2] - 1;
-        for cell_z in origin.pos().z..(end_z + 1) {
-            for cell_y in origin.pos().y..(end_y + 1) {
-                for cell_x in origin.pos().x..(end_x + 1) {
+        for cell_z in origin.pos().z..=end_z {
+            for cell_y in origin.pos().y..=end_y {
+                for cell_x in origin.pos().x..=end_x {
                     // Use cell center as first vertex of each triangle.
                     let grid_point = Point3::new(origin.pos().root, cell_x, cell_y, cell_z);
 

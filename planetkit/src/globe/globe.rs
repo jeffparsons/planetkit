@@ -50,7 +50,7 @@ impl<'a> GlobeGuts<'a> for Globe {
 impl Globe {
     pub fn new(spec: Spec) -> Globe {
         Globe {
-            spec: spec,
+            spec,
             gen: Box::new(SimpleGen::new(spec)),
             chunks: HashMap::new(),
             chunk_pairs: HashMap::new(),
@@ -282,7 +282,7 @@ impl Globe {
     }
 
     pub fn increment_chunk_owned_edge_version_for_cell(&mut self, pos: PosInOwningRoot) {
-        let chunk_origin = self.origin_of_chunk_owning(pos.into());
+        let chunk_origin = self.origin_of_chunk_owning(pos);
         let chunk = self
             .chunks
             .get_mut(&chunk_origin)

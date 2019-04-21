@@ -35,8 +35,8 @@ impl<R: gfx::Resources> MeshRepository<R> {
     ) -> MeshRepository<R> {
         MeshRepository {
             mesh_storage: froggy::Storage::new(),
-            default_output_color_buffer: default_output_color_buffer,
-            default_output_stencil_buffer: default_output_stencil_buffer,
+            default_output_color_buffer,
+            default_output_stencil_buffer,
             log: parent_log.new(o!()),
         }
     }

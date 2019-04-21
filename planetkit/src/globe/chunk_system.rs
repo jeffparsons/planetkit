@@ -82,7 +82,7 @@ impl ChunkSystem {
 
         // There are no cell dwellers, so no interesting terrain.
         // (If a tree falls in a forest...)
-        if cd_positions.len() == 0 {
+        if cd_positions.is_empty() {
             return;
         }
 

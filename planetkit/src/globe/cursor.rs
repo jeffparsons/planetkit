@@ -154,8 +154,8 @@ impl<'a> Cursor<'a> {
     /// use `new_in_chunk` instead.
     fn new_without_chunk_hint(globe: &'a Globe, pos: Point3) -> Cursor<'a> {
         Cursor {
-            globe: globe,
-            pos: pos,
+            globe,
+            pos,
             current_chunk: None,
             current_chunk_might_be_dirty: true,
         }
@@ -189,8 +189,8 @@ impl<'a> CursorMut<'a> {
     /// use `new_in_chunk` instead.
     fn new_without_chunk_hint(globe: &'a mut Globe, pos: Point3) -> CursorMut<'a> {
         CursorMut {
-            globe: globe,
-            pos: pos,
+            globe,
+            pos,
             current_chunk_origin: None,
             current_chunk_might_be_dirty: true,
         }

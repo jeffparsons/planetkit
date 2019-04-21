@@ -55,13 +55,13 @@ impl Spec {
         BigEndian::write_u64(&mut seed_as_u8_array[8..], seed);
 
         Spec {
-            seed: seed,
-            seed_as_u8_array: seed_as_u8_array,
-            floor_radius: floor_radius,
-            ocean_radius: ocean_radius,
-            block_height: block_height,
-            root_resolution: root_resolution,
-            chunk_resolution: chunk_resolution,
+            seed,
+            seed_as_u8_array,
+            floor_radius,
+            ocean_radius,
+            block_height,
+            root_resolution,
+            chunk_resolution,
         }
     }
 
@@ -84,7 +84,7 @@ impl Spec {
             floor_radius,
             ocean_radius,
             0.65,
-            [8388608, 16777216],
+            [8_388_608, 16_777_216],
             // Chunks should probably be taller, but short chunks are a bit
             // better for now in exposing bugs visually.
             [16, 16, 4],

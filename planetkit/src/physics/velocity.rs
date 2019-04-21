@@ -14,7 +14,7 @@ pub struct Velocity {
 impl Velocity {
     pub fn new(local_velocity: Vec3) -> Velocity {
         Velocity {
-            local_velocity: local_velocity,
+            local_velocity,
         }
     }
 

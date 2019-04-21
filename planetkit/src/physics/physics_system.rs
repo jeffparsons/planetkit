@@ -94,3 +94,9 @@ impl<'a> specs::System<'a> for PhysicsSystem {
         }
     }
 }
+
+impl Default for PhysicsSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}

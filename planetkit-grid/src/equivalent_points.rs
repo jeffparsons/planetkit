@@ -835,7 +835,8 @@ mod tests {
     #[test]
     fn all_equivalent_points_symmetric() {
         const ROOT_RESOLUTION: [GridCoord; 2] = [16, 32];
-        for xy in iproduct!(0..(ROOT_RESOLUTION[0] + 1), 0..(ROOT_RESOLUTION[1] + 1)) {
+        // NOTE: Going right up to the far edge.
+        for xy in iproduct!(0..=ROOT_RESOLUTION[0], 0..=ROOT_RESOLUTION[1]) {
             let (x, y) = xy;
             let point = Point3::new(
                 // Arbitrary root

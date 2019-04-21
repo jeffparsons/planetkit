@@ -90,7 +90,7 @@ pub fn remove_block(globe: &mut Globe, pos_in_owning_root: PosInOwningRoot) -> C
     // Keep for later, so we can return what was in it.
     let cloned_cell = {
         let cell = globe.authoritative_cell_mut(pos_in_owning_root);
-        let cs = cell.clone();
+        let cs = *cell;
         cell.material = Material::Air;
         cs
     };

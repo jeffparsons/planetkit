@@ -31,7 +31,7 @@ where
 
         RecvSystem {
             log: parent_log.new(o!()),
-            recv_rx: recv_rx,
+            recv_rx,
         }
     }
 }
@@ -99,7 +99,7 @@ where
             // Re-wrap the message for consumption by other systems.
             let recv_message = RecvMessage {
                 source: peer_id,
-                game_message: game_message,
+                game_message,
             };
             recv_message_queue.queue.push_back(recv_message);
         }

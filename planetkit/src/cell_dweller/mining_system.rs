@@ -18,7 +18,7 @@ pub struct MiningInputAdapter {
 
 impl MiningInputAdapter {
     pub fn new(sender: mpsc::Sender<MiningEvent>) -> MiningInputAdapter {
-        MiningInputAdapter { sender: sender }
+        MiningInputAdapter { sender }
     }
 }
 
@@ -27,7 +27,7 @@ impl input_adapter::InputAdapter for MiningInputAdapter {
         use piston::input::keyboard::Key;
         use piston::input::{Button, ButtonState};
 
-        if let &Input::Button(button_args) = input_event {
+        if let Input::Button(button_args) = *input_event {
             if let Button::Keyboard(key) = button_args.button {
                 let is_down = match button_args.state {
                     ButtonState::Press => true,
@@ -59,7 +59,7 @@ pub struct MiningSystem {
 impl MiningSystem {
     pub fn new(input_receiver: mpsc::Receiver<MiningEvent>, parent_log: &Logger) -> MiningSystem {
         MiningSystem {
-            input_receiver: input_receiver,
+            input_receiver,
             log: parent_log.new(o!()),
             pick_up: false,
         }
@@ -142,7 +142,7 @@ impl<'a> specs::System<'a> for MiningSystem {
                     // Send the request to the master node, including when that's us.
                     destination: Destination::Master,
                     game_message: CellDwellerMessage::TryPickUpBlock(TryPickUpBlockMessage {
-                        cd_entity_id: cd_entity_id,
+                        cd_entity_id,
                     }),
                     transport: Transport::TCP,
                 })

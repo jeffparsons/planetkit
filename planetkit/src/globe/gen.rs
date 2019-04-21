@@ -54,8 +54,8 @@ impl SimpleGen {
             // Truncate seed to make it fit what `noise` expects.
             .set_seed(spec.seed as u32);
         SimpleGen {
-            spec: spec,
-            terrain_noise: terrain_noise,
+            spec,
+            terrain_noise,
         }
     }
 }
@@ -100,7 +100,7 @@ impl Gen for SimpleGen {
             Material::Air
         };
         Cell {
-            material: material,
+            material,
             // `Globe` fills this in; it's not really a property
             // of the naturally generated world, and it's not
             // deterministic from the world seed, so we don't

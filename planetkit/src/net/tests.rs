@@ -55,10 +55,7 @@ impl Node {
         // to ensure the existence of all Default resources.
         dispatcher.setup(&mut world.res);
 
-        Node {
-            world: world,
-            dispatcher: dispatcher,
-        }
+        Node { world, dispatcher }
     }
 
     pub fn new_server() -> Node {
@@ -103,7 +100,7 @@ impl Node {
     }
 
     pub fn dispatch(&mut self) {
-        self.dispatcher.dispatch(&mut self.world.res);
+        self.dispatcher.dispatch(&self.world.res);
     }
 
     pub fn enqueue_message(&mut self, message: SendMessage<TestMessage>) {
@@ -119,7 +116,7 @@ impl Node {
             .world
             .write_resource::<RecvMessageQueue<TestMessage>>()
             .queue;
-        assert!(recv_queue.len() >= 1);
+        assert!(!recv_queue.is_empty());
         let received_message = recv_queue.pop_front().unwrap().game_message;
         assert_eq!(received_message, expected_message);
     }

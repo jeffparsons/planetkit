@@ -27,11 +27,10 @@ where
             .take()
             .expect("Somebody already took it!");
 
-        let system = NewPeerSystem {
+        NewPeerSystem {
             _log: parent_log.new(o!()),
-            new_peer_rx: new_peer_rx,
-        };
-        system
+            new_peer_rx,
+        }
     }
 }
 

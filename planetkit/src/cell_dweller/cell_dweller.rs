@@ -32,11 +32,11 @@ impl CellDweller {
         globe_entity: Option<specs::Entity>,
     ) -> CellDweller {
         CellDweller {
-            pos: pos,
-            dir: dir,
+            pos,
+            dir,
             last_turn_bias: TurnDir::Right,
             is_real_space_transform_dirty: true,
-            globe_spec: globe_spec,
+            globe_spec,
             // TODO: accept as parameter
             seconds_between_moves: 0.1,
             seconds_until_next_move: 0.0,
@@ -44,7 +44,7 @@ impl CellDweller {
             seconds_between_turns: 0.2,
             seconds_until_next_turn: 0.0,
             seconds_until_next_fall: 0.0,
-            globe_entity: globe_entity,
+            globe_entity,
         }
     }
 

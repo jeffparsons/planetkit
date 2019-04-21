@@ -20,7 +20,7 @@ pub struct MovementInputAdapter {
 
 impl MovementInputAdapter {
     pub fn new(sender: mpsc::Sender<MovementEvent>) -> MovementInputAdapter {
-        MovementInputAdapter { sender: sender }
+        MovementInputAdapter { sender }
     }
 }
 
@@ -29,7 +29,7 @@ impl input_adapter::InputAdapter for MovementInputAdapter {
         use piston::input::keyboard::Key;
         use piston::input::{Button, ButtonState};
 
-        if let &Input::Button(button_args) = input_event {
+        if let Input::Button(button_args) = *input_event {
             if let Button::Keyboard(key) = button_args.button {
                 let is_down = match button_args.state {
                     ButtonState::Press => true,
@@ -104,7 +104,7 @@ impl MovementSystem {
         parent_log: &Logger,
     ) -> MovementSystem {
         MovementSystem {
-            input_receiver: input_receiver,
+            input_receiver,
             log: parent_log.new(o!()),
             step_forward: false,
             step_backward: false,
@@ -180,7 +180,7 @@ impl MovementSystem {
         // Ask the globe if we can go there, attempting to climb up if there is a hil/cliff.
         // Usually we'll allow climbing a maximum of one block, but especially in certain tests
         // we want to let you climb higher!
-        for _ in 0..(self.max_step_height + 1) {
+        for _ in 0..=self.max_step_height {
             let cell = match globe.maybe_non_authoritative_cell(new_pos) {
                 Ok(cell) => cell,
                 // Chunk not loaded; wait until it is before attempting to move.
@@ -324,7 +324,7 @@ impl<'a> specs::System<'a> for MovementSystem {
                     // connecting to multiple servers, or to other non-server peers.
                     destination: Destination::EveryoneElse,
                     game_message: CellDwellerMessage::SetPos(SetPosMessage {
-                        entity_id: entity_id,
+                        entity_id,
                         new_pos: cd.pos,
                         new_dir: cd.dir,
                         new_last_turn_bias: cd.last_turn_bias,

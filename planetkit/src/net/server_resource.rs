@@ -32,7 +32,7 @@ impl<G: GameMessage> ServerResource<G> {
             server: Arc::new(Mutex::new(server)),
             recv_rx: Arc::new(Mutex::new(Some(recv_rx))),
             new_peer_rx: Arc::new(Mutex::new(Some(new_peer_rx))),
-            send_udp_tx: send_udp_tx,
+            send_udp_tx,
         }
     }
 }

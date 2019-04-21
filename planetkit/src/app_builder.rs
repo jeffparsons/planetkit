@@ -70,8 +70,8 @@ impl AppBuilder {
         // if you want it by calling `with_networking`.
 
         AppBuilder {
-            root_log: root_log,
-            world: world,
+            root_log,
+            world,
             dispatcher_builder: specs::DispatcherBuilder::new(),
             movement_input_adapter: None,
             mining_input_adapter: None,
@@ -176,4 +176,10 @@ impl<'a, 'b, F> AddSystemsFn<'a, 'b> for F where
         specs::DispatcherBuilder<'a, 'b>,
     ) -> specs::DispatcherBuilder<'a, 'b>
 {
+}
+
+impl Default for AppBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }

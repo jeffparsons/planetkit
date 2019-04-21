@@ -1,3 +1,9 @@
+// It's a private module; allow this.
+// (It's just used for grouping implementation code;
+// not in any public interface. Maybe one day I'll revisit
+// this and make the internal organisation a bit better,
+// but I don't want to be bugged about it for now.)
+#[allow(clippy::module_inception)]
 mod cell_dweller;
 mod mining;
 mod mining_system;

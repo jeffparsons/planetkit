@@ -9,7 +9,7 @@ pub struct RigidBody {
 impl RigidBody {
     pub fn new(body_handle: BodyHandle) -> RigidBody {
         RigidBody {
-            body_handle: body_handle,
+            body_handle,
         }
     }
 }

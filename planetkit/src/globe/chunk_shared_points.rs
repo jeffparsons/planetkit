@@ -19,7 +19,7 @@ pub struct ChunkSharedPoints {
     y_max: GridCoord,
     iter: itertools::ConsTuples<
         itertools::Product<
-            itertools::Product<ops::Range<GridCoord>, ops::Range<GridCoord>>,
+            itertools::Product<ops::RangeInclusive<GridCoord>, ops::RangeInclusive<GridCoord>>,
             ops::Range<GridCoord>,
         >,
         ((GridCoord, GridCoord), GridCoord),
@@ -30,8 +30,9 @@ impl ChunkSharedPoints {
     pub fn new(chunk_origin: ChunkOrigin, chunk_resolution: [GridCoord; 3]) -> ChunkSharedPoints {
         let pos = chunk_origin.pos();
         let iter = iproduct!(
-            pos.x..(pos.x + chunk_resolution[0] + 1),
-            pos.y..(pos.y + chunk_resolution[1] + 1),
+            // Include the far edge.
+            pos.x..=(pos.x + chunk_resolution[0]),
+            pos.y..=(pos.y + chunk_resolution[1]),
             // Chunks don't share points in the z-direction,
             // but do in the x- and y-directions.
             pos.z..(pos.z + chunk_resolution[2])
@@ -42,7 +43,7 @@ impl ChunkSharedPoints {
             x_max: pos.x + chunk_resolution[0],
             y_min: pos.y,
             y_max: pos.y + chunk_resolution[1],
-            iter: iter,
+            iter,
         }
     }
 }

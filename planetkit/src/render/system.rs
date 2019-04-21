@@ -68,13 +68,13 @@ impl<R: gfx::Resources, C: gfx::CommandBuffer<R>> System<R, C> {
             .unwrap();
 
         System {
-            pso: pso,
-            encoder_channel: encoder_channel,
-            output_color: output_color,
-            output_stencil: output_stencil,
-            projection: projection,
+            pso,
+            encoder_channel,
+            output_color,
+            output_stencil,
+            projection,
             _log: log,
-            mesh_repo: mesh_repo,
+            mesh_repo,
         }
     }
 

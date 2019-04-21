@@ -12,12 +12,12 @@ impl ProtoMesh {
         // Don't allow creating empty mesh.
         // Back-end doesn't seem to like this, and it probably represents
         // a mistake if we attempt this anyway.
-        assert!(vertexes.len() > 0);
-        assert!(indexes.len() > 0);
+        assert!(!vertexes.is_empty());
+        assert!(!indexes.is_empty());
 
         ProtoMesh {
-            vertexes: vertexes,
-            indexes: indexes,
+            vertexes,
+            indexes,
         }
     }
 }

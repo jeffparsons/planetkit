@@ -73,7 +73,7 @@ impl Globe {
                 // Ensure minimum required air above.
                 let mut hopefully_air_pos = *hopefully_land_pos;
                 for _ in 0..min_air_cells_above {
-                    hopefully_air_pos.z = hopefully_air_pos.z + 1;
+                    hopefully_air_pos.z += 1;
                     cursor.set_pos(hopefully_air_pos);
                     cursor.ensure_chunk_present();
                     let cell = cursor.cell().expect(
@@ -161,7 +161,7 @@ impl Globe {
                 );
                 if cell.material == material {
                     // Yay, we found it!
-                    return pos.into();
+                    return pos;
                 }
             }
             let new_pos = cursor.pos().with_z(cursor.pos().z + 1);

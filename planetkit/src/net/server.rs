@@ -48,10 +48,10 @@ impl<G: GameMessage> Server<G> {
         let remote = remote_rx.recv().expect("Sender hung up");
 
         Server {
-            remote: remote,
+            remote,
             log: parent_logger.new(o!()),
-            recv_system_sender: recv_system_sender,
-            send_system_new_peer_sender: send_system_new_peer_sender,
+            recv_system_sender,
+            send_system_new_peer_sender,
             send_udp_wire_message_rx: Some(send_udp_wire_message_rx),
             port: None,
         }

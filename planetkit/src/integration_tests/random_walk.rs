@@ -115,7 +115,7 @@ impl Walker {
                 // Set our new character as the currently controlled cell dweller.
                 self.world
                     .write_resource::<cell_dweller::ActiveCellDweller>()
-                    .maybe_entity = Some(guy_entity.clone());
+                    .maybe_entity = Some(*guy_entity);
 
                 // Maybe turn left or right.
                 let f: f32 = rng.gen();
@@ -146,7 +146,7 @@ impl Walker {
                 }
 
                 self.world.write_resource::<TimeDeltaResource>().0 = 0.1;
-                self.dispatcher.dispatch(&mut self.world.res);
+                self.dispatcher.dispatch(&self.world.res);
                 self.world.maintain();
             }
         }
