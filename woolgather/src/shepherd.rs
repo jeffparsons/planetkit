@@ -9,7 +9,8 @@ use specs::{self, Builder};
 /// Create the player character: a shepherd who must find and rescue the sheep
 /// that have strayed from his flock and fallen into holes.
 pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> specs::Entity {
-    use rand::{SeedableRng, XorShiftRng};
+    use rand::SeedableRng;
+    use rand_xoshiro::Xoshiro256StarStar;
 
     // Find a suitable spawn point for the player character at the globe surface.
     let (globe_spec, shepherd_pos) = {
@@ -19,7 +20,7 @@ pub fn create_now(world: &mut specs::World, globe_entity: specs::Entity) -> spec
             .expect("Uh oh, it looks like our Globe went missing.");
         let globe_spec = globe.spec();
         // Seed spawn point RNG with world seed.
-        let mut rng = XorShiftRng::from_seed(globe_spec.seed_as_u8_array);
+        let mut rng = Xoshiro256StarStar::from_seed(globe_spec.seed_as_u8_array);
         let shepherd_pos = globe
             .air_above_random_surface_dry_land(
                 &mut rng, 2, // Min air cells above

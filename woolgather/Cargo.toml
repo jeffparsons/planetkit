@@ -6,7 +6,8 @@ edition = "2018"
 
 [dependencies]
 planetkit = { path = "../planetkit" }
-rand = "0.5.3"
+rand = "0.6"
+rand_xoshiro = "0.1"
 shred = "0.7.0"
 specs = "0.12.0"
 slog = "2.0.4"

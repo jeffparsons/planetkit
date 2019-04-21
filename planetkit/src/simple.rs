@@ -35,7 +35,8 @@ pub fn create_simple_player_character_now(
     world: &mut specs::World,
     globe_entity: specs::Entity,
 ) -> specs::Entity {
-    use rand::{SeedableRng, XorShiftRng};
+    use rand::SeedableRng;
+    use rand_xoshiro::Xoshiro256StarStar;
 
     // Find a suitable spawn point for the player character at the globe surface.
     use crate::grid::Dir;
@@ -46,7 +47,7 @@ pub fn create_simple_player_character_now(
             .expect("Uh oh, it looks like our Globe went missing.");
         let globe_spec = globe.spec();
         // Seed spawn point RNG with world seed.
-        let mut rng = XorShiftRng::from_seed(globe_spec.seed_as_u8_array);
+        let mut rng = Xoshiro256StarStar::from_seed(globe_spec.seed_as_u8_array);
         let player_character_pos = globe
             .air_above_random_surface_dry_land(
                 &mut rng, 2, // Min air cells above

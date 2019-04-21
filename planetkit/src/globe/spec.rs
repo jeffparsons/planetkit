@@ -16,9 +16,9 @@ use crate::grid::{GridCoord, Point2, Point3};
 #[derive(Clone, Copy)]
 pub struct Spec {
     pub seed: u64,
-    // `rand` consumes PRNG seeds from a `[u8; 16]`,
+    // `rand` consumes PRNG seeds from a `[u8; 32]`,
     // so we store it as that (big-endian) as well for convenience.
-    pub seed_as_u8_array: [u8; 16],
+    pub seed_as_u8_array: [u8; 32],
     pub floor_radius: f64,
     // NOTE: Don't let ocean radius be a neat multiple of block
     // height above floor radius, or we'll end up with
@@ -47,12 +47,14 @@ impl Spec {
         // Convert seed to `u8` array for convenience when providing
         // it to `rand`.
         use bytes::{BigEndian, ByteOrder};
-        let mut seed_as_u8_array = [0u8; 16];
-        // TODO: Just writing the seed twice for now;
+        let mut seed_as_u8_array = [0u8; 32];
+        // TODO: Just writing the seed four times for now;
         // will use an actual `u128` seed when `bytes` supports
-        // writing that.
-        BigEndian::write_u64(&mut seed_as_u8_array[..8], seed);
-        BigEndian::write_u64(&mut seed_as_u8_array[8..], seed);
+        // writing that, and write it out twice here.
+        BigEndian::write_u64(&mut seed_as_u8_array[0..8], seed);
+        BigEndian::write_u64(&mut seed_as_u8_array[8..16], seed);
+        BigEndian::write_u64(&mut seed_as_u8_array[16..24], seed);
+        BigEndian::write_u64(&mut seed_as_u8_array[24..32], seed);
 
         Spec {
             seed,
