@@ -8,6 +8,6 @@ edition = "2018"
 planetkit = { path = "../planetkit" }
 rand = "0.6"
 rand_xoshiro = "0.1"
-shred = "0.7.0"
-specs = "0.12.0"
+shred = "0.7"
+specs = "0.14"
 slog = "2.0.4"
