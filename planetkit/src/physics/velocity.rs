@@ -13,9 +13,7 @@ pub struct Velocity {
 
 impl Velocity {
     pub fn new(local_velocity: Vec3) -> Velocity {
-        Velocity {
-            local_velocity,
-        }
+        Velocity { local_velocity }
     }
 
     pub fn local_velocity(&self) -> Vec3 {

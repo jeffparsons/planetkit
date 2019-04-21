@@ -15,9 +15,6 @@ impl ProtoMesh {
         assert!(!vertexes.is_empty());
         assert!(!indexes.is_empty());
 
-        ProtoMesh {
-            vertexes,
-            indexes,
-        }
+        ProtoMesh { vertexes, indexes }
     }
 }

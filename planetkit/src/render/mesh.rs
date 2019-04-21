@@ -79,9 +79,6 @@ impl<R: gfx::Resources> Mesh<R> {
             out_color: output_color,
             out_depth: output_stencil,
         };
-        Mesh {
-            data,
-            slice,
-        }
+        Mesh { data, slice }
     }
 }
