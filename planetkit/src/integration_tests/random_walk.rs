@@ -107,7 +107,6 @@ impl Walker {
             .send(MovementEvent::StepForward(true))
             .unwrap();
 
-        use rand;
         use rand::Rng;
         let mut rng = rand::thread_rng();
         for _ in 0..ticks {
