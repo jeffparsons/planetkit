@@ -6,7 +6,6 @@ pub fn make_window(log: &Logger) -> PistonWindow {
     use opengl_graphics::OpenGL;
     use piston::window::AdvancedWindow;
     use piston::window::WindowSettings;
-    use piston_window::PistonWindow;
 
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;

@@ -98,7 +98,6 @@ pub fn create_simple_chase_camera_now(
             camera_transform,
         ))
         .build();
-    use crate::camera::DefaultCamera;
     // TODO: gah, where does this belong?
     world.add_resource(DefaultCamera {
         camera_entity: Some(camera_entity),

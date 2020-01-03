@@ -374,7 +374,6 @@ impl Globe {
     /// Make sure we are tracking the currency of shared data in all chunks
     /// upstream or downstream of this chunk.
     fn ensure_all_chunk_pairs_present_for(&mut self, chunk: &Chunk) {
-        use crate::globe::chunk_pair::{ChunkPair, ChunkPairOrigins};
         // Copy cached upstream and downstream neighbors from
         // chunks rather than re-computing them for each pair now.
         for upstream_neighbor in &chunk.upstream_neighbors {

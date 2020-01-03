@@ -116,7 +116,6 @@ impl Gen for SimpleGen {
     }
 
     fn populate_cells(&self, origin: ChunkOrigin, cells: &mut Vec<Cell>) {
-        use rand;
         use rand::Rng;
 
         // We should be passed an empty vector to populate.
