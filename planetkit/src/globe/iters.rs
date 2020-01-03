@@ -176,7 +176,6 @@ pub fn chunks_containing_point(
     root_resolution: [GridCoord; 2],
     chunk_resolution: [GridCoord; 3],
 ) -> impl Iterator<Item = (ChunkOrigin, Point3)> {
-    use super::ChunksInSameRootContainingPoint;
     use crate::grid::EquivalentPoints;
 
     EquivalentPoints::new(point, root_resolution).flat_map(move |equivalent_point| {
