@@ -1,6 +1,8 @@
 # PlanetKit
 
-[![Travis CI build status][bi]][bl] [![AppVeyor build status][ai]][al]
+[![Travis CI build status][bi]][bl]
+[![AppVeyor build status][ai]][al]
+[![Rust](https://img.shields.io/badge/rust-1.40%2B-blue.svg?maxAge=3600)](https://github.com/jeffparsons/rangemap) <!-- Don't forget to update the Travis config when bumping minimum Rust version. -->
 
 [bi]: https://travis-ci.org/jeffparsons/planetkit.svg?branch=master
 [bl]: https://travis-ci.org/jeffparsons/planetkit
@@ -11,7 +13,7 @@
 
 Colorful blobs that might one day resemble planets.
 
-Requires the latest stable version of Rust.
+Requires Rust 1.40.
 
 ![Screenshot](https://raw.githubusercontent.com/jeffparsons/planetkit/master/screenshot.png)
 
